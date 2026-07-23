@@ -92,7 +92,7 @@ export function TopUsers({ sessionId }: TopUsersProps) {
                     </div>
 
                     <div className="flex items-center gap-3 text-[11px] text-white/40">
-                      <span>{user.entries} ingresos al live</span>
+                      <span>{user.entries <= 1 ? "primer live!" : `${user.entries} ingresos al live`}</span>
                       <span>{user.comments} comentarios</span>
                     </div>
 
