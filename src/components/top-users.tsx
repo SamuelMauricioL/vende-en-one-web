@@ -18,6 +18,23 @@ interface TopUsersProps {
   sessionId: string;
 }
 
+const USER_COLORS = [
+  "#ff0050", "#00f2ea", "#ff6b35", "#ffd700",
+  "#ff69b4", "#7c3aed", "#06d6a0", "#f72585",
+  "#4cc9f0", "#e63946", "#2ec4b6", "#ff9f1c",
+  "#b5179e", "#4361ee", "#f77f00", "#80ed99",
+];
+
+function getUserColor(userId: string): string {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return USER_COLORS[Math.abs(hash) % USER_COLORS.length];
+}
+
+const TOP_MEDALS = ["🥇", "🥈", "🥉"];
+
 export function TopUsers({ sessionId }: TopUsersProps) {
   const { data: users, connected } = useSSE<TopUser>(
     `/api/lives/${sessionId}/stats/stream`,
@@ -25,81 +42,64 @@ export function TopUsers({ sessionId }: TopUsersProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">Usuarios top</h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-white/80">Usuarios top</h3>
         <div className="flex items-center gap-2">
-          <div
-            className={`w-2 h-2 rounded-full ${
-              connected ? "bg-green-500" : "bg-red-500"
-            }`}
-          />
-          <span className="text-sm text-muted-foreground">
-            {users?.length ?? 0} usuarios
-          </span>
+          <span className={`w-2 h-2 rounded-full ${connected ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" : "bg-red-500"}`} />
+          <span className="text-xs text-white/40">{users?.length ?? 0} usuarios</span>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-2 max-h-[500px] pr-2">
+      <div className="flex-1 overflow-y-auto space-y-1.5 max-h-[520px] pr-1">
         {!users || users.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
+          <p className="text-sm text-white/30 text-center py-12">
             {connected ? "Esperando usuarios..." : "Conectando..."}
           </p>
         ) : (
-          users.map((user, index) => (
-            <div
-              key={user.tiktokUserId}
-              className="flex gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors"
-            >
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-2)] text-white font-bold text-sm">
-                {index + 1}
-              </div>
+          users.map((user, index) => {
+            const color = getUserColor(user.tiktokUserId);
+            const maxScore = users[0]?.score || 1;
+            const barWidth = (user.score / maxScore) * 100;
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-sm truncate">
-                    {user.nickname || user.displayId || "Anónimo"}
-                  </span>
-                  {user.verified && (
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">
-                      ✓
+            return (
+              <div
+                key={user.tiktokUserId}
+                className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                <div className="flex items-center justify-center w-7 h-7 shrink-0">
+                  {index < 3 ? (
+                    <span className="text-lg">{TOP_MEDALS[index]}</span>
+                  ) : (
+                    <span className="text-xs font-bold text-white/30">#{index + 1}</span>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="font-semibold text-sm truncate" style={{ color }}>
+                      {user.nickname || user.displayId || "Anónimo"}
                     </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
-                  <span>Entradas: {user.entries}</span>
-                  <span>Comentarios: {user.comments}</span>
-                  {user.followerCount && (
-                    <span>{user.followerCount} seguidores</span>
-                  )}
-                </div>
-
-                {user.commentTexts.length > 0 && (
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground font-medium">
-                      Intereses:
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {user.commentTexts.slice(0, 3).map((text, i) => (
-                        <span
-                          key={i}
-                          className="text-xs px-2 py-0.5 rounded-full bg-background/50 border border-border/50 truncate max-w-[150px]"
-                          title={text}
-                        >
-                          {text}
-                        </span>
-                      ))}
-                      {user.commentTexts.length > 3 && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-background/50 border border-border/50">
-                          +{user.commentTexts.length - 3} más
-                        </span>
-                      )}
-                    </div>
+                    {user.verified && (
+                      <span className="text-blue-400 text-xs">✓</span>
+                    )}
                   </div>
-                )}
+
+                  <div className="flex items-center gap-3 text-[11px] text-white/40">
+                    <span>score {user.score}</span>
+                    <span>{user.entries} entradas</span>
+                    <span>{user.comments} comentarios</span>
+                  </div>
+
+                  <div className="mt-1 h-1 rounded-full bg-white/5 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${barWidth}%`, backgroundColor: color }}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

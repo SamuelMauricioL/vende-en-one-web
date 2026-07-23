@@ -4,15 +4,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
 import { LiveChat } from "./live-chat";
 import { TopUsers } from "./top-users";
 
@@ -85,70 +76,62 @@ export function LiveController() {
   };
 
   return (
-    <div className="space-y-7">
-      <Card className="border-border/50 bg-card/80 backdrop-blur-sm shadow-2xl">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg">Iniciar listener</CardTitle>
-          <CardDescription>
-            El username se envía a <code className="text-xs bg-muted px-1.5 py-0.5 rounded">POST /lives/start</code> a través del proxy.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleStart} className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="username" className="text-muted-foreground text-xs">
-                Usuario de TikTok
-              </Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="ej. charlidamelio"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                spellCheck={false}
-                autoComplete="off"
-                className="h-12 text-base bg-background/50"
-              />
-            </div>
-            <div className="flex gap-2 sm:items-end sm:pt-5">
-              {!activeSessionId ? (
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="h-12 px-6 bg-[var(--brand)] hover:bg-[var(--brand)]/90 text-white font-semibold"
-                >
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Iniciar Live
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={loading}
-                  className="h-12 px-5"
-                  onClick={() => handleStop(username)}
-                >
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Detener
-                </Button>
-              )}
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="space-y-5">
+      {/* TikTok-style compact form */}
+      <div className="rounded-2xl bg-white/[0.04] border border-white/[0.06] p-4">
+        <form onSubmit={handleStart} className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1">
+            <Input
+              id="username"
+              type="text"
+              placeholder="Usuario de TikTok"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              spellCheck={false}
+              autoComplete="off"
+              className="h-11 text-sm bg-white/5 border-white/10 text-white/90 placeholder:text-white/25 focus-visible:ring-[#fe2c55]/50"
+              disabled={!!activeSessionId}
+            />
+          </div>
+          <div className="flex gap-2 sm:self-end">
+            {!activeSessionId ? (
+              <Button
+                type="submit"
+                disabled={loading}
+                className="h-11 px-6 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-semibold text-sm rounded-xl shadow-lg shadow-[#fe2c55]/25"
+              >
+                {loading && (
+                  <span className="mr-2 h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                )}
+                {loading ? "Conectando..." : "Iniciar Live"}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={loading}
+                className="h-11 px-6 border-white/20 text-white/80 hover:bg-white/10 rounded-xl text-sm"
+                onClick={() => handleStop(username)}
+              >
+                {loading ? (
+                  <span className="mr-2 h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                ) : null}
+                {loading ? "Deteniendo..." : "Detener Live"}
+              </Button>
+            )}
+          </div>
+        </form>
+      </div>
 
+      {/* Live panels */}
       {activeSessionId && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="border-border/50 bg-card/80 backdrop-blur-sm shadow-2xl">
-            <CardContent className="pt-6">
-              <LiveChat sessionId={activeSessionId} />
-            </CardContent>
-          </Card>
-          <Card className="border-border/50 bg-card/80 backdrop-blur-sm shadow-2xl">
-            <CardContent className="pt-6">
-              <TopUsers sessionId={activeSessionId} />
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+          <div className="lg:col-span-3 rounded-2xl bg-white/[0.04] border border-white/[0.06] p-4">
+            <LiveChat sessionId={activeSessionId} />
+          </div>
+          <div className="lg:col-span-2 rounded-2xl bg-white/[0.04] border border-white/[0.06] p-4">
+            <TopUsers sessionId={activeSessionId} />
+          </div>
         </div>
       )}
     </div>
