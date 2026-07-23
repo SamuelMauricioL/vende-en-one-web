@@ -11,6 +11,7 @@ interface TopUser {
   entries: number;
   comments: number;
   commentTexts: string[];
+  firstSeen: number;
   score: number;
 }
 
@@ -96,6 +97,9 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
                   <div className="flex items-center gap-3 text-[11px] text-white/40">
                     <span>{user.entries <= 1 ? "primer live!" : `${user.entries} ingresos al live`}</span>
                     <span>{user.comments} comentarios</span>
+                    {user.firstSeen && (
+                      <span>{Math.floor((Date.now() - user.firstSeen) / 60000)} min en live</span>
+                    )}
                   </div>
 
                   <div className="mt-1 h-1 rounded-full bg-white/5 overflow-hidden">
