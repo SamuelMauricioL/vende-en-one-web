@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
 
 interface ChatMessage {
@@ -40,6 +40,24 @@ export function LiveChat({ sessionId, selectedUserIds }: LiveChatProps) {
     `/api/lives/${sessionId}/chat/stream`,
   );
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  function relativeTime(ts: number): string {
+    const diff = Date.now() - ts;
+    const sec = Math.floor(diff / 1000);
+    if (sec < 10) return "ahora";
+    if (sec < 60) return `hace ${sec}s`;
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `hace ${min}min`;
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return `hace ${h}h ${m}min`;
+  }
 
   const isFiltered = selectedUserIds.size > 0;
   const filtered = messages?.filter(
@@ -97,6 +115,7 @@ export function LiveChat({ sessionId, selectedUserIds }: LiveChatProps) {
                     {msg.followerCount && (
                       <span className="text-[11px] text-white/30">{msg.followerCount} seguidores</span>
                     )}
+                    <span className="text-[11px] text-white/20 ml-auto">{relativeTime(msg.createdAt)}</span>
                   </div>
                   <p className="text-sm text-white/90 leading-relaxed break-words">{msg.comment}</p>
                 </div>
