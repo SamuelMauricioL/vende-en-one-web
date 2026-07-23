@@ -92,7 +92,6 @@ export function TopUsers({ sessionId }: TopUsersProps) {
                     </div>
 
                     <div className="flex items-center gap-3 text-[11px] text-white/40">
-                      <span>score {user.score}</span>
                       <span>{user.entries} entradas</span>
                       <span>{user.comments} comentarios</span>
                     </div>
