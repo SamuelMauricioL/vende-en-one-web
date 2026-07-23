@@ -1,0 +1,15 @@
+{
+  "name": "vende-en-one-web",
+  "version": "1.0.0",
+  "description": "Frontend web para Vende en One.",
+  "private": true,
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
