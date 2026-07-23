@@ -15,6 +15,8 @@ import {
 import { Loader2 } from "lucide-react";
 import { StatusPanel } from "./status-panel";
 import { LivesList } from "./lives-list";
+import { LiveChat } from "./live-chat";
+import { TopUsers } from "./top-users";
 
 export type StatusKind = "" | "ok" | "warn" | "err";
 
@@ -32,6 +34,7 @@ export function LiveController() {
   });
   const [lives, setLives] = useState<unknown[]>([]);
   const [livesLoading, setLivesLoading] = useState(false);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   const refreshLives = useCallback(async () => {
     setLivesLoading(true);
@@ -63,6 +66,10 @@ export function LiveController() {
       const data = await res.json().catch(() => ({ raw: "respuesta no-JSON" }));
 
       if (res.ok) {
+        const sessionId = data.live?.sessionId;
+        if (sessionId) {
+          setActiveSessionId(sessionId);
+        }
         setStatus({
           text: `Live iniciado para @${clean}`,
           kind: "ok",
@@ -106,6 +113,7 @@ export function LiveController() {
       if (res.ok) {
         setStatus({ text: `Detenido @${clean}`, kind: "ok" });
         toast.success(`Detenido: @${clean}`);
+        setActiveSessionId(null);
       } else {
         setStatus({
           text: `Error (${res.status}): ${JSON.stringify(data, null, 2)}`,
@@ -170,6 +178,21 @@ export function LiveController() {
           </form>
         </CardContent>
       </Card>
+
+      {activeSessionId && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="border-border/50 bg-card/80 backdrop-blur-sm shadow-2xl">
+            <CardContent className="pt-6">
+              <LiveChat sessionId={activeSessionId} />
+            </CardContent>
+          </Card>
+          <Card className="border-border/50 bg-card/80 backdrop-blur-sm shadow-2xl">
+            <CardContent className="pt-6">
+              <TopUsers sessionId={activeSessionId} />
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <StatusPanel status={status} />
