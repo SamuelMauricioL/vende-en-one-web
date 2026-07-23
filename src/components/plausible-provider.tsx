@@ -2,20 +2,20 @@
 
 import Script from "next/script";
 
-const PLAUSIBLE_SCRIPT_URL =
-  process.env.NEXT_PUBLIC_PLAUSIBLE_SCRIPT_URL ||
-  "https://plausible.io/js/script.js";
-const PLAUSIBLE_DOMAIN = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN || "";
+const UMAMI_SCRIPT_URL =
+  process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL ||
+  "https://cloud.umami.is/script.js";
+const UMAMI_WEBSITE_ID = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID || "";
 
-export function PlausibleProvider({ children }: { children: React.ReactNode }) {
-  if (!PLAUSIBLE_DOMAIN) return <>{children}</>;
+export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
+  if (!UMAMI_WEBSITE_ID) return <>{children}</>;
 
   return (
     <>
       <Script
         defer
-        data-domain={PLAUSIBLE_DOMAIN}
-        src={PLAUSIBLE_SCRIPT_URL}
+        src={UMAMI_SCRIPT_URL}
+        data-website-id={UMAMI_WEBSITE_ID}
         strategy="afterInteractive"
       />
       {children}

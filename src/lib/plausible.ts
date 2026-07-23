@@ -1,21 +1,18 @@
-type PlausibleProps = Record<string, string | number | boolean>;
-
-interface PlausibleOptions {
-  props?: PlausibleProps;
-  callback?: () => void;
-}
+type UmamiData = Record<string, string | number | boolean>;
 
 declare global {
   interface Window {
-    plausible?: (event: string, options?: PlausibleOptions) => void;
+    umami?: {
+      track: (event: string, data?: UmamiData) => void;
+    };
   }
 }
 
-export function trackEvent(event: string, props?: PlausibleProps): void {
+export function trackEvent(event: string, data?: UmamiData): void {
   if (typeof window === "undefined") return;
   try {
-    window.plausible?.(event, props ? { props } : undefined);
+    window.umami?.track(event, data);
   } catch {
-    // silently fail — analytics shouldn't break the app
+    // silently fail
   }
 }
