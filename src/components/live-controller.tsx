@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,26 @@ export function LiveController() {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+
+  // Restore active session on page reload
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/lives")
+      .then((r) => r.json().catch(() => ({})))
+      .then((data) => {
+        if (cancelled) return;
+        const lives = Array.isArray(data.lives) ? data.lives : [];
+        if (lives.length > 0) {
+          const live = lives[0] as { sessionId?: string; username?: string };
+          if (live.sessionId) {
+            setActiveSessionId(live.sessionId);
+            if (live.username) setUsername(live.username);
+          }
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
