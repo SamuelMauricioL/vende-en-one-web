@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LiveChat } from "./live-chat";
 import { TopUsers } from "./top-users";
+import { trackEvent } from "@/lib/plausible";
 
 export function LiveController() {
   const [username, setUsername] = useState("");
@@ -45,8 +46,10 @@ export function LiveController() {
         if (sessionId) {
           setActiveSessionId(sessionId);
         }
+        trackEvent("Live Started", { username: clean });
         toast.success(`Live iniciado: @${clean}`);
       } else {
+        trackEvent("Live Start Failed", { username: clean, status: res.status });
         toast.error(`Error al iniciar: ${data.message || res.status}`);
       }
     } catch (err) {
@@ -75,10 +78,12 @@ export function LiveController() {
       const data = await res.json().catch(() => ({ raw: "respuesta no-JSON" }));
 
       if (res.ok) {
+        trackEvent("Live Stopped", { username: clean });
         toast.success(`Detenido: @${clean}`);
         setActiveSessionId(null);
         setSelectedUserIds(new Set());
       } else {
+        trackEvent("Live Stop Failed", { username: clean, status: res.status });
         toast.error(`Error al detener: ${data.message || res.status}`);
       }
     } catch (err) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { trackEvent } from "@/lib/plausible";
 import { useEffect, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
 
@@ -87,7 +88,12 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
               <button
                 key={user.tiktokUserId}
                 type="button"
-                onClick={() => onToggleUser(user.tiktokUserId)}
+                onClick={() => {
+                  onToggleUser(user.tiktokUserId);
+                  trackEvent(isSelected ? "User Deselected" : "User Selected", {
+                    username: user.nickname || user.displayId || "unknown",
+                  });
+                }}
                 className={`w-full text-left flex items-center gap-3 p-2.5 rounded-xl transition-colors cursor-pointer ${
                   isSelected
                     ? "bg-white/15 ring-1 ring-white/20"
