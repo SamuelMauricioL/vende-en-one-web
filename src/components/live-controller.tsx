@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,41 +13,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { StatusPanel } from "./status-panel";
-import { LivesList } from "./lives-list";
 import { LiveChat } from "./live-chat";
 import { TopUsers } from "./top-users";
-
-export type StatusKind = "" | "ok" | "warn" | "err";
-
-export interface StatusState {
-  text: string;
-  kind: StatusKind;
-}
 
 export function LiveController() {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<StatusState>({
-    text: "Sin actividad todavía.",
-    kind: "",
-  });
-  const [lives, setLives] = useState<unknown[]>([]);
-  const [livesLoading, setLivesLoading] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-
-  const refreshLives = useCallback(async () => {
-    setLivesLoading(true);
-    try {
-      const res = await fetch("/api/lives");
-      const data = await res.json().catch(() => ({}));
-      setLives(Array.isArray(data.lives) ? data.lives : []);
-    } catch {
-      setLives([]);
-    } finally {
-      setLivesLoading(false);
-    }
-  }, []);
 
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +27,6 @@ export function LiveController() {
     if (!clean) return;
 
     setLoading(true);
-    setStatus({ text: "Enviando POST /lives/start…", kind: "warn" });
 
     try {
       const res = await fetch("/api/lives/start", {
@@ -70,25 +41,15 @@ export function LiveController() {
         if (sessionId) {
           setActiveSessionId(sessionId);
         }
-        setStatus({
-          text: `Live iniciado para @${clean}`,
-          kind: "ok",
-        });
         toast.success(`Live iniciado: @${clean}`);
       } else {
-        setStatus({
-          text: `Error (${res.status}): ${JSON.stringify(data, null, 2)}`,
-          kind: "err",
-        });
         toast.error(`Error al iniciar: ${data.message || res.status}`);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error desconocido";
-      setStatus({ text: `Fallo de red: ${msg}`, kind: "err" });
       toast.error(`Fallo de red: ${msg}`);
     } finally {
       setLoading(false);
-      refreshLives();
     }
   };
 
@@ -100,7 +61,6 @@ export function LiveController() {
     }
 
     setLoading(true);
-    setStatus({ text: "Deteniendo…", kind: "warn" });
 
     try {
       const res = await fetch("/api/lives/stop", {
@@ -111,22 +71,16 @@ export function LiveController() {
       const data = await res.json().catch(() => ({ raw: "respuesta no-JSON" }));
 
       if (res.ok) {
-        setStatus({ text: `Detenido @${clean}`, kind: "ok" });
         toast.success(`Detenido: @${clean}`);
         setActiveSessionId(null);
       } else {
-        setStatus({
-          text: `Error (${res.status}): ${JSON.stringify(data, null, 2)}`,
-          kind: "err",
-        });
         toast.error(`Error al detener: ${data.message || res.status}`);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error desconocido";
-      setStatus({ text: `Fallo de red: ${msg}`, kind: "err" });
+      toast.error(`Fallo de red: ${msg}`);
     } finally {
       setLoading(false);
-      refreshLives();
     }
   };
 
@@ -193,16 +147,6 @@ export function LiveController() {
           </Card>
         </div>
       )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <StatusPanel status={status} />
-        <LivesList
-          lives={lives}
-          loading={livesLoading}
-          onStop={handleStop}
-          onRefresh={refreshLives}
-        />
-      </div>
     </div>
   );
 }

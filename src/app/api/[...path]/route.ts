@@ -15,6 +15,8 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
   const accept = req.headers.get("Accept");
   if (accept) headers.Accept = accept;
 
+  const isStream = path?.some((p) => p === "stream");
+
   try {
     const upstream = await fetch(url, {
       method: req.method,
@@ -22,8 +24,19 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
       body: ["GET", "HEAD"].includes(req.method)
         ? undefined
         : JSON.stringify(await req.json().catch(() => ({}))),
-      signal: AbortSignal.timeout(15000),
+      ...(isStream ? {} : { signal: AbortSignal.timeout(15000) }),
     });
+
+    if (isStream) {
+      return new Response(upstream.body, {
+        status: upstream.status,
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      });
+    }
 
     const text = await upstream.text();
     return new NextResponse(text, {
@@ -36,7 +49,7 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
         error: "proxy_error",
         message: err instanceof Error ? err.message : "Upstream API unreachable",
       },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }
