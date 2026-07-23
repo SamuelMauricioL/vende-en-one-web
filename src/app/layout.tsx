@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
-import { AnalyticsProvider } from "@/components/plausible-provider";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,7 +30,8 @@ export default function RootLayout({
       className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <AnalyticsProvider>{children}</AnalyticsProvider>
+        {children}
+        <Analytics />
       </body>
       <Toaster richColors position="bottom-center" />
     </html>

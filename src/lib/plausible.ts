@@ -1,17 +1,10 @@
-type UmamiData = Record<string, string | number | boolean>;
+import { track } from "@vercel/analytics";
 
-declare global {
-  interface Window {
-    umami?: {
-      track: (event: string, data?: UmamiData) => void;
-    };
-  }
-}
+type EventData = Record<string, string | number | boolean>;
 
-export function trackEvent(event: string, data?: UmamiData): void {
-  if (typeof window === "undefined") return;
+export function trackEvent(event: string, data?: EventData): void {
   try {
-    window.umami?.track(event, data);
+    track(event, data);
   } catch {
     // silently fail
   }
