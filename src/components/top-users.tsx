@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
 
 interface TopUser {
@@ -42,6 +43,23 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
   const { data: users, connected } = useSSE<TopUser>(
     `/api/lives/${sessionId}/stats/stream`,
   );
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  function formatDuration(ms: number): string {
+    const totalMin = Math.floor(ms / 60000);
+    const sec = Math.floor((ms % 60000) / 1000);
+    if (totalMin >= 60) {
+      const h = Math.floor(totalMin / 60);
+      const m = totalMin % 60;
+      return `${h}h ${m}m`;
+    }
+    return `${totalMin}m ${sec}s`;
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -98,7 +116,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
                     <span>{user.entries <= 1 ? "primer live!" : `${user.entries} ingresos al live`}</span>
                     <span>{user.comments} comentarios</span>
                     {user.firstSeen && (
-                      <span>{Math.floor((Date.now() - user.firstSeen) / 60000)} min en live</span>
+                      <span>{formatDuration(Date.now() - user.firstSeen)} en live</span>
                     )}
                   </div>
 
