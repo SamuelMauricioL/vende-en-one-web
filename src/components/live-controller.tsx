@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,19 @@ export function LiveController() {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+
+  const toggleUser = useCallback((userId: string) => {
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  }, []);
 
   // Restore active session on page reload
   useEffect(() => {
@@ -84,6 +97,7 @@ export function LiveController() {
       if (res.ok) {
         toast.success(`Detenido: @${clean}`);
         setActiveSessionId(null);
+        setSelectedUserIds(new Set());
       } else {
         toast.error(`Error al detener: ${data.message || res.status}`);
       }
@@ -147,10 +161,10 @@ export function LiveController() {
       {activeSessionId && (
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
           <div className="lg:col-span-3 rounded-2xl bg-white/[0.04] border border-white/[0.06] p-4">
-            <LiveChat sessionId={activeSessionId} />
+            <LiveChat sessionId={activeSessionId} selectedUserIds={selectedUserIds} />
           </div>
           <div className="lg:col-span-2 rounded-2xl bg-white/[0.04] border border-white/[0.06] p-4">
-            <TopUsers sessionId={activeSessionId} />
+            <TopUsers sessionId={activeSessionId} selectedUserIds={selectedUserIds} onToggleUser={toggleUser} />
           </div>
         </div>
       )}

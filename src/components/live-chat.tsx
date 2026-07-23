@@ -16,6 +16,7 @@ interface ChatMessage {
 
 interface LiveChatProps {
   sessionId: string;
+  selectedUserIds: Set<string>;
 }
 
 const USER_COLORS = [
@@ -25,7 +26,8 @@ const USER_COLORS = [
   "#b5179e", "#4361ee", "#f77f00", "#80ed99",
 ];
 
-function getUserColor(userId: string): string {
+function getUserColor(userId: string | undefined): string {
+  if (!userId) return "#fff";
   let hash = 0;
   for (let i = 0; i < userId.length; i++) {
     hash = userId.charCodeAt(i) + ((hash << 5) - hash);
@@ -33,34 +35,50 @@ function getUserColor(userId: string): string {
   return USER_COLORS[Math.abs(hash) % USER_COLORS.length];
 }
 
-export function LiveChat({ sessionId }: LiveChatProps) {
+export function LiveChat({ sessionId, selectedUserIds }: LiveChatProps) {
   const { data: messages, connected } = useSSE<ChatMessage>(
     `/api/lives/${sessionId}/chat/stream`,
   );
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const isFiltered = selectedUserIds.size > 0;
+  const filtered = messages?.filter(
+    (m) => !isFiltered || (m.tiktokUserId && selectedUserIds.has(m.tiktokUserId)),
+  );
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages?.length]);
+  }, [filtered?.length]);
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-white/80">Chat en vivo</h3>
+        <h3 className="text-sm font-semibold text-white/80">
+          Chat en vivo
+          {isFiltered && (
+            <span className="ml-2 text-[11px] font-normal text-white/40">
+              · filtrado
+            </span>
+          )}
+        </h3>
         <div className="flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${connected ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" : "bg-red-500"}`} />
-          <span className="text-xs text-white/40">{messages?.length ?? 0} mensajes</span>
+          <span className="text-xs text-white/40">{filtered?.length ?? 0} mensajes</span>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-2 max-h-[520px] pr-1 scroll-smooth">
-        {!messages || messages.length === 0 ? (
+        {!filtered || filtered.length === 0 ? (
           <p className="text-sm text-white/30 text-center py-12">
-            {connected ? "Esperando mensajes..." : "Conectando..."}
+            {connected
+              ? isFiltered
+                ? "Este usuario no ha enviado mensajes."
+                : "Esperando mensajes..."
+              : "Conectando..."}
           </p>
         ) : (
-          messages.map((msg) => {
-            const color = msg.tiktokUserId ? getUserColor(msg.tiktokUserId) : "#fff";
+          filtered.map((msg) => {
+            const color = getUserColor(msg.tiktokUserId);
             return (
               <div
                 key={msg.id}

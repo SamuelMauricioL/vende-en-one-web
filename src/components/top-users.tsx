@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
-import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface TopUser {
   tiktokUserId: string;
@@ -18,6 +16,8 @@ interface TopUser {
 
 interface TopUsersProps {
   sessionId: string;
+  selectedUserIds: Set<string>;
+  onToggleUser: (userId: string) => void;
 }
 
 const USER_COLORS = [
@@ -37,11 +37,10 @@ function getUserColor(userId: string): string {
 
 const TOP_MEDALS = ["🥇", "🥈", "🥉"];
 
-export function TopUsers({ sessionId }: TopUsersProps) {
+export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersProps) {
   const { data: users, connected } = useSSE<TopUser>(
     `/api/lives/${sessionId}/stats/stream`,
   );
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   return (
     <div className="flex flex-col h-full">
@@ -53,7 +52,7 @@ export function TopUsers({ sessionId }: TopUsersProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-1 max-h-[520px] pr-1">
+      <div className="flex-1 overflow-y-auto space-y-1.5 max-h-[520px] pr-1">
         {!users || users.length === 0 ? (
           <p className="text-sm text-white/30 text-center py-12">
             {connected ? "Esperando usuarios..." : "Conectando..."}
@@ -63,77 +62,50 @@ export function TopUsers({ sessionId }: TopUsersProps) {
             const color = getUserColor(user.tiktokUserId);
             const maxScore = users[0]?.score || 1;
             const barWidth = (user.score / maxScore) * 100;
-            const isExpanded = expandedId === user.tiktokUserId;
+            const isSelected = selectedUserIds.has(user.tiktokUserId);
 
             return (
-              <div key={user.tiktokUserId}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setExpandedId(isExpanded ? null : user.tiktokUserId)
-                  }
-                  className="w-full text-left flex items-center gap-3 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center justify-center w-7 h-7 shrink-0">
-                    {index < 3 ? (
-                      <span className="text-lg">{TOP_MEDALS[index]}</span>
-                    ) : (
-                      <span className="text-xs font-bold text-white/30">#{index + 1}</span>
+              <button
+                key={user.tiktokUserId}
+                type="button"
+                onClick={() => onToggleUser(user.tiktokUserId)}
+                className={`w-full text-left flex items-center gap-3 p-2.5 rounded-xl transition-colors cursor-pointer ${
+                  isSelected
+                    ? "bg-white/15 ring-1 ring-white/20"
+                    : "bg-white/5 hover:bg-white/10"
+                }`}
+              >
+                <div className="flex items-center justify-center w-7 h-7 shrink-0">
+                  {index < 3 ? (
+                    <span className="text-lg">{TOP_MEDALS[index]}</span>
+                  ) : (
+                    <span className="text-xs font-bold text-white/30">#{index + 1}</span>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="font-semibold text-sm truncate" style={{ color }}>
+                      {user.nickname || user.displayId || "Anónimo"}
+                    </span>
+                    {user.verified && (
+                      <span className="text-blue-400 text-xs">✓</span>
                     )}
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="font-semibold text-sm truncate" style={{ color }}>
-                        {user.nickname || user.displayId || "Anónimo"}
-                      </span>
-                      {user.verified && (
-                        <span className="text-blue-400 text-xs">✓</span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-3 text-[11px] text-white/40">
-                      <span>{user.entries <= 1 ? "primer live!" : `${user.entries} ingresos al live`}</span>
-                      <span>{user.comments} comentarios</span>
-                    </div>
-
-                    <div className="mt-1 h-1 rounded-full bg-white/5 overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${barWidth}%`, backgroundColor: color }}
-                      />
-                    </div>
+                  <div className="flex items-center gap-3 text-[11px] text-white/40">
+                    <span>{user.entries <= 1 ? "primer live!" : `${user.entries} ingresos al live`}</span>
+                    <span>{user.comments} comentarios</span>
                   </div>
 
-                  <div className="shrink-0 text-white/30">
-                    {isExpanded ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
+                  <div className="mt-1 h-1 rounded-full bg-white/5 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${barWidth}%`, backgroundColor: color }}
+                    />
                   </div>
-                </button>
-
-                {/* Expanded messages inline */}
-                {isExpanded && (
-                  <div className="ml-9 mr-2 mt-1 mb-2 space-y-1.5 pl-3 border-l-2 border-white/[0.06]">
-                    {user.commentTexts.length === 0 ? (
-                      <p className="text-sm text-white/30 text-center py-3">
-                        Este usuario no ha enviado mensajes.
-                      </p>
-                    ) : (
-                      user.commentTexts.map((text, i) => (
-                        <div
-                          key={i}
-                          className="p-2.5 rounded-lg bg-white/5 text-sm text-white/80 leading-relaxed break-words"
-                        >
-                          {text}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
+                </div>
+              </button>
             );
           })
         )}
