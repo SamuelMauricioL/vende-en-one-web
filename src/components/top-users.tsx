@@ -92,13 +92,7 @@ export function TopUsers({ sessionId }: TopUsersProps) {
                     </div>
 
                     <div className="flex items-center gap-3 text-[11px] text-white/40">
-                      <span className="group relative">
-                        {user.entries} ingresos
-                        <span className="ml-0.5 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-white/10 text-[9px] text-white/40 cursor-help font-bold leading-none">?</span>
-                        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block whitespace-nowrap bg-[#1a1a24] text-[11px] text-white/70 px-2.5 py-1.5 rounded-lg border border-white/[0.06] shadow-lg z-10">
-                          Veces que ingresó al live
-                        </span>
-                      </span>
+                      <span>{user.entries} ingresos al live</span>
                       <span>{user.comments} comentarios</span>
                     </div>
 
