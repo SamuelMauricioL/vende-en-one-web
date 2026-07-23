@@ -47,7 +47,7 @@ export function LiveChat({ sessionId, selectedUserIds }: LiveChatProps) {
   );
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({ behavior: "instant" });
   }, [filtered?.length]);
 
   return (
