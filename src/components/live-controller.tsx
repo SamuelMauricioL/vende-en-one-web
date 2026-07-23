@@ -111,23 +111,27 @@ export function LiveController() {
               />
             </div>
             <div className="flex gap-2 sm:items-end sm:pt-5">
-              <Button
-                type="submit"
-                disabled={loading}
-                className="h-12 px-6 bg-[var(--brand)] hover:bg-[var(--brand)]/90 text-white font-semibold"
-              >
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Iniciar Live
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={loading}
-                className="h-12 px-5"
-                onClick={() => handleStop(username)}
-              >
-                Detener
-              </Button>
+              {!activeSessionId ? (
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="h-12 px-6 bg-[var(--brand)] hover:bg-[var(--brand)]/90 text-white font-semibold"
+                >
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Iniciar Live
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={loading}
+                  className="h-12 px-5"
+                  onClick={() => handleStop(username)}
+                >
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Detener
+                </Button>
+              )}
             </div>
           </form>
         </CardContent>
