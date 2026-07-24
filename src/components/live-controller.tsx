@@ -98,12 +98,15 @@ export function LiveController() {
     <div className="space-y-5">
       {/* TikTok-style compact form */}
       <div className="rounded-2xl bg-white/[0.04] border border-white/[0.06] p-4">
+        <p className="text-xs text-white/50 mb-3 leading-relaxed">
+          Escribe el nombre de usuario de TikTok del live que quieres monitorear. <span className="text-[#fe2c55] font-medium">¡No pierdas ventas por TikTok Live!</span>
+        </p>
         <form onSubmit={handleStart} className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
             <Input
               id="username"
               type="text"
-              placeholder="Usuario de TikTok"
+              placeholder="ej. usuario_tiktok"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               spellCheck={false}
