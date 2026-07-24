@@ -148,7 +148,7 @@ export function LiveController() {
       {/* Live panels */}
       {activeSessionId && (
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-          <div className="lg:col-span-3 rounded-2xl bg-white/[0.04] border border-white/[0.06] p-4">
+          <div className="lg:col-span-3 lg:order-last rounded-2xl bg-white/[0.04] border border-white/[0.06] p-4">
             <LiveChat sessionId={activeSessionId} selectedUserIds={selectedUserIds} />
           </div>
           <div className="lg:col-span-2 rounded-2xl bg-white/[0.04] border border-white/[0.06] p-4">
