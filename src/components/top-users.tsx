@@ -25,9 +25,9 @@ interface TopUsersProps {
 type LeadStage = "interesado" | "negociando" | "compra";
 
 const STAGE_CONFIG: Record<LeadStage, { label: string; color: string; funnelPct: string }> = {
-  interesado: { label: "Interesado", color: "#4ade80", funnelPct: "40%" },
-  negociando: { label: "Negociando", color: "#facc15", funnelPct: "18%" },
-  compra:      { label: "Compra", color: "#fe2c55", funnelPct: "3%" },
+  interesado: { label: "Interesado", color: "#4ade80", funnelPct: "35%" },
+  negociando: { label: "Negociando", color: "#facc15", funnelPct: "65%" },
+  compra:      { label: "Compra", color: "#fe2c55", funnelPct: "97%" },
 };
 
 const STAGE_ORDER: LeadStage[] = ["compra", "negociando", "interesado"];
@@ -121,6 +121,34 @@ const INTENT_PATTERNS: { stage: LeadStage; keywords: RegExp[] }[] = [
       /batería/i, /peso/i, /capacidad/i, /versión/i, /tipo de/i,
       /cómo (es|funciona|se usa|se utiliza)/i,
       /caracter/i,
+      // Specific product pointing
+      /el que (está|estaba|ves|se ve|tienes)/i,
+      /el de (arriba|abajo|lado|costado|detrás|adelante|frente|fondo)/i,
+      /el (primero|segundo|tercero|último|siguiente)/i,
+      /a (lado|costado|un lado) de/i,
+      /junto (a|con|del|de la|al)/i,
+      /muestra el (que|de|del)/i, /enseña el (que|de|del)/i,
+      /enséñame/i, /muestra (el|la|los|las)/i,
+      /el (rosa|azul|rojo|verde|negro|blanco|gris|amarillo)/i,
+      /la (rosada|azul|roja|verde|negra|blanca|gris|amarilla)/i,
+      /tomar(le)? (captura|foto|fotografía|pantallazo|screenshot)/i,
+      /sácale (foto|captura|fotografía)/i,
+      /pásame (foto|captura|imagen)/i,
+      /mándame (foto|captura|imagen)/i,
+      /el (modelo|estilo|diseño) (que|de)/i,
+      /cuál (es|tienes|vendes|mejor)/i,
+      /ese (me|lo|si|de)/i, /esa (me|la|si|de)/i,
+      /quiero ver ese/i, /déjame ver/i,
+      /a ver el (que|de|del|la|las|los)/i,
+      /el que está (detrás|adelante|al lado|arriba|abajo)/i,
+      /el de la (izquierda|derecha|mitad|punta|esquina)/i,
+      /los (dos|tres) (me|los|se)/i,
+      /cada (cuánto|cuanto)/i, /vale la pena/i,
+      /cómo (lo|la) (vendes|tienes|consigo)/i,
+      /cuándo (lo|la) (tienes|consigues|traes)/i,
+      /cuándo (lo|la) puedes (tener|conseguir|traer)/i,
+      /todavía (lo|la) (tienes|vendes)/i,
+      /ya (lo|la) (vendiste|entregaste|descontinuaste)/i,
       /cuándo me llega/i, /cuándo (lo|me) (mandas|envías)/i,
     ],
   },
