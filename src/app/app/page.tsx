@@ -52,7 +52,7 @@ export default function AppPage() {
           </div>
         </main>
 
-        <footer className="border-t border-white/[0.04] py-3 shrink-0">
+        <footer className="border-t border-white/[0.04] py-3 shrink-0 max-md:hidden">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
             <span className="text-[10px] text-white/20">
               LiveLeads &copy; {new Date().getFullYear()}
