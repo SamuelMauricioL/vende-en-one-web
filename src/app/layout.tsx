@@ -35,7 +35,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`dark ${jakartaSans.variable} ${jakartaMono.variable} h-full antialiased scroll-smooth`}
+      className={`dark ${jakartaSans.variable} ${jakartaMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {children}

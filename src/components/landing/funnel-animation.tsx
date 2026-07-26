@@ -45,6 +45,7 @@ export default function FunnelAnimation() {
   const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
   const [balls, setBalls] = useState<Ball[]>([]);
   const [lostTexts, setLostTexts] = useState<LostText[]>([]);
   const animRef = useRef<number>(0);
@@ -85,10 +86,26 @@ export default function FunnelAnimation() {
     setBalls(initial);
   }, [makeBall]);
 
+  // Pause animation when not visible
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setVisible(entry.isIntersecting),
+      { threshold: 0.05 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   useEffect(() => {
     setMounted(true);
 
     const tick = () => {
+      if (!visible) {
+        animRef.current = requestAnimationFrame(tick);
+        return;
+      }
       setBalls((prev) => {
         const next = prev
           .map((b) => {
@@ -182,7 +199,14 @@ export default function FunnelAnimation() {
       animRef.current = requestAnimationFrame(tick);
     };
 
-    animRef.current = requestAnimationFrame(tick);
+    // Start the loop
+    const startLoop = () => {
+      animRef.current = requestAnimationFrame(tick);
+    };
+
+    // If already visible, start immediately
+    startLoop();
+
     return () => cancelAnimationFrame(animRef.current);
   }, [makeBall, addLostText]);
 
