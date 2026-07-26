@@ -60,6 +60,7 @@ export default function VideoSection() {
             muted
             loop
             playsInline
+            preload="none"
             onCanPlay={() => setVideoReady(true)}
             onError={() => setVideoReady(false)}
           >
