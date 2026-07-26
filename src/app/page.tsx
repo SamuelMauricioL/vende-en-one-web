@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Navbar from "@/components/landing/navbar";
 import HeroSection from "@/components/landing/hero";
 import FunnelAnimation from "@/components/landing/funnel-animation";

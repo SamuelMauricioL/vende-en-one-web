@@ -121,6 +121,11 @@
   background: rgba(255, 255, 255, 0.15);
 }
 
+/* Prevent 300ms tap delay on mobile */
+* {
+  touch-action: manipulation;
+}
+
 @keyframes slideDownOut {
   0% {
     transform: translateY(0);
