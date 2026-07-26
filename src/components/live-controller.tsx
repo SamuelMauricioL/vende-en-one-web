@@ -183,7 +183,7 @@ export function LiveController() {
               </p>
             )}
           </div>
-          <div className="flex gap-2 sm:self-end">
+          <div className="flex gap-2 self-start">
             {!activeSessionId ? (
               <Button
                 type="submit"
