@@ -371,7 +371,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, onStop, loa
                   ))}
                 </div>
 
-                <div className="p-3 pt-2.5">
+                <div className="p-2.5 pt-2">
                   <div className="flex items-start gap-2.5">
                     <div
                       className="w-2.5 h-2.5 rounded-full mt-1 shrink-0"
@@ -400,21 +400,21 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, onStop, loa
                         >
                           {cfg.funnelPct}
                         </span>
+                        <span className="text-[10px] text-white/25 shrink-0">
+                          {user.comments} msgs
+                        </span>
+                        {user.followerCount && (
+                          <span className="text-[10px] text-white/25 shrink-0 truncate max-w-[80px]">
+                            {user.followerCount} seg
+                          </span>
+                        )}
                       </div>
 
                       {user.keyAction && (
-                        <p className="text-xs text-white/50 leading-relaxed mt-1 line-clamp-2 italic">
+                        <p className="text-xs text-white/50 leading-relaxed line-clamp-1 italic">
                           &ldquo;{user.keyAction}&rdquo;
                         </p>
                       )}
-
-                      <div className="flex items-center gap-3 mt-1.5 text-[10px] text-white/25">
-                        <span>{user.entries} visitas</span>
-                        <span>{user.comments} msgs</span>
-                        {user.followerCount && (
-                          <span>{user.followerCount} seguidores</span>
-                        )}
-                      </div>
                     </div>
                   </div>
                 </div>
