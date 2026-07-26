@@ -22,55 +22,126 @@ interface TopUsersProps {
   onToggleUser: (userId: string) => void;
 }
 
-type LeadStage = "interesado" | "lead" | "caliente" | "compra";
+type LeadStage = "interesado" | "negociando" | "compra";
 
 const STAGE_CONFIG: Record<LeadStage, { label: string; color: string; funnelPct: string }> = {
   interesado: { label: "Interesado", color: "#4ade80", funnelPct: "40%" },
-  lead:        { label: "Lead", color: "#facc15", funnelPct: "18%" },
-  caliente:    { label: "Caliente", color: "#fb923c", funnelPct: "8%" },
+  negociando: { label: "Negociando", color: "#facc15", funnelPct: "18%" },
   compra:      { label: "Compra", color: "#fe2c55", funnelPct: "3%" },
 };
 
-const STAGE_ORDER: LeadStage[] = ["compra", "caliente", "lead", "interesado"];
+const STAGE_ORDER: LeadStage[] = ["compra", "negociando", "interesado"];
 const STAGE_COLORS = STAGE_ORDER.map((s) => STAGE_CONFIG[s].color);
 
 // Funnel bar widths (decreasing to mimic funnel shape)
 const FUNNEL_BAR_PCT: Record<LeadStage, number> = {
-  interesado: 70,
-  lead: 45,
-  caliente: 26,
-  compra: 12,
+  interesado: 75,
+  negociando: 40,
+  compra: 15,
 };
 
 const INTENT_PATTERNS: { stage: LeadStage; keywords: RegExp[] }[] = [
   {
     stage: "compra",
     keywords: [
-      /compro/i, /quiero \d/i, /aparta/, /ya te hice/i, /dónde pago/i,
-      /lo quiero/i, /transfier/, /ya pagu/, /deposité/i,
+      // Purchase intent
+      /compro/i, /quiero\s+\d/i, /aparta/i, /ya te hice/i, /dónde pago/i,
+      /lo quiero/i, /transfier/i, /ya pagu/i, /deposit/i,
+      // Quantity / taking
+      /quiero (uno|un[oa]|comprar|ya)/i, /llevo\s+\d/i, /me llevo/i,
+      /llévame/i, /apártame/i, /apartado/i, /reserv/i, /encarga/i,
+      /pídelo/i, /anótame/i, /apuntame/i,
+      // Payment methods
+      /yape/i, /plin/i, /contraentrega/i, /contra entrega/i,
+      /pago contra/i, /envío contra/i,
+      // Banking / transfers
+      /deposit/i, /abon/i, /transferencia/i, /transferir/i,
+      /bancaria/i, /cuenta\s+(bancaria|de ahorro|corriente)/i,
+      /BCP/i, /BBVA/i, /interbank/i, /scotiabank/i, /bancolombia/i,
+      /número de cuenta/i, /código QR/i, /link de pago/i,
+      /qr\b/i, /datos (de pago|bancarios)/i,
+      // Payment confirmation
+      /comprobante/i, /voucher/i, /captura/i,
+      /ya (pagué|deposité|transferí|yapeé|plineé|te transferí)/i,
+      /listo ya pagué/i, /pago realizado/i, /confirmar pago/i,
+      /confirma porfa/i,
+      // Direct contact (high purchase intent)
+      /whatsapp/i, /whatsap/i, /wsp\b/i, /wp\b/i,
+      /al dm/i, /al interno/i, /mensaje privado/i, /inbox/i,
+      /mensaje directo/i, /md\b/i,
+      /escríbeme/i, /escríbeme al/i, /contáctame/i, /comunícate/i,
+      /teléfono/i, /celular/i, /cel\b/i,
+      /pasame tu (número|whatsapp|wp|wsp)/i,
+      /me das tu número/i, /me pasas tu/i,
+      /mándame (dm|mensaje|un dm|un mensaje)/i,
+      /envíame un dm/i,
+      // Urgency
+      /hoy mismo/i, /ahora mismo/i, /en este momento/i, /ya mismo/i,
+      /urgente/i, /lo necesito ya/i, /lo quiero ya/i,
+      /para hoy/i, /para mañana/i, /lo antes posible/i,
+      // Address / delivery coordination
+      /dirección/i, /domicilio/i, /envía a/i, /reparto/i, /reparten/i,
+      /recoger/i, /recojo/i, /vengo a/i, /paso a/i,
+      /dónde (va|lo mando|lo envías)/i,
+      // Payment methods (carrier)
+      /efectivo/i, /tarjeta/i, /crédito/i, /débito/i,
+      /pago (móvil|movil|con tarjeta|en efectivo)/i,
     ],
   },
   {
-    stage: "caliente",
+    stage: "negociando",
     keywords: [
-      /whatsapp/i, /escríbeme/i, /dm\b/i, /pasame tu/i, /número/i,
-      /yape/i, /plin/i, /contraentrega/i, /transferencia/i,
-      /mándame dm/i, /escríbeme al/i,
-    ],
-  },
-  {
-    stage: "lead",
-    keywords: [
-      /precio/i, /cuánto cuesta/i, /envío/i, /stock/i, /talla/i,
-      /garantía/i, /descuento/i, /por mayor/i, /color /i, /modelo/i,
-      /disponible/i, /cuándo me llega/i,
+      // Price
+      /precio/i, /cuánto cuesta/i, /cuánto (vale|es|cuesta|está)/i,
+      /a cómo/i, /en cuánto/i, /cuál es el precio/i,
+      /vale\s*\d/i, /cuesta/i, /precios/i,
+      /\$\s*\d/i, /\d+\s*(soles|pesos)/i,
+      /me das el precio/i, /me pasas precio/i, /precio por interno/i,
+      /lista de precio/i, /precio por mayor/i, /precio al por mayor/i,
+      /precio por cantidad/i, /precio x mayor/i,
+      // Shipping / delivery
+      /envío/i, /envían/i, /envías/i, /hacen envío/i,
+      /envío gratis/i, /cuánto (el envío|el delivery)/i,
+      /delivery/i, /cuánto el delivery/i,
+      /tiempo de entrega/i, /demora/i, /cuándo llega/i,
+      // Stock / availability
+      /stock/i, /disponible/i, /hay de/i, /lo tienes/i,
+      /tienes en/i, /disponible en/i, /todavía hay/i,
+      /lo vendes/i, /vendes/i,
+      // Product details
+      /talla/i, /tallas disponibles/i, /tamaño/i, /medidas/i,
+      /color/i, /colores disponibles/i, /modelo/i,
+      /garantía/i, /tiene garantía/i,
+      /descuento/i, /oferta/i, /promoción/i,
+      /por mayor/i, /mayorista/i, /al por mayor/i,
+      /por cantidad/i, /pack/i, /combo/i, /incluye/i, /viene con/i,
+      /material/i, /de qué (está hecho|es)/i,
+      /calidad/i, /original/i, /réplica/i,
+      /funciona/i, /especificaciones/i, /descripción/i,
+      /batería/i, /peso/i, /capacidad/i, /versión/i, /tipo de/i,
+      /cómo (es|funciona|se usa|se utiliza)/i,
+      /caracter/i,
+      /cuándo me llega/i, /cuándo (lo|me) (mandas|envías)/i,
     ],
   },
   {
     stage: "interesado",
     keywords: [
-      /me interesa/i, /me encantó/i, /hermoso/i, /fotos?/i,
-      /info/i, /más detalles/i, /cómo es/i, /se ve/i, /bonito/i,
+      /me interesa/i, /me interesa mucho/i,
+      /me encant/i, /me gusta/i,
+      /hermoso/i, /hermosa/i, /lind[oa]/i, /precios[oa]/i,
+      /bonit[oa]/i, /que bonito/i,
+      /espectacular/i, /increíble/i, /genial/i,
+      /buen producto/i, /se ve (bien|padre|genial|increíble)/i,
+      /wow/i, /me late/i,
+      /fotos?/i, /manda foto/i, /más fotos/i, /pasa foto/i,
+      /enseña/i, /muéstrame/i, /a ver/i, /se mira/i,
+      /info/i, /más detalles/i, /más info/i,
+      /info por fa/i, /información/i,
+      /quiero ver/i, /me gustaría ver/i,
+      /llama (la atención|mi atención)/i,
+      /que (lindo|hermoso|bonito|espectacular)/i,
+      /me interesa mucho/i, /estoy interesad[oa]/i,
     ],
   },
 ];
@@ -124,7 +195,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
 
   const grouped = useMemo(() => {
     const groups: Record<LeadStage, (typeof enriched)[number][]> = {
-      interesado: [], lead: [], caliente: [], compra: [],
+      interesado: [], negociando: [], compra: [],
     };
     for (const u of enriched) {
       if (groups[u.stage]) groups[u.stage].push(u);
@@ -254,7 +325,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
                       className="w-2.5 h-2.5 rounded-full mt-1 shrink-0"
                       style={{
                         backgroundColor: cfg.color,
-                        boxShadow: user.stage === "compra" || user.stage === "caliente"
+                        boxShadow: user.stage === "compra"
                           ? `0 0 8px ${cfg.color}60`
                           : "none",
                       }}
