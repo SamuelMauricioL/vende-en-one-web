@@ -20,6 +20,8 @@ interface TopUsersProps {
   sessionId: string;
   selectedUserIds: Set<string>;
   onToggleUser: (userId: string) => void;
+  onStop: () => void;
+  loading: boolean;
 }
 
 type LeadStage = "interesado" | "negociando" | "compra";
@@ -204,7 +206,7 @@ function getStageIndex(stage: LeadStage): number {
   return STAGE_ORDER.indexOf(stage);
 }
 
-export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersProps) {
+export function TopUsers({ sessionId, selectedUserIds, onToggleUser, onStop, loading }: TopUsersProps) {
   const { data: users, connected } = useSSE<TopUser>(
     `/api/lives/${sessionId}/stats/stream`,
   );
@@ -255,6 +257,14 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-white/80">Leads en vivo</h3>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onStop}
+            disabled={loading}
+            className="md:hidden h-8 px-3 border border-white/20 text-white/70 hover:bg-white/10 rounded-lg text-xs font-medium transition-colors disabled:opacity-40"
+          >
+            {loading ? "Deteniendo..." : "Detener"}
+          </button>
           <span className={`w-2 h-2 rounded-full ${connected ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" : "bg-red-500"}`} />
           <span className="text-xs text-white/40">{totalUsers} interactuaron</span>
         </div>

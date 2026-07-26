@@ -144,9 +144,9 @@ export function LiveController() {
 
   return (
     <div className="space-y-5">
-      {/* Form */}
+      {/* Form - hidden on mobile */}
       <div
-        className="rounded-2xl p-5"
+        className="rounded-2xl p-5 max-md:hidden"
         style={{
           background: "rgba(255,255,255,0.03)",
           border: "1px solid rgba(255,255,255,0.06)",
@@ -220,7 +220,13 @@ export function LiveController() {
             <LiveChat sessionId={activeSessionId} selectedUserIds={selectedUserIds} />
           </div>
           <div className="lg:col-span-2 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-            <TopUsers sessionId={activeSessionId} selectedUserIds={selectedUserIds} onToggleUser={toggleUser} />
+            <TopUsers
+              sessionId={activeSessionId}
+              selectedUserIds={selectedUserIds}
+              onToggleUser={toggleUser}
+              onStop={handleStop}
+              loading={loading}
+            />
           </div>
         </div>
       )}
