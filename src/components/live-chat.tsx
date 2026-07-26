@@ -40,6 +40,7 @@ export function LiveChat({ sessionId, selectedUserIds }: LiveChatProps) {
     `/api/lives/${sessionId}/chat/stream`,
   );
   const bottomRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -65,7 +66,9 @@ export function LiveChat({ sessionId, selectedUserIds }: LiveChatProps) {
   );
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "instant" });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [filtered?.length]);
 
   return (
@@ -85,7 +88,7 @@ export function LiveChat({ sessionId, selectedUserIds }: LiveChatProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-2 max-h-[520px] pr-1 scroll-smooth">
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto space-y-2 max-h-[520px] pr-1 scroll-smooth">
         {!filtered || filtered.length === 0 ? (
           <p className="text-sm text-white/30 text-center py-12">
             {connected
