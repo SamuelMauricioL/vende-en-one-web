@@ -155,10 +155,10 @@ export const LiveController = forwardRef<LiveControllerHandle, {}>((_props, ref)
   const extracted = input.trim() ? extractUsername(input.trim()) : null;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 h-full flex flex-col min-h-0">
       {/* Form */}
       <div
-        className={`rounded-2xl p-5 ${activeSessionId ? "max-md:hidden" : ""}`}
+        className={`rounded-2xl p-4 shrink-0 ${activeSessionId ? "max-md:hidden" : ""}`}
         style={{
           background: "rgba(255,255,255,0.03)",
           border: "1px solid rgba(255,255,255,0.06)",
@@ -227,8 +227,8 @@ export const LiveController = forwardRef<LiveControllerHandle, {}>((_props, ref)
 
       {/* Live panels */}
       {activeSessionId && (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-          <div className="lg:col-span-2 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 flex-1 min-h-0">
+          <div className="lg:col-span-2 rounded-2xl p-4 flex flex-col min-h-0 overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
             <TopUsers
               sessionId={activeSessionId}
               selectedUserIds={selectedUserIds}
@@ -236,7 +236,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {}>((_props, ref)
               maxMobileItems={5}
             />
           </div>
-          <div className="lg:col-span-3 lg:order-last rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="lg:col-span-3 lg:order-last rounded-2xl p-4 flex flex-col min-h-0 overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
             <LiveChat sessionId={activeSessionId} selectedUserIds={selectedUserIds} />
           </div>
         </div>

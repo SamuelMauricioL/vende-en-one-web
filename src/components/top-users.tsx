@@ -258,9 +258,9 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, maxMobileIt
   }, []);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3 shrink-0">
         <h3 className="text-sm font-semibold text-white/80">Leads en vivo</h3>
         <div className="flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${connected ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" : "bg-red-500"}`} />
@@ -321,7 +321,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, maxMobileIt
       </div>
 
       {/* User list */}
-      <div className="flex-1 overflow-y-auto space-y-1.5 max-h-[420px] pr-1">
+      <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0 pr-1">
         {!enriched || enriched.length === 0 ? (
           <p className="text-sm text-white/30 text-center py-12">
             {connected ? "Esperando mensajes..." : "Conectando..."}

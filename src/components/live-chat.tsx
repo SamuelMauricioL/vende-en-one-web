@@ -72,8 +72,8 @@ export function LiveChat({ sessionId, selectedUserIds }: LiveChatProps) {
   }, [filtered?.length]);
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-3">
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex items-center justify-between mb-3 shrink-0">
         <h3 className="text-sm font-semibold text-white/80">
           Chat en vivo
           {isFiltered && (
@@ -88,7 +88,7 @@ export function LiveChat({ sessionId, selectedUserIds }: LiveChatProps) {
         </div>
       </div>
 
-      <div ref={chatContainerRef} className="flex-1 overflow-y-auto space-y-2 max-h-[520px] pr-1 scroll-smooth">
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto space-y-2 min-h-0 pr-1 scroll-smooth">
         {!filtered || filtered.length === 0 ? (
           <p className="text-sm text-white/30 text-center py-12">
             {connected
