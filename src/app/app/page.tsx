@@ -1,16 +1,19 @@
 "use client";
 
-import { LiveController } from "@/components/live-controller";
+import { useRef } from "react";
+import { LiveController, type LiveControllerHandle } from "@/components/live-controller";
 import { I18nProvider } from "@/lib/i18n/context";
 import { Toaster } from "@/components/ui/sonner";
 
 export default function AppPage() {
+  const controllerRef = useRef<LiveControllerHandle>(null);
+
   return (
     <I18nProvider>
       <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0b0f1a" }}>
         <main className="flex-1">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-12">
-            {/* Header with back button */}
+            {/* Header with back button and mobile stop button */}
             <div className="mb-8 flex items-center gap-4">
               <a
                 href="/"
@@ -28,14 +31,22 @@ export default function AppPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               </a>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-white/90 tracking-tight">
-                  Live Controller
-                </h1>
-              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white/90 tracking-tight flex-1">
+                Live Controller
+              </h1>
+              {controllerRef.current?.active && (
+                <button
+                  type="button"
+                  onClick={() => controllerRef.current?.handleStop()}
+                  disabled={controllerRef.current?.loading}
+                  className="md:hidden h-9 px-4 border border-white/20 text-white/70 hover:bg-white/10 rounded-lg text-xs font-medium transition-colors disabled:opacity-40"
+                >
+                  {controllerRef.current?.loading ? "Deteniendo..." : "Detener"}
+                </button>
+              )}
             </div>
 
-            <LiveController />
+            <LiveController ref={controllerRef} />
           </div>
         </main>
 

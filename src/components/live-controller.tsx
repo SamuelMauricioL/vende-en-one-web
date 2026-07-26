@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useImperativeHandle, forwardRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,12 +48,24 @@ function validateInput(raw: string): { valid: boolean; error?: string } {
   return { valid: true };
 }
 
-export function LiveController() {
+export interface LiveControllerHandle {
+  handleStop: () => Promise<void>;
+  active: boolean;
+  loading: boolean;
+}
+
+export const LiveController = forwardRef<LiveControllerHandle, {}>((_props, ref) => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [lastUsername, setLastUsername] = useState("");
+
+  useImperativeHandle(ref, () => ({
+    handleStop,
+    active: !!activeSessionId,
+    loading,
+  }), [activeSessionId, loading]);
 
   const toggleUser = useCallback((userId: string) => {
     setSelectedUserIds((prev) => {
@@ -221,8 +233,6 @@ export function LiveController() {
               sessionId={activeSessionId}
               selectedUserIds={selectedUserIds}
               onToggleUser={toggleUser}
-              onStop={handleStop}
-              loading={loading}
               maxMobileItems={5}
             />
           </div>
@@ -233,4 +243,4 @@ export function LiveController() {
       )}
     </div>
   );
-}
+});
