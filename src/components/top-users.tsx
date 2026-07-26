@@ -214,11 +214,16 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
     return users
       .map((u) => {
         const stage = classifyLead(u.commentTexts);
-        if (!stage) return null; // skip users with no comment data
+        if (!stage) return null;
         const keyAction = getKeyAction(u.commentTexts);
         return { ...u, stage, keyAction };
       })
-      .filter(Boolean) as (TopUser & { stage: LeadStage; keyAction: string | null })[];
+      .filter(Boolean)
+      .sort((a, b) => {
+        const aIdx = STAGE_ORDER.indexOf(a!.stage);
+        const bIdx = STAGE_ORDER.indexOf(b!.stage);
+        return aIdx - bIdx;
+      }) as (TopUser & { stage: LeadStage; keyAction: string | null })[];
   }, [users]);
 
   const grouped = useMemo(() => {
