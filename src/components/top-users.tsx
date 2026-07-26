@@ -106,6 +106,13 @@ const INTENT_PATTERNS: { stage: LeadStage; keywords: RegExp[] }[] = [
       /envío/i, /envían/i, /envías/i, /hacen envío/i,
       /envío gratis/i, /cuánto (el envío|el delivery)/i,
       /delivery/i, /cuánto el delivery/i,
+      /shalom/i, /olva/i, /serpost/i, /dhl/i, /fedex/i,
+      /hacen envío/i, /hacen delivery/i, /hacen envió/i,
+      /envían a/i, /envías a/i, /mandan a/i, /mandas a/i,
+      /llega a/i, /llegas a/i,
+      /a (todo|toda) (el Perú|la república|la costa|la sierra|la selva)/i,
+      /a provincia/i, /a lima/i, /al interior/i,
+      /por (shalom|olva|serpost|dhl|fedex|encomienda|bus|courier)/i,
       /tiempo de entrega/i, /demora/i, /cuándo llega/i,
       // Stock / availability
       /stock/i, /disponible/i, /hay de/i, /lo tienes/i,
