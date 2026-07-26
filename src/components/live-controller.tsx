@@ -216,9 +216,6 @@ export function LiveController() {
       {/* Live panels */}
       {activeSessionId && (
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-          <div className="lg:col-span-3 lg:order-last rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-            <LiveChat sessionId={activeSessionId} selectedUserIds={selectedUserIds} />
-          </div>
           <div className="lg:col-span-2 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
             <TopUsers
               sessionId={activeSessionId}
@@ -226,7 +223,11 @@ export function LiveController() {
               onToggleUser={toggleUser}
               onStop={handleStop}
               loading={loading}
+              maxMobileItems={5}
             />
+          </div>
+          <div className="lg:col-span-3 lg:order-last rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <LiveChat sessionId={activeSessionId} selectedUserIds={selectedUserIds} />
           </div>
         </div>
       )}

@@ -22,6 +22,7 @@ interface TopUsersProps {
   onToggleUser: (userId: string) => void;
   onStop: () => void;
   loading: boolean;
+  maxMobileItems?: number;
 }
 
 type LeadStage = "interesado" | "negociando" | "compra";
@@ -206,7 +207,7 @@ function getStageIndex(stage: LeadStage): number {
   return STAGE_ORDER.indexOf(stage);
 }
 
-export function TopUsers({ sessionId, selectedUserIds, onToggleUser, onStop, loading }: TopUsersProps) {
+export function TopUsers({ sessionId, selectedUserIds, onToggleUser, onStop, loading, maxMobileItems }: TopUsersProps) {
   const { data: users, connected } = useSSE<TopUser>(
     `/api/lives/${sessionId}/stats/stream`,
   );
@@ -329,7 +330,8 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, onStop, loa
             {connected ? "Esperando mensajes..." : "Conectando..."}
           </p>
         ) : (
-          enriched.map((user) => {
+          enriched.map((user, index) => {
+            const hideOnMobile = maxMobileItems && index >= maxMobileItems;
             const cfg = STAGE_CONFIG[user.stage];
             const isSelected = selectedUserIds.has(user.tiktokUserId);
             const stageIndex = getStageIndex(user.stage);
@@ -341,7 +343,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, onStop, loa
                 onClick={() => onToggleUser(user.tiktokUserId)}
                 className={`w-full text-left rounded-xl transition-all duration-200 cursor-pointer overflow-hidden ${
                   isSelected ? "ring-1 ring-white/20" : "hover:ring-1 hover:ring-white/10"
-                }`}
+                } ${hideOnMobile ? "max-md:hidden" : ""}`}
                 style={{
                   backgroundColor: isSelected ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)",
                   borderLeft: `3px solid ${cfg.color}`,
