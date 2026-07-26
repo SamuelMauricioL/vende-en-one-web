@@ -1,22 +1,30 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { Toaster } from "@/components/ui/sonner";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const jakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jakartaMono = Plus_Jakarta_Sans({
+  variable: "--font-mono",
   subsets: ["latin"],
+  weight: ["400"],
 });
 
 export const metadata: Metadata = {
-  title: "Vende en One · Live Controller",
-  description: "Inicia y detén listeners de TikTok Live conectados a Convex.",
+  title: "LiveLeads — No pierdas clientes en tu TikTok Live",
+  description:
+    "Captura, filtra y sigue cada lead de tu TikTok Live. IA que identifica compradores reales con 90% de precisión. Hecho para creadores que venden en vivo.",
+  openGraph: {
+    title: "LiveLeads — No pierdas clientes en tu TikTok Live",
+    description:
+      "Captura, filtra y sigue cada lead de tu TikTok Live. IA que identifica compradores reales con 90% de precisión.",
+    type: "website",
+    locale: "es_PE",
+  },
 };
 
 export default function RootLayout({
@@ -27,13 +35,12 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`dark ${jakartaSans.variable} ${jakartaMono.variable} h-full antialiased scroll-smooth`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col font-sans">
         {children}
         <Analytics />
       </body>
-      <Toaster richColors position="bottom-center" />
     </html>
   );
 }
