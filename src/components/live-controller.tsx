@@ -193,7 +193,7 @@ export function LiveController() {
                 {loading && (
                   <span className="mr-2 h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                 )}
-                {loading ? "Conectando..." : "Iniciar Live"}
+                {loading ? "Conectando..." : "Iniciar"}
               </Button>
             ) : (
               <Button
@@ -206,7 +206,7 @@ export function LiveController() {
                 {loading ? (
                   <span className="mr-2 h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                 ) : null}
-                {loading ? "Deteniendo..." : "Detener Live"}
+                {loading ? "Deteniendo..." : "Detener"}
               </Button>
             )}
           </div>
