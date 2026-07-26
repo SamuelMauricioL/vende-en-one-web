@@ -144,9 +144,9 @@ export function LiveController() {
 
   return (
     <div className="space-y-5">
-      {/* Form - hidden on mobile */}
+      {/* Form */}
       <div
-        className="rounded-2xl p-5 max-md:hidden"
+        className="rounded-2xl p-5"
         style={{
           background: "rgba(255,255,255,0.03)",
           border: "1px solid rgba(255,255,255,0.06)",
