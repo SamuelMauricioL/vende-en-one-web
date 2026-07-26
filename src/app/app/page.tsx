@@ -1,12 +1,17 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useCallback } from "react";
 import { LiveController, type LiveControllerHandle } from "@/components/live-controller";
 import { I18nProvider } from "@/lib/i18n/context";
 import { Toaster } from "@/components/ui/sonner";
 
 export default function AppPage() {
   const controllerRef = useRef<LiveControllerHandle>(null);
+  const [sessionActive, setSessionActive] = useState(false);
+
+  const handleActiveChange = useCallback((active: boolean) => {
+    setSessionActive(active);
+  }, []);
 
   return (
     <I18nProvider>
@@ -34,7 +39,7 @@ export default function AppPage() {
               <h1 className="text-xl sm:text-2xl font-extrabold text-white/90 tracking-tight flex-1">
                 Live Controller
               </h1>
-              {controllerRef.current?.active && (
+              {sessionActive && (
                 <button
                   type="button"
                   onClick={() => controllerRef.current?.handleStop()}
@@ -48,7 +53,7 @@ export default function AppPage() {
           </div>
 
           <div className="flex-1 min-h-0 px-4 sm:px-6 pb-4 max-w-6xl w-full mx-auto">
-            <LiveController ref={controllerRef} />
+            <LiveController ref={controllerRef} onActiveChange={handleActiveChange} />
           </div>
         </main>
 

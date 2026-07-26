@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useImperativeHandle, forwardRef } from "react";
+import { useCallback, useState, useImperativeHandle, forwardRef, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,7 +54,7 @@ export interface LiveControllerHandle {
   loading: boolean;
 }
 
-export const LiveController = forwardRef<LiveControllerHandle, {}>((_props, ref) => {
+export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?: (active: boolean) => void }>(({ onActiveChange }, ref) => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -66,6 +66,10 @@ export const LiveController = forwardRef<LiveControllerHandle, {}>((_props, ref)
     active: !!activeSessionId,
     loading,
   }), [activeSessionId, loading]);
+
+  useEffect(() => {
+    onActiveChange?.(!!activeSessionId);
+  }, [activeSessionId, onActiveChange]);
 
   const toggleUser = useCallback((userId: string) => {
     setSelectedUserIds((prev) => {
