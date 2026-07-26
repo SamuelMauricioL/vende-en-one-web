@@ -22,25 +22,24 @@ interface TopUsersProps {
   onToggleUser: (userId: string) => void;
 }
 
-type LeadStage = "espectador" | "interesado" | "lead" | "caliente" | "compra";
+type LeadStage = "interesado" | "lead" | "caliente" | "compra";
 
 const STAGE_CONFIG: Record<LeadStage, { label: string; color: string; funnelPct: string }> = {
-  espectador: { label: "Espectador", color: "#25f4ee", funnelPct: "100%" },
   interesado: { label: "Interesado", color: "#4ade80", funnelPct: "40%" },
   lead:        { label: "Lead", color: "#facc15", funnelPct: "18%" },
   caliente:    { label: "Caliente", color: "#fb923c", funnelPct: "8%" },
   compra:      { label: "Compra", color: "#fe2c55", funnelPct: "3%" },
 };
 
-const STAGE_ORDER: LeadStage[] = ["compra", "caliente", "lead", "interesado", "espectador"];
+const STAGE_ORDER: LeadStage[] = ["compra", "caliente", "lead", "interesado"];
+const STAGE_COLORS = STAGE_ORDER.map((s) => STAGE_CONFIG[s].color);
 
-// Funnel bar widths in percent (visual funnel shape)
+// Funnel bar widths (decreasing to mimic funnel shape)
 const FUNNEL_BAR_PCT: Record<LeadStage, number> = {
-  espectador: 100,
-  interesado: 65,
-  lead: 40,
-  caliente: 22,
-  compra: 10,
+  interesado: 70,
+  lead: 45,
+  caliente: 26,
+  compra: 12,
 };
 
 const INTENT_PATTERNS: { stage: LeadStage; keywords: RegExp[] }[] = [
@@ -76,15 +75,17 @@ const INTENT_PATTERNS: { stage: LeadStage; keywords: RegExp[] }[] = [
   },
 ];
 
-function classifyLead(comments: string[]): LeadStage {
+// Returns null if user has no comment data (can't determine intent)
+function classifyLead(comments: string[]): LeadStage | null {
+  if (!comments || comments.length === 0) return null;
+
   const allText = comments.join(" ");
   for (const group of INTENT_PATTERNS) {
     for (const pattern of group.keywords) {
       if (pattern.test(allText)) return group.stage;
     }
   }
-  if (comments.length > 0) return "interesado";
-  return "espectador";
+  return "interesado";
 }
 
 function getKeyAction(comments: string[]): string | null {
@@ -111,16 +112,19 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
 
   const enriched = useMemo(() => {
     if (!users) return [];
-    return users.map((u) => {
-      const stage = classifyLead(u.commentTexts);
-      const keyAction = getKeyAction(u.commentTexts);
-      return { ...u, stage, keyAction };
-    });
+    return users
+      .map((u) => {
+        const stage = classifyLead(u.commentTexts);
+        if (!stage) return null; // skip users with no comment data
+        const keyAction = getKeyAction(u.commentTexts);
+        return { ...u, stage, keyAction };
+      })
+      .filter(Boolean) as (TopUser & { stage: LeadStage; keyAction: string | null })[];
   }, [users]);
 
   const grouped = useMemo(() => {
     const groups: Record<LeadStage, (typeof enriched)[number][]> = {
-      espectador: [], interesado: [], lead: [], caliente: [], compra: [],
+      interesado: [], lead: [], caliente: [], compra: [],
     };
     for (const u of enriched) {
       if (groups[u.stage]) groups[u.stage].push(u);
@@ -130,7 +134,6 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
 
   const totalUsers = enriched.length;
 
-  // Find max count for funnel bar scaling
   const maxStageCount = Math.max(
     ...STAGE_ORDER.map((s) => grouped[s].length),
     1,
@@ -149,11 +152,11 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
         <h3 className="text-sm font-semibold text-white/80">Leads en vivo</h3>
         <div className="flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${connected ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" : "bg-red-500"}`} />
-          <span className="text-xs text-white/40">{totalUsers} usuarios</span>
+          <span className="text-xs text-white/40">{totalUsers} interactuaron</span>
         </div>
       </div>
 
-      {/* Visual funnel bar — mimics the landing page funnel */}
+      {/* Visual funnel */}
       <div className="mb-5 rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
         <div className="px-3 pt-2.5 pb-3">
           <div className="flex flex-col items-center gap-1">
@@ -165,15 +168,13 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
 
               return (
                 <div key={stage} className="flex items-center gap-2 w-full">
-                  {/* Label */}
                   <span
-                    className="text-[10px] font-medium w-16 text-right shrink-0"
+                    className="text-[10px] font-medium w-14 text-right shrink-0"
                     style={{ color: cfg.color }}
                   >
                     {cfg.label}
                   </span>
 
-                  {/* Funnel bar */}
                   <div className="flex-1 flex justify-center">
                     <div
                       className="rounded-full transition-all duration-500"
@@ -186,7 +187,6 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
                         overflow: "hidden",
                       }}
                     >
-                      {/* Fill proportional to count */}
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{
@@ -198,7 +198,6 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
                     </div>
                   </div>
 
-                  {/* Count */}
                   <span className="text-[10px] text-white/40 w-6 text-left shrink-0 font-mono">
                     {count}
                   </span>
@@ -213,7 +212,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
       <div className="flex-1 overflow-y-auto space-y-1.5 max-h-[420px] pr-1">
         {!enriched || enriched.length === 0 ? (
           <p className="text-sm text-white/30 text-center py-12">
-            {connected ? "Esperando usuarios..." : "Conectando..."}
+            {connected ? "Esperando mensajes..." : "Conectando..."}
           </p>
         ) : (
           enriched.map((user) => {
@@ -234,7 +233,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
                   borderLeft: `3px solid ${cfg.color}`,
                 }}
               >
-                {/* Stage progress line (mini funnel indicator) */}
+                {/* Stage progress line */}
                 <div className="flex h-0.5 w-full bg-white/[0.03]">
                   {STAGE_ORDER.map((s, i) => (
                     <div
@@ -251,7 +250,6 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
 
                 <div className="p-3 pt-2.5">
                   <div className="flex items-start gap-2.5">
-                    {/* Stage dot */}
                     <div
                       className="w-2.5 h-2.5 rounded-full mt-1 shrink-0"
                       style={{
@@ -263,7 +261,6 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
                     />
 
                     <div className="flex-1 min-w-0">
-                      {/* Username + stage + funnel pct */}
                       <div className="flex items-center gap-2 mb-0.5">
                         <span
                           className="font-semibold text-sm truncate"
@@ -282,14 +279,12 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser }: TopUsersP
                         </span>
                       </div>
 
-                      {/* Key action */}
                       {user.keyAction && (
                         <p className="text-xs text-white/50 leading-relaxed mt-1 line-clamp-2 italic">
                           &ldquo;{user.keyAction}&rdquo;
                         </p>
                       )}
 
-                      {/* Stats */}
                       <div className="flex items-center gap-3 mt-1.5 text-[10px] text-white/25">
                         <span>{user.entries} visitas</span>
                         <span>{user.comments} msgs</span>
