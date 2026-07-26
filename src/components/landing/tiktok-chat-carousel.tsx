@@ -38,19 +38,21 @@ const messages = [
   "Compro ahora, dónde pago?",
 ];
 
-function relativeTime(): string {
-  const seconds = Math.floor(Math.random() * 180) + 3;
+function formatRelativeTime(createdAt: number): string {
+  const seconds = Math.floor((Date.now() - createdAt) / 1000);
   if (seconds < 60) return `hace ${seconds}s`;
   return `hace ${Math.floor(seconds / 60)}m`;
 }
 
 function createMessage(index: number) {
   const msgIndex = index % messages.length;
+  // Each message gets a random past timestamp within the last 5 minutes
+  const ageOffset = Math.floor(Math.random() * 300) * 1000; // 0-300s ago
   return {
     avatar: avatars[msgIndex % avatars.length],
     username: usernames[msgIndex % usernames.length],
     message: messages[msgIndex],
-    time: relativeTime(),
+    createdAt: Date.now() - ageOffset,
     hue: (msgIndex * 37 + 180) % 360,
   };
 }
@@ -64,8 +66,15 @@ export default function TikTokChatCarousel() {
   );
   const [activeIndex, setActiveIndex] = useState(0);
   const [leaving, setLeaving] = useState(false);
+  const [tick, setTick] = useState(0); // forces re-render to update relative times
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const leavingRef = useRef(false);
+
+  // Update times every 10 seconds
+  useEffect(() => {
+    const iv = setInterval(() => setTick((t) => t + 1), 10000);
+    return () => clearInterval(iv);
+  }, []);
 
   const advance = useCallback(() => {
     if (leavingRef.current) return;
@@ -88,12 +97,10 @@ export default function TikTokChatCarousel() {
 
   const current = items[activeIndex];
   const next = items[(activeIndex + 1) % MESSAGE_COUNT];
-  const prevIndex = (activeIndex - 1 + MESSAGE_COUNT) % MESSAGE_COUNT;
 
   return (
     <div className="relative w-full max-w-sm mx-auto">
       <div className="relative w-full overflow-hidden rounded-xl" style={{ height: 160 }}>
-        {/* Incoming message: appears from top */}
         <div
           key={leaving ? "incoming" : "static"}
           className="absolute inset-x-0"
@@ -103,10 +110,9 @@ export default function TikTokChatCarousel() {
             animation: leaving ? "slideDownIn 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards" : "none",
           }}
         >
-          <TikTokMessage data={leaving ? next : current} />
+          <TikTokMessage data={leaving ? next : current} tick={tick} />
         </div>
 
-        {/* Outgoing message: slides down and fades */}
         {leaving && (
           <div
             className="absolute inset-x-0"
@@ -117,7 +123,7 @@ export default function TikTokChatCarousel() {
             }}
             onAnimationEnd={handleAnimEnd}
           >
-            <TikTokMessage data={current} />
+            <TikTokMessage data={current} tick={tick} />
           </div>
         )}
       </div>
@@ -125,7 +131,8 @@ export default function TikTokChatCarousel() {
   );
 }
 
-function TikTokMessage({ data }: { data: MessageData }) {
+// Separate component that uses tick to recompute relative time
+function TikTokMessage({ data, tick: _tick }: { data: MessageData; tick: number }) {
   return (
     <div
       className="rounded-xl p-3 flex items-start gap-2.5 w-full"
@@ -166,7 +173,9 @@ function TikTokMessage({ data }: { data: MessageData }) {
         <p className="text-sm text-white/90 leading-relaxed">{data.message}</p>
 
         <div className="flex items-center gap-3 mt-1.5">
-          <span className="text-[10px] text-white/20 font-mono">{data.time}</span>
+          <span className="text-[10px] text-white/20 font-mono">
+            {formatRelativeTime(data.createdAt)}
+          </span>
         </div>
       </div>
     </div>
