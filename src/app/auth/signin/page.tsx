@@ -24,11 +24,11 @@ export default function SignInPage() {
           appearance={{
             elements: {
               rootBox: "w-full mx-auto",
-              card: "bg-transparent shadow-none",
+              card: "bg-[#1a1d2e] shadow-lg border border-white/10",
               headerTitle: "text-white/90 text-xl",
               headerSubtitle: "text-white/40 text-sm",
               socialButtonsBlockButton:
-                "bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-xl text-sm",
+                "bg-white/10 border border-white/20 hover:bg-white/20 text-white rounded-xl text-sm",
               formButtonPrimary:
                 "bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white rounded-xl",
               footerActionLink: "text-[#fe2c55] hover:text-[#fe2c55]/80",

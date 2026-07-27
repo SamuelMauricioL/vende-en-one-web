@@ -54,7 +54,7 @@ export default function RootLayout({
               colorDanger: "#fe2c55",
             },
             elements: {
-              card: "shadow-none",
+              card: "bg-[#1a1d2e] shadow-lg border border-white/10",
               headerTitle: "text-white/90",
               headerSubtitle: "text-white/40",
               dividerLine: "bg-white/10",
@@ -62,7 +62,7 @@ export default function RootLayout({
               formFieldLabel: "text-white/50",
               formFieldInput: "bg-white/5 border-white/10 text-white rounded-xl",
               footerActionLink: "text-[#fe2c55]",
-              socialButtonsBlockButton: "bg-white/5 border border-white/10 text-white hover:bg-white/10",
+              socialButtonsBlockButton: "bg-white/10 border border-white/20 text-white hover:bg-white/20",
               formButtonPrimary: "bg-[#fe2c55] text-white hover:bg-[#fe2c55]/80",
             },
           }}
