@@ -50,14 +50,6 @@ export default function Navbar() {
           >
             {t("nav.features")}
           </a>
-          {session && (
-            <a
-              href="/app"
-              className="text-xs text-white/40 hover:text-white/70 transition-colors tracking-wide"
-            >
-              {t("nav.live")}
-            </a>
-          )}
           <LanguageSwitcher />
           <AuthButton />
         </nav>
