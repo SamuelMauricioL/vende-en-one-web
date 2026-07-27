@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   title: "Live Leads — No pierdas clientes en tu TikTok Live",
   description:
     "Live Leads captura, filtra y clasifica leads de TikTok Live en tiempo real. IA que identifica compradores con 90% de precisión. Conecta tu TikTok Live y nunca pierdas una venta.",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
   openGraph: {
     title: "Live Leads — No pierdas clientes en tu TikTok Live",
     description:

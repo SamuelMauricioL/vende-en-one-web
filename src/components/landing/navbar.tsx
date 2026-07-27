@@ -27,17 +27,13 @@ export default function Navbar() {
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <a href="/" className="flex items-center gap-2.5">
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center font-extrabold text-sm shadow-lg"
-            style={{
-              background: "linear-gradient(135deg, #fe2c55, #25f4ee)",
-              color: "#0b0f1a",
-            }}
-          >
-            LL
-          </div>
-          <span className="text-sm font-bold text-white/80 tracking-tight">
+        <a href="/" className="flex items-center gap-2">
+          <img
+            src="/favicon.png"
+            alt="Live Leads"
+            className="w-7 h-7 rounded-lg"
+          />
+          <span className="text-base font-bold text-white/90 tracking-wide">
             Live Leads
           </span>
         </a>
