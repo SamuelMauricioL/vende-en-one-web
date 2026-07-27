@@ -23,12 +23,12 @@ export default function SignInPage() {
         <SignIn
           appearance={{
             elements: {
-              rootBox: "w-full",
+              rootBox: "w-full mx-auto",
               card: "bg-transparent shadow-none",
               headerTitle: "text-white/90 text-xl",
-              headerSubtitle: "text-white/40",
+              headerSubtitle: "text-white/40 text-sm",
               socialButtonsBlockButton:
-                "bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-xl",
+                "bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-xl text-sm",
               formButtonPrimary:
                 "bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white rounded-xl",
               footerActionLink: "text-[#fe2c55] hover:text-[#fe2c55]/80",
