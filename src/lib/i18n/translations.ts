@@ -85,7 +85,7 @@ export const es = {
   "cta.stat.setup": "En configurar",
 
   // Footer
-  "footer.tagline": "Hecho para creadores que venden en vivo — LiveLeads",
+  "footer.tagline": "Hecho para creadores que venden en vivo — Live Leads",
 } as const;
 
 export const en: Record<TranslationKey, string> = {
@@ -171,5 +171,5 @@ export const en: Record<TranslationKey, string> = {
   "cta.stat.setup": "To set up",
 
   // Footer
-  "footer.tagline": "Made for creators who sell live — LiveLeads",
+  "footer.tagline": "Made for creators who sell live — Live Leads",
 };

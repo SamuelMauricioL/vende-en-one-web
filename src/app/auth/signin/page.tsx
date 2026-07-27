@@ -24,7 +24,7 @@ function SignInContent() {
             LL
           </div>
           <span className="text-lg font-bold text-white/80 tracking-tight">
-            LiveLeads
+            Live Leads
           </span>
         </a>
 
@@ -40,7 +40,7 @@ function SignInContent() {
             Iniciar sesión
           </h1>
           <p className="text-sm text-white/40 text-center mb-8">
-            Ingresa con tu cuenta de Google para usar LiveLeads
+            Ingresa con tu cuenta de Google para usar Live Leads
           </p>
 
           {error && (
@@ -73,7 +73,7 @@ function SignInContent() {
           </button>
 
           <p className="mt-6 text-xs text-white/20 text-center">
-            Al ingresar aceptas usar LiveLeads para capturar leads de tus TikTok Lives.
+            Al ingresar aceptas usar Live Leads para capturar leads de tus TikTok Lives.
           </p>
         </div>
 

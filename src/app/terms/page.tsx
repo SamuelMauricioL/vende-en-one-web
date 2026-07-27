@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Términos del Servicio — LiveLeads",
+  title: "Términos del Servicio — Live Leads",
 };
 
 export default function TermsPage() {
@@ -18,12 +18,12 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-lg font-semibold text-white/80 mb-2">1. Aceptación de los términos</h2>
-          <p>Al usar LiveLeads, aceptas estos términos del servicio. Si no estás de acuerdo, no uses el servicio.</p>
+          <p>Al usar Live Leads, aceptas estos términos del servicio. Si no estás de acuerdo, no uses el servicio.</p>
         </section>
 
         <section>
           <h2 className="text-lg font-semibold text-white/80 mb-2">2. Descripción del servicio</h2>
-          <p>LiveLeads es una herramienta que permite a creadores y vendedores monitorear transmisiones de TikTok Live para capturar y clasificar leads en tiempo real mediante análisis de inteligencia artificial.</p>
+          <p>Live Leads es una herramienta que permite a creadores y vendedores monitorear transmisiones de TikTok Live para capturar y clasificar leads en tiempo real mediante análisis de inteligencia artificial.</p>
         </section>
 
         <section>
@@ -38,7 +38,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-lg font-semibold text-white/80 mb-2">4. Limitación de responsabilidad</h2>
-          <p>LiveLeads se proporciona &quot;tal cual&quot;. No garantizamos que el servicio sea ininterrumpido o libre de errores. No somos responsables por ventas perdidas o decisiones comerciales basadas en los datos proporcionados.</p>
+          <p>Live Leads se proporciona &quot;tal cual&quot;. No garantizamos que el servicio sea ininterrumpido o libre de errores. No somos responsables por ventas perdidas o decisiones comerciales basadas en los datos proporcionados.</p>
         </section>
 
         <section>

@@ -38,7 +38,7 @@ export default function Navbar() {
             LL
           </div>
           <span className="text-sm font-bold text-white/80 tracking-tight">
-            LiveLeads
+            Live Leads
           </span>
         </a>
 

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Política de Privacidad — LiveLeads",
+  title: "Política de Privacidad — Live Leads",
 };
 
 export default function PrivacyPage() {
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="text-lg font-semibold text-white/80 mb-2">1. Información que recopilamos</h2>
-          <p>LiveLeads recopila la siguiente información cuando usas nuestros servicios:</p>
+          <p>Live Leads recopila la siguiente información cuando usas nuestros servicios:</p>
           <ul className="list-disc pl-5 mt-2 space-y-1">
             <li>Información de tu cuenta de Google (nombre, email, avatar) cuando inicias sesión</li>
             <li>Datos de transmisiones de TikTok Live que monitoreas (mensajes del chat, interacciones de usuarios)</li>

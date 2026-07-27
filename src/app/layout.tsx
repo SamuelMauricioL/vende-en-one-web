@@ -16,13 +16,13 @@ const jakartaMono = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "LiveLeads — No pierdas clientes en tu TikTok Live",
+  title: "Live Leads — No pierdas clientes en tu TikTok Live",
   description:
-    "LiveLeads captura, filtra y clasifica leads de TikTok Live en tiempo real. IA que identifica compradores con 90% de precisión. Conecta tu TikTok Live y nunca pierdas una venta.",
+    "Live Leads captura, filtra y clasifica leads de TikTok Live en tiempo real. IA que identifica compradores con 90% de precisión. Conecta tu TikTok Live y nunca pierdas una venta.",
   openGraph: {
-    title: "LiveLeads — No pierdas clientes en tu TikTok Live",
+    title: "Live Leads — No pierdas clientes en tu TikTok Live",
     description:
-      "LiveLeads captura, filtra y clasifica leads de TikTok Live en tiempo real. IA que identifica compradores con 90% de precisión.",
+      "Live Leads captura, filtra y clasifica leads de TikTok Live en tiempo real. IA que identifica compradores con 90% de precisión.",
     type: "website",
     locale: "es_PE",
   },

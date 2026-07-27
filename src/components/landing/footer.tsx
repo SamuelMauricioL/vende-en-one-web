@@ -20,7 +20,7 @@ export default function Footer() {
               LL
             </div>
             <span className="text-xs text-white/30 font-medium">
-              LiveLeads &copy; {new Date().getFullYear()}
+              Live Leads &copy; {new Date().getFullYear()}
             </span>
           </div>
 
