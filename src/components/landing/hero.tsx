@@ -73,7 +73,7 @@ export default function HeroSection() {
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8">
               <div className="w-1.5 h-1.5 rounded-full bg-[#25f4ee] animate-pulse" />
               <span className="text-xs text-white/50 font-medium tracking-wide">
-                {t("hero.badge")}
+                LiveLeads — {t("hero.badge")}
               </span>
             </div>
 
