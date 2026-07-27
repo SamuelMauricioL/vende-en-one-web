@@ -23,7 +23,6 @@ export default function Footer() {
               Live Leads &copy; {new Date().getFullYear()}
             </span>
           </div>
-
           <div className="flex items-center gap-6">
             <a
               href="/app"
@@ -31,7 +30,21 @@ export default function Footer() {
             >
               Live Controller
             </a>
-            <span className="text-white/10 text-xs">—</span>
+            <span className="text-white/10 text-xs">&middot;</span>
+            <a
+              href="/privacy"
+              className="text-xs text-white/30 hover:text-white/50 transition-colors"
+            >
+              Privacidad
+            </a>
+            <span className="text-white/10 text-xs">&middot;</span>
+            <a
+              href="/terms"
+              className="text-xs text-white/30 hover:text-white/50 transition-colors"
+            >
+              T&eacute;rminos
+            </a>
+            <span className="text-white/10 text-xs">&mdash;</span>
             <span className="text-xs text-white/20">
               {t("footer.tagline")}
             </span>

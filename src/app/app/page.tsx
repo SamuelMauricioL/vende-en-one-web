@@ -60,10 +60,14 @@ export default function AppPage() {
         </main>
 
         <footer className="border-t border-white/[0.04] py-3 shrink-0 max-md:hidden">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center flex items-center justify-center gap-4">
             <span className="text-[10px] text-white/20">
               Live Leads &copy; {new Date().getFullYear()}
             </span>
+            <span className="text-white/10 text-[10px]">&middot;</span>
+            <a href="/privacy" className="text-[10px] text-white/20 hover:text-white/40 transition-colors">Privacidad</a>
+            <span className="text-white/10 text-[10px]">&middot;</span>
+            <a href="/terms" className="text-[10px] text-white/20 hover:text-white/40 transition-colors">Términos</a>
           </div>
         </footer>
       </div>
