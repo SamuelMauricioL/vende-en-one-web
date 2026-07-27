@@ -4,11 +4,9 @@ import { useState, useEffect } from "react";
 import LanguageSwitcher from "./language-switcher";
 import { useI18n } from "@/lib/i18n/context";
 import { AuthButton } from "@/components/auth/auth-button";
-import { useSession } from "next-auth/react";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
-  const { data: session } = useSession();
   const { t } = useI18n();
 
   useEffect(() => {
