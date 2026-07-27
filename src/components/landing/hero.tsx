@@ -99,6 +99,11 @@ export default function HeroSection() {
               {t("hero.subtitle")}
             </p>
 
+            {/* Explicit purpose (for Google OAuth verification) */}
+            <p className="mt-4 text-sm text-white/30 max-w-lg leading-relaxed border-l-2 border-[#fe2c55]/30 pl-4">
+              <strong className="text-white/60">Live Leads</strong> es una herramienta de IA que captura, clasifica y gestiona leads de ventas en <strong className="text-white/60">TikTok Live</strong> en tiempo real, para que nunca pierdas un cliente.
+            </p>
+
             {/* CTA Buttons */}
             <div className="mt-10 flex flex-col sm:flex-row gap-4">
               <a
