@@ -208,7 +208,7 @@ export default function FunnelAnimation() {
     startLoop();
 
     return () => cancelAnimationFrame(animRef.current);
-  }, [makeBall, addLostText]);
+  }, [makeBall, addLostText, visible]);
 
   if (!mounted) {
     return (
