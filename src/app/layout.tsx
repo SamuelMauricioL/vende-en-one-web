@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
+import { AuthProvider } from "@/components/auth/provider";
 import "./globals.css";
 
 const jakartaSans = Plus_Jakarta_Sans({
@@ -38,7 +39,7 @@ export default function RootLayout({
       className={`dark ${jakartaSans.variable} ${jakartaMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
         <Analytics />
         <link rel="prefetch" href="/app" />
       </body>

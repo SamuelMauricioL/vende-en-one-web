@@ -4,6 +4,7 @@ import { useRef, useState, useCallback } from "react";
 import { LiveController, type LiveControllerHandle } from "@/components/live-controller";
 import { I18nProvider } from "@/lib/i18n/context";
 import { Toaster } from "@/components/ui/sonner";
+import { AuthButton } from "@/components/auth/auth-button";
 
 export default function AppPage() {
   const controllerRef = useRef<LiveControllerHandle>(null);
@@ -39,6 +40,7 @@ export default function AppPage() {
               <h1 className="text-xl sm:text-2xl font-extrabold text-white/90 tracking-tight flex-1">
                 Live Controller
               </h1>
+              <AuthButton variant="app" />
               {sessionActive && (
                 <button
                   type="button"

@@ -3,9 +3,12 @@
 import { useState, useEffect } from "react";
 import LanguageSwitcher from "./language-switcher";
 import { useI18n } from "@/lib/i18n/context";
+import { AuthButton } from "@/components/auth/auth-button";
+import { useSession } from "next-auth/react";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const { data: session } = useSession();
   const { t } = useI18n();
 
   useEffect(() => {
@@ -40,7 +43,7 @@ export default function Navbar() {
         </a>
 
         {/* Nav links */}
-        <nav className="hidden sm:flex items-center gap-6">
+        <nav className="hidden sm:flex items-center gap-4">
           <a
             href="#demo"
             className="text-xs text-white/40 hover:text-white/70 transition-colors tracking-wide"
@@ -53,31 +56,22 @@ export default function Navbar() {
           >
             {t("nav.features")}
           </a>
+          {session && (
+            <a
+              href="/app"
+              className="text-xs text-white/40 hover:text-white/70 transition-colors tracking-wide"
+            >
+              {t("nav.live")}
+            </a>
+          )}
           <LanguageSwitcher />
-          <a
-            href="/app"
-            className="text-xs font-semibold px-4 py-2 rounded-lg transition-all duration-200 hover:scale-[1.02]"
-            style={{
-              background: "linear-gradient(135deg, #fe2c55, #e8254a)",
-              color: "white",
-            }}
-          >
-            {t("nav.live")}
-          </a>
+          <AuthButton />
         </nav>
 
         {/* Mobile */}
         <div className="sm:hidden flex items-center gap-2">
           <LanguageSwitcher />
-          <a
-            href="/app"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-white"
-            style={{
-              background: "linear-gradient(135deg, #fe2c55, #e8254a)",
-            }}
-          >
-            {t("nav.live")}
-          </a>
+          <AuthButton />
         </div>
       </div>
     </header>

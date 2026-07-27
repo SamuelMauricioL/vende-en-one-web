@@ -49,3 +49,4 @@ next-env.d.ts
 .grok/
 .kiro/
 .opencode/
+.env*.local
