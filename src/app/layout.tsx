@@ -16,9 +16,10 @@ const jakartaMono = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Live Leads — No pierdas clientes en tu TikTok Live",
+  title: "Live Leads",
   description:
     "Live Leads captura, filtra y clasifica leads de TikTok Live en tiempo real. IA que identifica compradores con 90% de precisión. Conecta tu TikTok Live y nunca pierdas una venta.",
+  applicationName: "Live Leads",
   icons: {
     icon: "/favicon.png",
     shortcut: "/favicon.png",
@@ -44,6 +45,19 @@ export default function RootLayout({
       className={`dark ${jakartaSans.variable} ${jakartaMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              name: "Live Leads",
+              applicationCategory: "BusinessApplication",
+              description: "Live Leads captures, filters, and classifies sales leads from TikTok Live in real-time using AI. It helps creators and sellers never miss a customer during live streams.",
+              url: "https://www.tiktoklive.me",
+            }),
+          }}
+        />
         <AuthProvider>{children}</AuthProvider>
         <Analytics />
         <link rel="prefetch" href="/app" />
