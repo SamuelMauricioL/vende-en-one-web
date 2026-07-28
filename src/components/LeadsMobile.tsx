@@ -77,11 +77,6 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, onConnec
     return enriched.filter((u) => u.stage === activeTab);
   }, [enriched, activeTab]);
 
-  const maxStageCount = Math.max(
-    ...STAGE_ORDER.map((s) => grouped[s].length),
-    1,
-  );
-
   const [tick, setTick] = useState(0);
   useEffect(() => {
     const iv = setInterval(() => setTick((t) => t + 1), 10000);
@@ -102,25 +97,6 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, onConnec
         <div className="flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${connected ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" : "bg-red-500"}`} />
           <span className="text-xs text-white/40">{totalUsers} interactuaron</span>
-        </div>
-      </div>
-
-      {/* Visual funnel — compact for mobile */}
-      <div className="mb-3 rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="px-3 py-2">
-          <div className="flex items-center gap-3 justify-center">
-            {STAGE_ORDER.map((stage) => {
-              const count = grouped[stage].length;
-              const cfg = STAGE_CONFIG[stage];
-              return (
-                <div key={stage} className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cfg.color }} />
-                  <span className="text-[10px] text-white/50">{cfg.label}</span>
-                  <span className="text-[10px] text-white/70 font-mono">{count}</span>
-                </div>
-              );
-            })}
-          </div>
         </div>
       </div>
 
