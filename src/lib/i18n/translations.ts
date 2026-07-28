@@ -18,10 +18,10 @@ export const es = {
   "hero.words.3": "seguimiento",
   "hero.words.4": "dinero",
   "hero.subtitle":
-    "Captura, filtra y sigue cada persona que interactúa en tu transmisión. Nuestra IA identifica a los compradores reales con un 90% de precisión para que nunca más pierdas una venta en el caos del chat en vivo.",
+    "Captura, filtra y sigue cada persona que interactúa en tu transmisión. Nuestra IA identifica a los compradores reales con un 90% de precisión para que nunca más pierdas una venta en el caos del chat en vivo. Y cuando el live termina, te quedas con los datos de quienes querían comprar.",
   "hero.cta.try": "Probar Live Controller",
   "hero.cta.watch": "Ver cómo funciona",
-  "hero.social": "+50 creadores ya no pierden ventas en vivo",
+  "hero.social": "+50 vendedores ya no pierden ventas en vivo",
   "hero.scroll": "Descubre",
 
   // Funnel
@@ -40,7 +40,7 @@ export const es = {
   "funnel.pct.3": "8%",
   "funnel.pct.4": "3%",
   "funnel.bottom":
-    "Solo unos cuantos te compran. Los demás se pierden entre mensajes.",
+    "Solo unos cuantos te compran. Los demás se pierden entre mensajes. Pero con Live Leads, los recuperas después del live.",
 
   // Video
   "video.title": "Así funciona en vivo",
@@ -73,14 +73,17 @@ export const es = {
   "features.5.title": "Sin fricción",
   "features.5.desc":
     "No necesitas ser técnico. Conectas tu live y empiezas a capturar leads al instante.",
+  "features.6.title": "Post-live: recupera ventas",
+  "features.6.desc":
+    "Lo que no vendiste en el live, véndelo después. Captura sus datos, escríbeles y cierra la venta cuando termine la transmisión.",
 
   // CTA
-  "cta.title": "¿Listo para dejar de perder clientes?",
+  "cta.title": "No pierdas ventas. Ni en el live, ni después.",
   "cta.subtitle":
-    "Conecta tu primer TikTok Live y empieza a capturar leads en menos de 2 minutos.",
+    "Captura leads durante la transmisión. Cuando termine el live, te quedas con los datos de los que querían comprar. Lo que no vendiste hoy, lo vendes mañana.",
   "cta.button": "Ir al Live Controller",
   "cta.secondary": "Ver features",
-  "cta.stat.creators": "Creadores activos",
+  "cta.stat.creators": "Vendedores activos",
   "cta.stat.precision": "Precisión IA",
   "cta.stat.setup": "En configurar",
 
@@ -104,10 +107,10 @@ export const en: Record<TranslationKey, string> = {
   "hero.words.3": "follow-ups",
   "hero.words.4": "money",
   "hero.subtitle":
-    "Capture, filter, and follow every person who interacts in your stream. Our AI identifies real buyers with 90% accuracy so you never lose a sale in the live chat chaos again.",
+    "Capture, filter, and follow every person who interacts in your stream. Our AI identifies real buyers with 90% accuracy so you never lose a sale in the live chat chaos again. And when the live ends, you keep the data of everyone who wanted to buy.",
   "hero.cta.try": "Try Live Controller",
   "hero.cta.watch": "See how it works",
-  "hero.social": "+50 creators no longer lose live sales",
+  "hero.social": "+50 sellers no longer lose live sales",
   "hero.scroll": "Discover",
 
   // Funnel
@@ -126,7 +129,7 @@ export const en: Record<TranslationKey, string> = {
   "funnel.pct.3": "8%",
   "funnel.pct.4": "3%",
   "funnel.bottom":
-    "Only a few will buy. The rest get buried in the chat.",
+    "Only a few will buy. The rest get buried in the chat. But with Live Leads, you recover them after the live.",
 
   // Video
   "video.title": "How it works live",
@@ -159,14 +162,17 @@ export const en: Record<TranslationKey, string> = {
   "features.5.title": "Zero friction",
   "features.5.desc":
     "No technical skills needed. Connect your live and start capturing leads instantly.",
+  "features.6.title": "Post-live: recover sales",
+  "features.6.desc":
+    "What you didn't sell during the live, sell it after. Capture their data, message them, and close the sale after the stream ends.",
 
   // CTA
-  "cta.title": "Ready to stop losing customers?",
+  "cta.title": "Don't lose sales. Not during the live, not after.",
   "cta.subtitle":
-    "Connect your first TikTok Live and start capturing leads in under 2 minutes.",
+    "Capture leads during the stream. When the live ends, you keep the data of everyone who wanted to buy. What you don't sell today, you sell tomorrow.",
   "cta.button": "Go to Live Controller",
   "cta.secondary": "View features",
-  "cta.stat.creators": "Active creators",
+  "cta.stat.creators": "Active sellers",
   "cta.stat.precision": "AI Precision",
   "cta.stat.setup": "To set up",
 

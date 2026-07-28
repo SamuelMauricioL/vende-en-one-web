@@ -9,11 +9,12 @@ import {
   Filter,
   BarChart3,
   MessageCircle,
+  Send,
 } from "lucide-react";
 
-const ICONS = [Radio, Users, Filter, MessageCircle, BarChart3, Zap];
-const FEATURE_KEYS = ["features.0.", "features.1.", "features.2.", "features.3.", "features.4.", "features.5."];
-const COLORS = ["#25f4ee", "#4ade80", "#facc15", "#fb923c", "#a78bfa", "#fe2c55"];
+const ICONS = [Radio, Users, Filter, MessageCircle, BarChart3, Zap, Send];
+const FEATURE_KEYS = ["features.0.", "features.1.", "features.2.", "features.3.", "features.4.", "features.5.", "features.6."];
+const COLORS = ["#25f4ee", "#4ade80", "#facc15", "#fb923c", "#a78bfa", "#fe2c55", "#06d6a0"];
 
 export default function FeaturesSection() {
   const { t } = useI18n();
