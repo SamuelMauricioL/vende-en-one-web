@@ -41,6 +41,14 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
 export function useI18n() {
   const context = useContext(ctx);
-  if (!context) throw new Error("useI18n must be used within I18nProvider");
+  if (!context) {
+    // SSR fallback — Astro islands render independently, context may not be available
+    return {
+      locale: "es" as Locale,
+      setLocale: () => {},
+      t: (key: TranslationKey): string => (messages.es[key] ?? key),
+      toggleLocale: () => {},
+    };
+  }
   return context;
 }
