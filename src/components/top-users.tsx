@@ -57,9 +57,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
       })
       .filter(Boolean)
       .sort((a, b) => {
-        const aIdx = STAGE_ORDER.indexOf(a!.stage);
-        const bIdx = STAGE_ORDER.indexOf(b!.stage);
-        return aIdx - bIdx;
+        return b.firstSeen - a.firstSeen;
       }) as (TopUser & { stage: LeadStage; keyAction: string | null })[];
   }, [users]);
 
