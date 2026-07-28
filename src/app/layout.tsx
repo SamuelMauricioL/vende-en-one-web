@@ -49,20 +49,10 @@ export default function RootLayout({
           appearance={{
             variables: {
               colorPrimary: "#fe2c55",
-              colorBackground: "#0b0f1a",
-              colorInput: "#fff",
-              colorDanger: "#fe2c55",
             },
             elements: {
-              card: "bg-[#1a1d2e] shadow-lg border border-white/10",
-              headerTitle: "text-white/90",
-              headerSubtitle: "text-white/40",
-              dividerLine: "bg-white/10",
-              dividerText: "text-white/30",
-              formFieldLabel: "text-white/50",
-              formFieldInput: "bg-white/5 border-white/10 text-white rounded-xl",
-              footerActionLink: "text-[#fe2c55]",
-              socialButtonsBlockButton: "bg-white/10 border border-white/20 text-white hover:bg-white/20",
+              card: "shadow-xl",
+              socialButtonsBlockButton: "border border-gray-300 hover:bg-gray-50",
               formButtonPrimary: "bg-[#fe2c55] text-white hover:bg-[#fe2c55]/80",
             },
           }}

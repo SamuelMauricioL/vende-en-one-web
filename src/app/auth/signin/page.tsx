@@ -24,19 +24,12 @@ export default function SignInPage() {
           appearance={{
             elements: {
               rootBox: "w-full mx-auto",
-              card: "bg-[#1a1d2e] shadow-lg border border-white/10",
-              headerTitle: "text-white/90 text-xl",
-              headerSubtitle: "text-white/40 text-sm",
+              card: "shadow-xl",
               socialButtonsBlockButton:
-                "bg-white/10 border border-white/20 hover:bg-white/20 text-white rounded-xl text-sm",
+                "border border-gray-300 hover:bg-gray-50 rounded-xl text-sm",
               formButtonPrimary:
                 "bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white rounded-xl",
               footerActionLink: "text-[#fe2c55] hover:text-[#fe2c55]/80",
-              dividerLine: "bg-white/10",
-              dividerText: "text-white/30",
-              formFieldLabel: "text-white/50",
-              formFieldInput:
-                "bg-white/5 border-white/10 text-white rounded-xl",
             },
           }}
           signUpUrl="/"
