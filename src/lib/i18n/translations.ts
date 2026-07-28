@@ -64,9 +64,6 @@ export const es = {
   "features.2.title": "Filtro IA de compradores",
   "features.2.desc":
     "Nuestro algoritmo analiza el comportamiento en vivo y asigna probabilidad de compra. Solo los leads calientes llegan a tu bandeja.",
-  "features.3.title": "Chat unificado",
-  "features.3.desc":
-    "Todos los leads en un solo lugar. Responde desde el dashboard sin tener que abrir TikTok.",
   "features.4.title": "Métricas en tiempo real",
   "features.4.desc":
     "Ve cuántos leads capturaste, cuántos están calificados y cuántos convirtieron. Todo en vivo.",
@@ -153,9 +150,6 @@ export const en: Record<TranslationKey, string> = {
   "features.2.title": "AI buyer filter",
   "features.2.desc":
     "Our algorithm analyzes live behavior and assigns a purchase probability. Only hot leads reach your inbox.",
-  "features.3.title": "Unified chat",
-  "features.3.desc":
-    "All leads in one place. Reply from the dashboard without opening TikTok.",
   "features.4.title": "Real-time metrics",
   "features.4.desc":
     "See how many leads you captured, how many are qualified, and how many converted. All live.",
