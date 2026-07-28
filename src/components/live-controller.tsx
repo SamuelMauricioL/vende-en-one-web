@@ -61,6 +61,13 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [lastUsername, setLastUsername] = useState(initialTikTokUsername);
 
+  const handleConnectionError = useCallback((error: string) => {
+    toast.error(`Error al conectar: ${error}`);
+    setActiveSessionId(null);
+    setSelectedUserIds(new Set());
+    setLastUsername("");
+  }, []);
+
   useImperativeHandle(ref, () => ({
     handleStop,
     active: !!activeSessionId,
@@ -342,10 +349,11 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
               selectedUserIds={selectedUserIds}
               onToggleUser={toggleUser}
               maxMobileItems={5}
+              onConnectionError={handleConnectionError}
             />
           </div>
           <div className="lg:col-span-3 lg:order-last rounded-2xl p-4 flex flex-col min-h-0 overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-            <LiveChat sessionId={activeSessionId} selectedUserIds={selectedUserIds} />
+            <LiveChat sessionId={activeSessionId} selectedUserIds={selectedUserIds} onConnectionError={handleConnectionError} />
           </div>
         </div>
       </>)}

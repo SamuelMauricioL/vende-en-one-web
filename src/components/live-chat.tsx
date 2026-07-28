@@ -17,6 +17,7 @@ interface ChatMessage {
 interface LiveChatProps {
   sessionId: string;
   selectedUserIds: Set<string>;
+  onConnectionError?: (error: string) => void;
 }
 
 const USER_COLORS = [
@@ -35,13 +36,20 @@ function getUserColor(userId: string | undefined): string {
   return USER_COLORS[Math.abs(hash) % USER_COLORS.length];
 }
 
-export function LiveChat({ sessionId, selectedUserIds }: LiveChatProps) {
-  const { data: messages, connected } = useSSE<ChatMessage>(
+export function LiveChat({ sessionId, selectedUserIds, onConnectionError }: LiveChatProps) {
+  const { data: messages, connected, status, connectionError } = useSSE<ChatMessage>(
     `/api/lives/${sessionId}/chat/stream`,
   );
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [, setTick] = useState(0);
+
+  // React to connection errors
+  useEffect(() => {
+    if (status === "error" && connectionError && onConnectionError) {
+      onConnectionError(connectionError);
+    }
+  }, [status, connectionError, onConnectionError]);
 
   useEffect(() => {
     const interval = setInterval(() => setTick((t) => t + 1), 10000);
@@ -91,11 +99,15 @@ export function LiveChat({ sessionId, selectedUserIds }: LiveChatProps) {
       <div ref={chatContainerRef} className="flex-1 overflow-y-auto space-y-2 min-h-0 pr-1 scroll-smooth">
         {!filtered || filtered.length === 0 ? (
           <p className="text-sm text-white/30 text-center py-12">
-            {connected
-              ? isFiltered
-                ? "Este usuario no ha enviado mensajes."
-                : "Esperando mensajes..."
-              : "Conectando..."}
+            {status === "error"
+              ? `Error de conexión: ${connectionError || "desconocido"}`
+              : status === "connecting"
+                ? "Conectando al live..."
+                : connected
+                  ? isFiltered
+                    ? "Este usuario no ha enviado mensajes."
+                    : "Esperando mensajes..."
+                  : "Conectando..."}
           </p>
         ) : (
           filtered.map((msg) => {

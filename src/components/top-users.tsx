@@ -30,12 +30,20 @@ interface TopUsersProps {
   selectedUserIds: Set<string>;
   onToggleUser: (userId: string) => void;
   maxMobileItems?: number;
+  onConnectionError?: (error: string) => void;
 }
 
-export function TopUsers({ sessionId, selectedUserIds, onToggleUser, maxMobileItems }: TopUsersProps) {
-  const { data: users, connected } = useSSE<TopUser>(
+export function TopUsers({ sessionId, selectedUserIds, onToggleUser, maxMobileItems, onConnectionError }: TopUsersProps) {
+  const { data: users, connected, status, connectionError } = useSSE<TopUser>(
     `/api/lives/${sessionId}/stats/stream`,
   );
+
+  // React to connection errors
+  useEffect(() => {
+    if (status === "error" && connectionError && onConnectionError) {
+      onConnectionError(connectionError);
+    }
+  }, [status, connectionError, onConnectionError]);
 
   const enriched = useMemo(() => {
     if (!users) return [];
@@ -144,7 +152,13 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, maxMobileIt
       <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0 pr-1">
         {!enriched || enriched.length === 0 ? (
           <p className="text-sm text-white/30 text-center py-12">
-            {connected ? "Esperando mensajes..." : "Conectando..."}
+            {status === "error"
+              ? `Error de conexión: ${connectionError || "desconocido"}`
+              : status === "connecting"
+                ? "Conectando al live..."
+                : connected
+                  ? "Esperando mensajes..."
+                  : "Conectando..."}
           </p>
         ) : (
           enriched.map((user, index) => {
