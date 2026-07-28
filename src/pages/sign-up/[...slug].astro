@@ -1,8 +1,8 @@
 ---
 import AuthLayout from "@/layouts/AuthLayout.astro";
-const { SignUp } = await import("@clerk/astro/react");
+import { LazySignUp } from "@/components/auth/lazy-sign-in";
 ---
 
 <AuthLayout title="Crear cuenta — Live Leads">
-  <SignUp client:only="react" />
+  <LazySignUp client:load />
 </AuthLayout>
