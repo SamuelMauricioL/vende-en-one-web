@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
 import { formatElapsed } from "@/lib/time";
 
@@ -62,6 +62,13 @@ export function LiveChat({ sessionId, selectedUserIds, onConnectionError }: Live
     (m) => !isFiltered || (m.tiktokUserId && selectedUserIds.has(m.tiktokUserId)),
   );
 
+  // Get the selected user's name from their messages
+  const selectedName = useMemo(() => {
+    if (!isFiltered || !filtered) return null;
+    const first = filtered.find((m) => m.nickname || m.displayId);
+    return first?.nickname || first?.displayId || null;
+  }, [filtered, isFiltered]);
+
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
@@ -75,7 +82,7 @@ export function LiveChat({ sessionId, selectedUserIds, onConnectionError }: Live
           Chat en vivo
           {isFiltered && (
             <span className="ml-2 text-[11px] font-normal text-white/40">
-              · filtrado
+              · {selectedName || "filtrado"}
             </span>
           )}
         </h3>

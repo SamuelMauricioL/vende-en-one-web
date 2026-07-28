@@ -97,13 +97,12 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
 
   const toggleUser = useCallback((userId: string) => {
     setSelectedUserIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(userId)) {
-        next.delete(userId);
-      } else {
-        next.add(userId);
+      if (prev.has(userId)) {
+        // Tap mismo usuario → deseleccionar (mostrar todos)
+        return new Set();
       }
-      return next;
+      // Seleccionar solo este usuario
+      return new Set([userId]);
     });
   }, []);
 
