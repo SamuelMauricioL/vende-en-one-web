@@ -39,6 +39,29 @@ API_BASE_URL=https://vende-en-one-api-production.up.railway.app
 pnpm dev
 ```
 
-## Deploy
+|## Deploy
 
-Conecta el repo a Vercel. Las env vars se configuran en el dashboard.
+|Conecta el repo a Vercel. Las env vars se configuran en el dashboard.
+|
+|## API Proxy (Middleware)
+|
+|El frontend expone `/api/*` como proxy hacia el backend en Railway.
+|Se implementa como **middleware de Astro** (`src/middleware.ts`) — no usa catch-all routes (`[...path].ts`) porque Astro 7 + Vercel adapter no las maneja correctamente.
+|
+|### Endpoints disponibles
+|
+|Endpoint | Descripción
+|-|-
+|`GET /api/ping` | Health check del proxy
+|`GET /api/lives` | Lista lives activas
+|`POST /api/lives/start` | Iniciar captura (body: `{"username":"@tiktoker"}`)
+|`POST /api/lives/{id}/stop` | Detener captura
+|`GET /api/lives/{id}/stats/stream` | SSE — estadísticas en tiempo real
+|`GET /api/lives/{id}/chat/stream` | SSE — chat en tiempo real
+|`GET /api/lives/{id}/export/csv` | Exportar leads a CSV
+|
+|### Backend
+|
+|URL: `https://vende-en-one-api-production.up.railway.app`
+|Configurar en `API_BASE_URL` env var.
+|
