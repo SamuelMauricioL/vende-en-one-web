@@ -91,7 +91,6 @@ export function AppNav({ current, stopButton }: AppNavProps) {
         style={{
           backgroundColor: "#0b0f1a",
           borderRight: "1px solid rgba(255,255,255,0.06)",
-          position: "relative",
         }}
       >
         <nav className="space-y-1 pt-2">
