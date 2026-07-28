@@ -60,7 +60,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   const [loading, setLoading] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
-  const [attendedUserIds, setAttendedUserIds] = useState<Set<string>>(new Set());
+  const [attendedMap, setAttendedMap] = useState<Map<string, { attendedAt: number; commentCount: number }>>(new Map());
   const [lastUsername, setLastUsername] = useState(initialTikTokUsername);
   const [showEditInput, setShowEditInput] = useState(false);
 
@@ -68,7 +68,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     toast.error(`Error al conectar: ${error}`);
     setActiveSessionId(null);
     setSelectedUserIds(new Set());
-    setAttendedUserIds(new Set());
+    setAttendedMap(new Map());
     setLastUsername("");
     setShowEditInput(false);
   }, []);
@@ -83,13 +83,13 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     onActiveChange?.(!!activeSessionId);
   }, [activeSessionId, onActiveChange]);
 
-  const toggleAttended = useCallback((userId: string) => {
-    setAttendedUserIds((prev) => {
-      const next = new Set(prev);
+  const toggleAttended = useCallback((userId: string, commentCount?: number) => {
+    setAttendedMap((prev) => {
+      const next = new Map(prev);
       if (next.has(userId)) {
         next.delete(userId);
       } else {
-        next.add(userId);
+        next.set(userId, { attendedAt: Date.now(), commentCount: commentCount ?? 0 });
       }
       return next;
     });
@@ -169,7 +169,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
         toast.success(`Detenido: @${lastUsername}`);
         setActiveSessionId(null);
         setSelectedUserIds(new Set());
-        setAttendedUserIds(new Set());
+        setAttendedMap(new Map());
       } else {
         trackEvent("Live Stop Failed", { username: lastUsername, status: res.status });
         toast.error(`Error al detener: ${data.message || res.status}`);
@@ -366,7 +366,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
               sessionId={activeSessionId}
               selectedUserIds={selectedUserIds}
               onToggleUser={toggleUser}
-              attendedUserIds={attendedUserIds}
+              attendedMap={attendedMap}
               onToggleAttended={toggleAttended}
               maxMobileItems={5}
               onConnectionError={handleConnectionError}
@@ -378,7 +378,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
               sessionId={activeSessionId}
               selectedUserIds={selectedUserIds}
               onToggleUser={toggleUser}
-              attendedUserIds={attendedUserIds}
+              attendedMap={attendedMap}
               onToggleAttended={toggleAttended}
               onConnectionError={handleConnectionError}
             />

@@ -29,18 +29,17 @@ interface TopUsersProps {
   sessionId: string;
   selectedUserIds: Set<string>;
   onToggleUser: (userId: string) => void;
-  attendedUserIds: Set<string>;
-  onToggleAttended: (userId: string) => void;
+  attendedMap: Map<string, { attendedAt: number; commentCount: number }>;
+  onToggleAttended: (userId: string, commentCount?: number) => void;
   maxMobileItems?: number;
   onConnectionError?: (error: string) => void;
 }
 
-export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedUserIds, onToggleAttended, maxMobileItems, onConnectionError }: TopUsersProps) {
+export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap, onToggleAttended, maxMobileItems, onConnectionError }: TopUsersProps) {
   const { data: users, connected, status, connectionError } = useSSE<TopUser>(
     `/api/lives/${sessionId}/stats/stream`,
   );
 
-  // React to connection errors
   useEffect(() => {
     if (status === "error" && connectionError && onConnectionError) {
       onConnectionError(connectionError);
@@ -63,6 +62,17 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedUse
         return aIdx - bIdx;
       }) as (TopUser & { stage: LeadStage; keyAction: string | null })[];
   }, [users]);
+
+  // Auto-unattend: if an attended user sent new messages, move back to pending
+  useEffect(() => {
+    if (!enriched || enriched.length === 0) return;
+    for (const user of enriched) {
+      const info = attendedMap.get(user.tiktokUserId);
+      if (info && user.commentTexts.length > info.commentCount) {
+        onToggleAttended(user.tiktokUserId);
+      }
+    }
+  }, [enriched, attendedMap, onToggleAttended]);
 
   const grouped = useMemo(() => {
     const groups: Record<LeadStage, (typeof enriched)[number][]> = {
@@ -87,9 +97,136 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedUse
     return () => clearInterval(iv);
   }, []);
 
+  const pendingList = enriched.filter((u) => !attendedMap.has(u.tiktokUserId));
+  const attendedList = enriched
+    .filter((u) => attendedMap.has(u.tiktokUserId))
+    .sort((a, b) => {
+      const aTime = attendedMap.get(a.tiktokUserId)?.attendedAt ?? 0;
+      const bTime = attendedMap.get(b.tiktokUserId)?.attendedAt ?? 0;
+      return bTime - aTime;
+    });
+
+  const renderLead = (user: (typeof enriched)[number], index: number, isAttended: boolean) => {
+    const hideOnMobile = maxMobileItems && index >= maxMobileItems;
+    const cfg = STAGE_CONFIG[user.stage];
+    const isSelected = selectedUserIds.has(user.tiktokUserId);
+    const stageIndex = getStageIndex(user.stage);
+
+    return (
+      <button
+        key={user.tiktokUserId}
+        type="button"
+        onClick={() => onToggleUser(user.tiktokUserId)}
+        className={`w-full text-left rounded-xl transition-all duration-200 cursor-pointer overflow-hidden ${
+          isSelected ? "ring-1 ring-white/20" : "hover:ring-1 hover:ring-white/10"
+        } ${hideOnMobile ? "max-md:hidden" : ""}`}
+        style={{
+          backgroundColor: isSelected
+            ? "rgba(255,255,255,0.08)"
+            : isAttended
+              ? "rgba(255,255,255,0.01)"
+              : "rgba(255,255,255,0.03)",
+          borderLeft: `3px solid ${cfg.color}`,
+          opacity: isAttended ? 0.5 : 1,
+          textDecoration: isAttended ? "line-through" : "none",
+        }}
+      >
+        <div className="flex h-0.5 w-full bg-white/[0.03]">
+          {STAGE_ORDER.map((s, i) => (
+            <div
+              key={s}
+              className="h-full transition-all duration-300"
+              style={{
+                flex: 1,
+                backgroundColor: i <= stageIndex ? STAGE_CONFIG[s].color : "transparent",
+                opacity: i === stageIndex ? 1 : 0.3,
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="p-2.5 pt-2">
+          <div className="flex items-start gap-2.5">
+            <div
+              className="w-2.5 h-2.5 rounded-full mt-1 shrink-0"
+              style={{
+                backgroundColor: cfg.color,
+                boxShadow: user.stage === "compra"
+                  ? `0 0 8px ${cfg.color}60`
+                  : "none",
+              }}
+            />
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span
+                  className="font-semibold text-sm truncate"
+                  style={{ color: isAttended ? "rgba(255,255,255,0.3)" : cfg.color }}
+                >
+                  {user.nickname || user.displayId || "Anónimo"}
+                </span>
+                <span
+                  className="text-[9px] font-bold px-1.5 py-0.5 rounded leading-none shrink-0"
+                  style={{
+                    backgroundColor: `${cfg.color}18`,
+                    color: isAttended ? "rgba(255,255,255,0.25)" : cfg.color,
+                  }}
+                >
+                  {cfg.funnelPct}
+                </span>
+                <span className="text-[10px] text-white/25 shrink-0">
+                  {user.comments} msgs
+                </span>
+                {user.followerCount && (
+                  <span className="text-[10px] text-white/25 shrink-0 truncate max-w-[80px]">
+                    {user.followerCount} seg
+                  </span>
+                )}
+              </div>
+
+              {user.keyAction && (
+                <p className="text-xs text-white/50 leading-relaxed line-clamp-1 italic"
+                   style={{ textDecoration: isAttended ? "line-through" : "none" }}>
+                  &ldquo;{user.keyAction}&rdquo;
+                </p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onToggleAttended(user.tiktokUserId, user.commentTexts.length); }}
+              className="shrink-0 self-center flex items-center gap-1 rounded-full transition-all duration-200 px-2.5 py-1"
+              style={{
+                backgroundColor: isAttended ? `${cfg.color}22` : "rgba(255,255,255,0.04)",
+                border: `1px solid ${isAttended ? cfg.color : "rgba(255,255,255,0.1)"}`,
+              }}
+              title={isAttended ? "Marcado como atendido" : "Marcar como atendido"}
+            >
+              <svg
+                className="w-3 h-3 transition-all duration-200"
+                style={{ color: isAttended ? cfg.color : "rgba(255,255,255,0.25)" }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={isAttended ? 2.5 : 1.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+              <span
+                className="text-[10px] font-medium"
+                style={{ color: isAttended ? cfg.color : "rgba(255,255,255,0.35)" }}
+              >
+                {isAttended ? "Atendido" : "Atender"}
+              </span>
+            </button>
+          </div>
+        </div>
+      </button>
+    );
+  };
+
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* Header */}
       <div className="flex items-center justify-between mb-3 shrink-0">
         <h3 className="text-sm font-semibold text-white/80">Leads en vivo</h3>
         <div className="flex items-center gap-2">
@@ -98,7 +235,6 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedUse
         </div>
       </div>
 
-      {/* Visual funnel */}
       <div className="mb-5 rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
         <div className="px-3 pt-2.5 pb-3">
           <div className="flex flex-col items-center gap-1">
@@ -110,13 +246,9 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedUse
 
               return (
                 <div key={stage} className="flex items-center gap-2 w-full">
-                  <span
-                    className="text-[10px] font-medium w-14 text-right shrink-0"
-                    style={{ color: cfg.color }}
-                  >
+                  <span className="text-[10px] font-medium w-14 text-right shrink-0" style={{ color: cfg.color }}>
                     {cfg.label}
                   </span>
-
                   <div className="flex-1 flex justify-center">
                     <div
                       className="rounded-full transition-all duration-500"
@@ -139,10 +271,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedUse
                       />
                     </div>
                   </div>
-
-                  <span className="text-[10px] text-white/40 w-6 text-left shrink-0 font-mono">
-                    {count}
-                  </span>
+                  <span className="text-[10px] text-white/40 w-6 text-left shrink-0 font-mono">{count}</span>
                 </div>
               );
             })}
@@ -150,7 +279,6 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedUse
         </div>
       </div>
 
-      {/* User list */}
       <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0 pr-1">
         {!enriched || enriched.length === 0 ? (
           <p className="text-sm text-white/30 text-center py-12">
@@ -163,120 +291,28 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedUse
                   : "Conectando..."}
           </p>
         ) : (
-          enriched.map((user, index) => {
-            const hideOnMobile = maxMobileItems && index >= maxMobileItems;
-            const cfg = STAGE_CONFIG[user.stage];
-            const isSelected = selectedUserIds.has(user.tiktokUserId);
-            const isAttended = attendedUserIds.has(user.tiktokUserId);
-            const stageIndex = getStageIndex(user.stage);
+          <>
+            {pendingList.length === 0 && attendedList.length === 0 ? (
+              <p className="text-sm text-white/30 text-center py-12">Esperando mensajes...</p>
+            ) : (
+              <>
+                {pendingList.map((user, index) => renderLead(user, index, false))}
 
-            return (
-              <button
-                key={user.tiktokUserId}
-                type="button"
-                onClick={() => onToggleUser(user.tiktokUserId)}
-                className={`w-full text-left rounded-xl transition-all duration-200 cursor-pointer overflow-hidden ${
-                  isSelected ? "ring-1 ring-white/20" : "hover:ring-1 hover:ring-white/10"
-                } ${hideOnMobile ? "max-md:hidden" : ""}`}
-                style={{
-                  backgroundColor: isSelected
-                    ? "rgba(255,255,255,0.08)"
-                    : isAttended
-                      ? "rgba(255,255,255,0.01)"
-                      : "rgba(255,255,255,0.03)",
-                  borderLeft: `3px solid ${cfg.color}`,
-                  opacity: isAttended ? 0.55 : 1,
-                }}
-              >
-                {/* Stage progress line */}
-                <div className="flex h-0.5 w-full bg-white/[0.03]">
-                  {STAGE_ORDER.map((s, i) => (
-                    <div
-                      key={s}
-                      className="h-full transition-all duration-300"
-                      style={{
-                        flex: 1,
-                        backgroundColor: i <= stageIndex ? STAGE_CONFIG[s].color : "transparent",
-                        opacity: i === stageIndex ? 1 : 0.3,
-                      }}
-                    />
-                  ))}
-                </div>
-
-                <div className="p-2.5 pt-2">
-                  <div className="flex items-start gap-2.5">
-                    <div
-                      className="w-2.5 h-2.5 rounded-full mt-1 shrink-0"
-                      style={{
-                        backgroundColor: cfg.color,
-                        boxShadow: user.stage === "compra"
-                          ? `0 0 8px ${cfg.color}60`
-                          : "none",
-                      }}
-                    />
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span
-                          className="font-semibold text-sm truncate"
-                          style={{ color: cfg.color }}
-                        >
-                          {user.nickname || user.displayId || "Anónimo"}
-                        </span>
-                        <span
-                          className="text-[9px] font-bold px-1.5 py-0.5 rounded leading-none shrink-0"
-                          style={{
-                            backgroundColor: `${cfg.color}18`,
-                            color: cfg.color,
-                          }}
-                        >
-                          {cfg.funnelPct}
-                        </span>
-                        <span className="text-[10px] text-white/25 shrink-0">
-                          {user.comments} msgs
-                        </span>
-                        {user.followerCount && (
-                          <span className="text-[10px] text-white/25 shrink-0 truncate max-w-[80px]">
-                            {user.followerCount} seg
-                          </span>
-                        )}
-                      </div>
-
-                      {user.keyAction && (
-                        <p className="text-xs text-white/50 leading-relaxed line-clamp-1 italic">
-                          &ldquo;{user.keyAction}&rdquo;
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Atendido button */}
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); onToggleAttended(user.tiktokUserId); }}
-                      className="shrink-0 self-center w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200"
-                      style={{
-                        backgroundColor: isAttended ? `${cfg.color}22` : "rgba(255,255,255,0.04)",
-                        border: `1px solid ${isAttended ? cfg.color : "rgba(255,255,255,0.1)"}`,
-                      }}
-                      title={isAttended ? "Marcado como atendido" : "Marcar como atendido"}
-                    >
-                      <svg
-                        className="w-3.5 h-3.5 transition-all duration-200"
-                        style={{ color: isAttended ? cfg.color : "rgba(255,255,255,0.25)" }}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={isAttended ? 2.5 : 1.5}
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                      </svg>
-                    </button>
+                {attendedList.length > 0 && (
+                  <div className="flex items-center gap-3 py-2 mt-2 mb-1">
+                    <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
+                    <span className="text-[10px] font-medium text-white/20 shrink-0">
+                      Atendidos ({attendedList.length})
+                    </span>
+                    <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
                   </div>
-                </div>
-              </button>
-            );
-          }
-        ))}
+                )}
+
+                {attendedList.map((user, index) => renderLead(user, index, true))}
+              </>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
