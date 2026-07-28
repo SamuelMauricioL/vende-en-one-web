@@ -8,40 +8,34 @@ export const POST = async ({ params, request }: { params: { path?: string[] }; r
   return proxy("POST", params, request);
 };
 
-export const PUT = async ({ params, request }: { params: { path?: string[] }; request: Request }) => {
-  return proxy("PUT", params, request);
-};
-
-export const DELETE = async ({ params, request }: { params: { path?: string[] }; request: Request }) => {
-  return proxy("DELETE", params, request);
-};
-
-export const PATCH = async ({ params, request }: { params: { path?: string[] }; request: Request }) => {
-  return proxy("PATCH", params, request);
-};
-
 async function proxy(method: string, params: { path?: string[] }, request?: Request) {
   const apiPath = "/" + (params.path?.join("/") || "");
   const url = new URL(apiPath, API_BASE_URL).toString();
   const isStream = params.path?.some((p) => p === "stream");
 
-  const headers: Record<string, string> = {};
-  const accept = request?.headers.get("Accept");
-  if (accept) headers["Accept"] = accept;
-  if (!isStream) headers["Content-Type"] = "application/json";
-
-  let body: string | undefined;
-  if (request && !["GET", "HEAD"].includes(method) && !isStream) {
-    body = await request.text().catch(() => "");
-  }
-
   try {
+    // Debug: first just try to reach Railway
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+
+    const headers: Record<string, string> = {};
+    const accept = request?.headers.get("Accept");
+    if (accept) headers["Accept"] = accept;
+    if (!isStream) headers["Content-Type"] = "application/json";
+
+    let body: string | undefined;
+    if (request && !["GET", "HEAD"].includes(method) && !isStream) {
+      const text = await request.text().catch(() => "");
+      body = text || undefined;
+    }
+
     const res = await fetch(url, {
       method,
       headers,
       body: body || undefined,
-      signal: isStream ? undefined : AbortSignal.timeout(25000),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
 
     if (isStream) {
       return new Response(res.body, {
@@ -59,11 +53,10 @@ async function proxy(method: string, params: { path?: string[] }, request?: Requ
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const name = err instanceof Error ? err.name : typeof err;
     return new Response(
-      JSON.stringify({
-        error: "proxy_error",
-        message: err instanceof Error ? err.message : "Upstream unreachable",
-      }),
+      JSON.stringify({ error: "proxy_error", name, message }),
       { status: 502, headers: { "Content-Type": "application/json" } }
     );
   }
