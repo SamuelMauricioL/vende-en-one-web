@@ -11,7 +11,7 @@ export const onRequest = clerkMiddleware((auth, context, next) => {
   if (isProtected) {
     const { userId } = auth();
     if (!userId) {
-      return context.redirect("/");
+      return context.redirect("/sign-in");
     }
   }
   return next();
