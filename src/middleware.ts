@@ -14,10 +14,9 @@ export const onRequest = clerkMiddleware(async (auth, context, next) => {
   const url = new URL(context.request.url);
   const pathname = url.pathname;
 
-  // Proxy /api/* requests directly to Railway with auth context
+  // Proxy /api/* requests directly to Railway
   if (pathname.startsWith("/api/")) {
-    const { userId } = auth();
-    return proxyApi(context.request, pathname.replace("/api/", ""), userId);
+    return proxyApi(context.request, pathname.replace("/api/", ""));
   }
 
   // Clerk auth for protected paths
@@ -61,7 +60,7 @@ export const onRequest = clerkMiddleware(async (auth, context, next) => {
   return next();
 });
 
-async function proxyApi(request: Request, apiPath: string, clerkUserId?: string | null) {
+async function proxyApi(request: Request, apiPath: string) {
   const target = API_BASE + "/" + apiPath;
   const method = request.method;
   const isStream = apiPath.includes("/stream");
@@ -72,11 +71,6 @@ async function proxyApi(request: Request, apiPath: string, clerkUserId?: string 
   const accept = request.headers.get("accept");
   if (accept) headers["accept"] = accept;
   if (!isStream && !ct) headers["content-type"] = "application/json";
-
-  // Forward Clerk user ID to API for user identification
-  if (clerkUserId) {
-    headers["x-clerk-user-id"] = clerkUserId;
-  }
 
   let body: BodyInit | undefined;
   if (!["GET", "HEAD"].includes(method) && !isStream) {
@@ -98,19 +92,13 @@ async function proxyApi(request: Request, apiPath: string, clerkUserId?: string 
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
           Connection: "keep-alive",
-          "x-debug-target": target,
-          "x-debug-backend-status": String(res.status),
         },
       });
     }
 
     return new Response(await res.text(), {
       status: res.status,
-      headers: {
-        "Content-Type": "application/json",
-        "x-debug-target": target,
-        "x-debug-backend-status": String(res.status),
-      },
+      headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
