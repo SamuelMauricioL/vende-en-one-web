@@ -1,0 +1,11 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { AppProviders } from "@/components/AppProviders";
+import I18nOnly from "@/components/I18nOnly";
+---
+
+<Layout title="Test I18n Only">
+  <AppProviders client:load>
+    <I18nOnly client:load />
+  </AppProviders>
+</Layout>
