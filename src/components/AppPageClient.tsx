@@ -6,7 +6,7 @@ import {
   type LiveControllerHandle,
 } from "@/components/live-controller";
 import { Toaster } from "@/components/ui/sonner";
-import { AuthButton } from "@/components/auth/auth-button";
+import { AppNav } from "@/components/app-nav";
 
 export default function AppPageClient() {
   const controllerRef = useRef<LiveControllerHandle>(null);
@@ -21,49 +21,24 @@ export default function AppPageClient() {
       className="h-dvh flex flex-col"
       style={{ backgroundColor: "#0b0f1a" }}
     >
-      <main className="flex-1 flex flex-col min-h-0">
-        <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-4 pb-2 shrink-0">
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-3">
-            <a
-              href="/"
-              className="flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-200 hover:bg-white/5 active:scale-95"
-              style={{ border: "1px solid rgba(255,255,255,0.08)" }}
-              aria-label="Volver"
+      <AppNav
+        current="live"
+        stopButton={
+          sessionActive ? (
+            <button
+              type="button"
+              onClick={() => controllerRef.current?.handleStop()}
+              disabled={controllerRef.current?.loading}
+              className="md:hidden h-8 px-3 border border-white/20 text-white/70 hover:bg-white/10 rounded-lg text-xs font-medium transition-colors disabled:opacity-40"
             >
-              <svg
-                className="w-3.5 h-3.5 text-white/50"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </a>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-white/90 tracking-tight flex-1">
-              Live Controller
-            </h1>
-            <AuthButton variant="app" />
-            {sessionActive && (
-              <button
-                type="button"
-                onClick={() => controllerRef.current?.handleStop()}
-                disabled={controllerRef.current?.loading}
-                className="md:hidden h-8 px-3 border border-white/20 text-white/70 hover:bg-white/10 rounded-lg text-xs font-medium transition-colors disabled:opacity-40"
-              >
-                {controllerRef.current?.loading
-                  ? "Deteniendo..."
-                  : "Detener"}
-              </button>
-            )}
-          </div>
-        </div>
-
+              {controllerRef.current?.loading
+                ? "Deteniendo..."
+                : "Detener"}
+            </button>
+          ) : undefined
+        }
+      />
+      <main className="flex-1 flex flex-col min-h-0">
         <div className="flex-1 min-h-0 px-4 sm:px-6 pb-4 max-w-6xl w-full mx-auto">
           <LiveController
             ref={controllerRef}

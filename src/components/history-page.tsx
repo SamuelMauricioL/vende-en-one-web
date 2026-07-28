@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AuthButton } from "@/components/auth/auth-button";
+import { AppNav } from "@/components/app-nav";
 import { Toaster } from "@/components/ui/sonner";
 import {
   classifyLead,
@@ -148,30 +148,7 @@ export default function HistoryPageClient({
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0b0f1a" }}>
-      {/* Header */}
-      <header
-        className="sticky top-0 z-40 border-b border-white/[0.04]"
-        style={{ backgroundColor: "#0b0f1a" }}
-      >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <a
-              href="/app"
-              className="flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-200 hover:bg-white/5 active:scale-95"
-              style={{ border: "1px solid rgba(255,255,255,0.08)" }}
-              aria-label="Volver"
-            >
-              <svg className="w-3.5 h-3.5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </a>
-            <h1 className="text-lg font-extrabold text-white/90 tracking-tight">
-              Historial
-            </h1>
-          </div>
-          <AuthButton variant="app" />
-        </div>
-      </header>
+      <AppNav current="history" />
 
       {/* Search */}
       <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 pt-6 pb-2">
