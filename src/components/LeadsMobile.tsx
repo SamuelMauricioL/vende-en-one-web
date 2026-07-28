@@ -11,6 +11,8 @@ import {
   type LeadStage,
 } from "@/lib/lead-classifier";
 
+import { formatElapsed } from "@/lib/time";
+
 interface TopUser {
   tiktokUserId: string;
   displayId?: string;
@@ -90,7 +92,7 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
 
   const [tick, setTick] = useState(0);
   useEffect(() => {
-    const iv = setInterval(() => setTick((t) => t + 1), 10000);
+    const iv = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(iv);
   }, []);
 
@@ -184,6 +186,9 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
                     {user.followerCount} seg
                   </span>
                 )}
+                <span className="text-[10px] text-white/20 shrink-0 font-mono tabular-nums">
+                  {formatElapsed(user.firstSeen)}
+                </span>
               </div>
 
               {user.keyAction && (
