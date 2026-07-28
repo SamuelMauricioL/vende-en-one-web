@@ -98,13 +98,19 @@ async function proxyApi(request: Request, apiPath: string, clerkUserId?: string 
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
           Connection: "keep-alive",
+          "x-debug-target": target,
+          "x-debug-backend-status": String(res.status),
         },
       });
     }
 
     return new Response(await res.text(), {
       status: res.status,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-debug-target": target,
+        "x-debug-backend-status": String(res.status),
+      },
     });
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
