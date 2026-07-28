@@ -56,6 +56,12 @@ const INTENT_PATTERNS: IntentGroup[] = [
       /dónde (va|lo mando|lo envías)/i,
       /efectivo/i, /tarjeta/i, /crédito/i, /débito/i,
       /pago (móvil|movil|con tarjeta|en efectivo)/i,
+      /te escribí (mis|los) datos/i, /te mandé (mis|los) datos/i,
+      /te envié (mis|los) datos/i, /te pasé (mis|los) datos/i,
+      /ya (realicé|realize|hice) el (moradito|pago|depósito|abono)/i,
+      /moradito/i,
+      /ya te (escribí|mandé|envié) (por|al) (dm|privado|whatsapp|whatsap|wsp)/i,
+      /ya te (escribí|mandé|envié) mis datos/i,
     ],
   },
   {
