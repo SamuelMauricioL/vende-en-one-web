@@ -60,12 +60,14 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [lastUsername, setLastUsername] = useState(initialTikTokUsername);
+  const [showEditInput, setShowEditInput] = useState(false);
 
   const handleConnectionError = useCallback((error: string) => {
     toast.error(`Error al conectar: ${error}`);
     setActiveSessionId(null);
     setSelectedUserIds(new Set());
     setLastUsername("");
+    setShowEditInput(false);
   }, []);
 
   useImperativeHandle(ref, () => ({
@@ -101,6 +103,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
 
     const username = extractUsername(input)!;
     setLastUsername(username);
+    setShowEditInput(false);
     setLoading(true);
 
     try {
@@ -168,7 +171,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   return (
     <div className="space-y-4 h-full flex flex-col min-h-0">
       {/* Form */}
-      {!activeSessionId && initialTikTokUsername ? (
+      {!activeSessionId && initialTikTokUsername && !showEditInput ? (
         /* ── Saved account: compact button ── */
         <div
           className="rounded-2xl p-4 shrink-0"
@@ -203,10 +206,8 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
               <button
                 type="button"
                 onClick={() => {
-                  setInput("");
-                  setLastUsername("");
-                  // Clear initialTikTokUsername by switching to manual mode
                   setInput(initialTikTokUsername ? `https://www.tiktok.com/@${initialTikTokUsername}` : "");
+                  setShowEditInput(true);
                 }}
                 className="text-[11px] text-white/30 hover:text-white/50 transition-colors px-2 py-1"
               >
