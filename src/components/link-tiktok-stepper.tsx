@@ -75,9 +75,9 @@ export default function LinkTikTokStepper() {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-full max-w-md mx-auto px-0">
       {/* Stepper */}
-      <div className="flex items-center justify-center gap-0 mb-12">
+      <div className="flex items-center justify-center gap-0 mb-8 sm:mb-12">
         {STEPS.map((step, i) => (
           <div key={step.label} className="flex items-center">
             {/* Step circle */}
@@ -187,15 +187,7 @@ export default function LinkTikTokStepper() {
             </button>
           </form>
 
-          {/* Skip link */}
-          <p className="mt-6 text-center">
-            <a
-              href="/app"
-              className="text-xs text-white/20 hover:text-white/40 transition-colors"
-            >
-              Omitir por ahora
-            </a>
-          </p>
+          {/* Removed: skip link — middleware redirects back anyway */}
         </>
       )}
     </div>
