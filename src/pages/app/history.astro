@@ -1,0 +1,10 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import HistoryPageClient from "@/components/history-page";
+
+const username = Astro.url.searchParams.get("username") || "";
+---
+
+<Layout title="Historial — Live Leads">
+  <HistoryPageClient client:load initialUsername={username} />
+</Layout>
