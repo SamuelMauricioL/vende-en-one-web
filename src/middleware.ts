@@ -2,18 +2,19 @@ import { clerkMiddleware } from "@clerk/astro/server";
 
 const API_BASE = "https://vende-en-one-api-production.up.railway.app";
 
-const protectedPaths = ["/app"];
+const protectedPaths = ["/app", "/link-tiktok"];
 
-// All /api/* routes → proxy to Railway, skip Clerk
+// All /api/* requests → proxy to Railway, skip Clerk
 // All other routes → Clerk middleware for auth
 
 export const onRequest = clerkMiddleware((auth, context, next) => {
   const url = new URL(context.request.url);
   const pathname = url.pathname;
 
-  // Proxy /api/* requests directly to Railway
+  // Proxy /api/* requests directly to Railway with auth context
   if (pathname.startsWith("/api/")) {
-    return proxyApi(context.request, pathname.replace("/api/", ""));
+    const { userId } = auth();
+    return proxyApi(context.request, pathname.replace("/api/", ""), userId);
   }
 
   // Clerk auth for protected paths
@@ -30,7 +31,7 @@ export const onRequest = clerkMiddleware((auth, context, next) => {
   return next();
 });
 
-async function proxyApi(request: Request, apiPath: string) {
+async function proxyApi(request: Request, apiPath: string, clerkUserId?: string | null) {
   const target = API_BASE + "/" + apiPath;
   const method = request.method;
   const isStream = apiPath.includes("/stream");
@@ -41,6 +42,11 @@ async function proxyApi(request: Request, apiPath: string) {
   const accept = request.headers.get("accept");
   if (accept) headers["accept"] = accept;
   if (!isStream && !ct) headers["content-type"] = "application/json";
+
+  // Forward Clerk user ID to API for user identification
+  if (clerkUserId) {
+    headers["x-clerk-user-id"] = clerkUserId;
+  }
 
   let body: BodyInit | undefined;
   if (!["GET", "HEAD"].includes(method) && !isStream) {

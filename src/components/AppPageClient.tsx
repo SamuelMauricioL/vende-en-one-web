@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
+import { useAuth } from "@clerk/astro/react";
 import {
   LiveController,
   type LiveControllerHandle,
@@ -11,6 +12,21 @@ import { AppNav } from "@/components/app-nav";
 export default function AppPageClient() {
   const controllerRef = useRef<LiveControllerHandle>(null);
   const [sessionActive, setSessionActive] = useState(false);
+  const { userId, isLoaded } = useAuth();
+  const [tiktokUsername, setTiktokUsername] = useState("");
+
+  // Fetch TikTok username from user profile
+  useEffect(() => {
+    if (!isLoaded || !userId) return;
+    fetch(`/api/users/profile/${userId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.profile?.tiktokUsername) {
+          setTiktokUsername(data.profile.tiktokUsername);
+        }
+      })
+      .catch(() => {});
+  }, [userId, isLoaded]);
 
   const handleActiveChange = useCallback((active: boolean) => {
     setSessionActive(active);
@@ -43,6 +59,7 @@ export default function AppPageClient() {
           <LiveController
             ref={controllerRef}
             onActiveChange={handleActiveChange}
+            initialTikTokUsername={tiktokUsername}
           />
         </div>
       </main>

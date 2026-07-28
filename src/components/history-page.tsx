@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "@clerk/astro/react";
 import { AppNav } from "@/components/app-nav";
 import { Toaster } from "@/components/ui/sonner";
 import {
@@ -106,6 +107,23 @@ export default function HistoryPageClient({
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
+  const { userId, isLoaded: authLoaded } = useAuth();
+
+  // Auto-fetch TikTok username from user profile if no initialUsername
+  useEffect(() => {
+    if (!authLoaded || !userId || defaultUsername) return;
+    fetch(`/api/users/profile/${userId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const stored = data?.profile?.tiktokUsername;
+        if (stored && !defaultUsername) {
+          setUsername(stored);
+          fetchHistory(stored);
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, authLoaded]);
 
   const fetchHistory = useCallback(async (u: string) => {
     if (!u.trim()) return;

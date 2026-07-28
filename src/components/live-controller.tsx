@@ -54,12 +54,12 @@ export interface LiveControllerHandle {
   loading: boolean;
 }
 
-export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?: (active: boolean) => void }>(({ onActiveChange }, ref) => {
-  const [input, setInput] = useState("");
+export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?: (active: boolean) => void; initialTikTokUsername?: string }>(({ onActiveChange, initialTikTokUsername = "" }, ref) => {
+  const [input, setInput] = useState(initialTikTokUsername ? `https://www.tiktok.com/@${initialTikTokUsername}` : "");
   const [loading, setLoading] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
-  const [lastUsername, setLastUsername] = useState("");
+  const [lastUsername, setLastUsername] = useState(initialTikTokUsername);
 
   useImperativeHandle(ref, () => ({
     handleStop,
