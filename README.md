@@ -1,19 +1,18 @@
-# Vende en One - Web
+# LiveLeads — Web
 
-Frontend web para **Vende en One · Live Controller**. Inicia y detén listeners de TikTok Live conectados a Convex.
+Frontend de **LiveLeads** (antes Vende en One). Captura leads de TikTok Live en tiempo real con clasificación IA.
 
 ## Stack
 
-- **Next.js 16** (App Router)
-- **TypeScript**
-- **Tailwind CSS v4**
-- **shadcn/ui** (componentes accesibles y personalizables)
-- **lucide-react** (iconos)
-- **pnpm** (package manager)
+- **Astro 7** + React 19 islands
+- **Tailwind CSS v4** + shadcn/ui
+- **Clerk** (autenticación)
+- **Vercel** (hosting)
+- **Railway** (backend API)
 
 ## Requisitos
 
-- Node.js 18+
+- Node.js 22+
 - pnpm (`npm install -g pnpm`)
 
 ## Instalación
@@ -24,9 +23,13 @@ pnpm install
 
 ## Variables de entorno
 
-Crea un archivo `.env.local` en la raíz del proyecto:
+Copiar `.env.example` a `.env.local` y completar:
 
 ```env
+PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_xxx
+CLERK_SECRET_KEY=sk_live_xxx
+PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 API_BASE_URL=https://vende-en-one-api-production.up.railway.app
 ```
 
@@ -36,54 +39,6 @@ API_BASE_URL=https://vende-en-one-api-production.up.railway.app
 pnpm dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000).
-
-## Build de producción
-
-```bash
-pnpm build
-pnpm start
-```
-
-## Lint
-
-```bash
-pnpm lint
-```
-
-## Estructura del proyecto
-
-```
-src/
-├── app/
-│   ├── api/[...path]/route.ts   # Proxy catch-all a la API upstream
-│   ├── globals.css              # Estilos globales + tema personalizado
-│   ├── layout.tsx               # Layout raíz
-│   └── page.tsx                 # Página principal
-├── components/
-│   ├── ui/                      # Componentes shadcn/ui
-│   ├── live-controller.tsx      # Controlador principal de lives
-│   ├── lives-list.tsx           # Lista de lives activos
-│   └── status-panel.tsx         # Panel de estado de la última acción
-└── lib/
-    └── utils.ts                 # Utilidades
-```
-
 ## Deploy
 
-El proyecto está optimizado para deploy en **Vercel**. Conecta el repositorio y Vercel detectará automáticamente Next.js.
-
-Asegúrate de configurar la variable de entorno `API_BASE_URL` en el dashboard de Vercel.
-
-## API Proxy
-
-El frontend actúa como proxy hacia la API upstream. Todas las requests a `/api/*` se redirigen a `API_BASE_URL`.
-
-Endpoints principales:
-- `POST /api/lives/start` — Inicia un listener de TikTok Live
-- `POST /api/lives/stop` — Detiene un listener
-- `GET /api/lives` — Lista de lives activos
-
-## Licencia
-
-MIT
+Conecta el repo a Vercel. Las env vars se configuran en el dashboard.
