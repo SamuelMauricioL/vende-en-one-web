@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
+import { formatElapsed } from "@/lib/time";
 
 interface ChatMessage {
   id: string;
@@ -52,21 +53,9 @@ export function LiveChat({ sessionId, selectedUserIds, onConnectionError }: Live
   }, [status, connectionError, onConnectionError]);
 
   useEffect(() => {
-    const interval = setInterval(() => setTick((t) => t + 1), 10000);
+    const interval = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(interval);
   }, []);
-
-  function relativeTime(ts: number): string {
-    const diff = Date.now() - ts;
-    const sec = Math.floor(diff / 1000);
-    if (sec < 10) return "ahora";
-    if (sec < 60) return `hace ${sec}s`;
-    const min = Math.floor(sec / 60);
-    if (min < 60) return `hace ${min}min`;
-    const h = Math.floor(min / 60);
-    const m = min % 60;
-    return `hace ${h}h ${m}min`;
-  }
 
   const isFiltered = selectedUserIds.size > 0;
   const filtered = messages?.filter(
@@ -130,7 +119,7 @@ export function LiveChat({ sessionId, selectedUserIds, onConnectionError }: Live
                     {msg.followerCount && (
                       <span className="text-[11px] text-white/30">{msg.followerCount} seguidores</span>
                     )}
-                    <span className="text-[11px] text-white/20 ml-auto">{relativeTime(msg.createdAt)}</span>
+                    <span className="text-[11px] text-white/20 ml-auto font-mono tabular-nums">{formatElapsed(msg.createdAt)}</span>
                   </div>
                   <p className="text-sm text-white/90 leading-relaxed break-words">{msg.comment}</p>
                 </div>
