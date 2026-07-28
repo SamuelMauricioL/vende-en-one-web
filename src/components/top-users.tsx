@@ -276,7 +276,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedUse
               </button>
             );
           }
-        )}
+        ))}
       </div>
     </div>
   );
