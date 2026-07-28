@@ -62,7 +62,7 @@ export const onRequest = clerkMiddleware(async (auth, context, next) => {
 });
 
 async function proxyApi(request: Request, apiPath: string, clerkUserId?: string | null) {
-  const target = API_BASE + apiPath;
+  const target = API_BASE + "/" + apiPath;
   const method = request.method;
   const isStream = apiPath.includes("/stream");
 
