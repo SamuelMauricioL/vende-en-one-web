@@ -4,8 +4,9 @@ import { useCallback, useState, useImperativeHandle, forwardRef, useEffect } fro
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LiveChat } from "./live-chat";
 import { TopUsers } from "./top-users";
+import { LiveChat } from "./live-chat";
+import { LeadsMobile } from "./LeadsMobile";
 import { trackEvent } from "@/lib/plausible";
 
 const TIKTOK_URL_REGEX = /^(?:https?:\/\/)?(?:www\.)?tiktok\.com\/@([a-zA-Z0-9_.-]+)/;
@@ -344,12 +345,22 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 flex-1 min-h-0">
-          <div className="lg:col-span-2 rounded-2xl p-4 flex flex-col min-h-0 overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+          {/* Desktop leads card */}
+          <div className="max-md:hidden lg:col-span-2 rounded-2xl p-4 flex flex-col min-h-0 overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
             <TopUsers
               sessionId={activeSessionId}
               selectedUserIds={selectedUserIds}
               onToggleUser={toggleUser}
               maxMobileItems={5}
+              onConnectionError={handleConnectionError}
+            />
+          </div>
+          {/* Mobile leads card with tabs */}
+          <div className="md:hidden rounded-2xl p-4 flex flex-col min-h-0 overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <LeadsMobile
+              sessionId={activeSessionId}
+              selectedUserIds={selectedUserIds}
+              onToggleUser={toggleUser}
               onConnectionError={handleConnectionError}
             />
           </div>
