@@ -28,10 +28,12 @@ interface LeadsMobileProps {
   sessionId: string;
   selectedUserIds: Set<string>;
   onToggleUser: (userId: string) => void;
+  attendedUserIds: Set<string>;
+  onToggleAttended: (userId: string) => void;
   onConnectionError?: (error: string) => void;
 }
 
-export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, onConnectionError }: LeadsMobileProps) {
+export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attendedUserIds, onToggleAttended, onConnectionError }: LeadsMobileProps) {
   const { data: users, connected, status, connectionError } = useSSE<TopUser>(
     `/api/lives/${sessionId}/stats/stream`,
   );
@@ -156,6 +158,7 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, onConnec
           filtered.map((user) => {
             const cfg = STAGE_CONFIG[user.stage];
             const isSelected = selectedUserIds.has(user.tiktokUserId);
+            const isAttended = attendedUserIds.has(user.tiktokUserId);
             const stageIndex = getStageIndex(user.stage);
 
             return (
@@ -167,8 +170,13 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, onConnec
                   isSelected ? "ring-1 ring-white/20" : "hover:ring-1 hover:ring-white/10"
                 }`}
                 style={{
-                  backgroundColor: isSelected ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)",
+                  backgroundColor: isSelected
+                    ? "rgba(255,255,255,0.08)"
+                    : isAttended
+                      ? "rgba(255,255,255,0.01)"
+                      : "rgba(255,255,255,0.03)",
                   borderLeft: `3px solid ${cfg.color}`,
+                  opacity: isAttended ? 0.55 : 1,
                 }}
               >
                 {/* Stage progress line */}
@@ -232,6 +240,29 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, onConnec
                       )}
                     </div>
                   </div>
+
+                  {/* Atendido button */}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onToggleAttended(user.tiktokUserId); }}
+                    className="shrink-0 self-center w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200"
+                    style={{
+                      backgroundColor: isAttended ? `${cfg.color}22` : "rgba(255,255,255,0.04)",
+                      border: `1px solid ${isAttended ? cfg.color : "rgba(255,255,255,0.12)"}`,
+                    }}
+                    title={isAttended ? "Marcado como atendido" : "Marcar como atendido"}
+                  >
+                    <svg
+                      className="w-4 h-4 transition-all duration-200"
+                      style={{ color: isAttended ? cfg.color : "rgba(255,255,255,0.25)" }}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={isAttended ? 2.5 : 1.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </button>
                 </div>
               </button>
             );
