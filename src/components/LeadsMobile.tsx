@@ -181,11 +181,6 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
                 <span className="text-[10px] text-white/25 shrink-0">
                   {user.comments} msgs
                 </span>
-                {user.followerCount && (
-                  <span className="text-[10px] text-white/25 shrink-0 truncate max-w-[80px]">
-                    {user.followerCount} seg
-                  </span>
-                )}
                 <span className="text-[10px] text-white/20 shrink-0 font-mono tabular-nums">
                   {formatElapsed(user.firstSeen)}
                 </span>
