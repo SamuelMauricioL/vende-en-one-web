@@ -107,10 +107,14 @@ async function proxyApi(request: Request, apiPath: string, clerkUserId?: string 
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
     return new Response(
       JSON.stringify({
         error: "proxy_error",
-        message: err instanceof Error ? err.message : String(err),
+        message: error.message,
+        code: (error as NodeJS.ErrnoException).code,
+        type: error.constructor.name,
+        target,
       }),
       { status: 502, headers: { "Content-Type": "application/json" } }
     );
