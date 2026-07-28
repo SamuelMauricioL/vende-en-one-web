@@ -1,9 +1,9 @@
 "use client";
 
-import { useUser, SignInButton, SignOutButton } from "@clerk/nextjs";
+import { useAuth, SignInButton, SignOutButton } from "@clerk/astro/react";
 
 export function AuthButton({ variant = "navbar" }: { variant?: "navbar" | "app" }) {
-  const { isLoaded, isSignedIn, user } = useUser();
+  const { isLoaded, isSignedIn, userId } = useAuth();
 
   if (!isLoaded) {
     return (
@@ -11,20 +11,14 @@ export function AuthButton({ variant = "navbar" }: { variant?: "navbar" | "app" 
     );
   }
 
-  if (isSignedIn && user) {
+  if (isSignedIn && userId) {
     if (variant === "app") {
       return (
         <div className="flex items-center gap-3">
-          {user.imageUrl && (
-            <img
-              src={user.imageUrl}
-              alt=""
-              className="w-7 h-7 rounded-full ring-2 ring-white/10"
-            />
-          )}
+          <UserAvatar client:visible />
           <div className="hidden sm:block">
             <p className="text-xs font-medium text-white/70">
-              {user.fullName || user.primaryEmailAddress?.emailAddress || "Usuario"}
+              Conectado
             </p>
           </div>
           <SignOutButton>
@@ -42,15 +36,9 @@ export function AuthButton({ variant = "navbar" }: { variant?: "navbar" | "app" 
     // Navbar variant
     return (
       <div className="flex items-center gap-2">
-        {user.imageUrl && (
-          <img
-            src={user.imageUrl}
-            alt=""
-            className="w-6 h-6 rounded-full ring-1 ring-white/10"
-          />
-        )}
+        <UserAvatar />
         <span className="text-xs text-white/50 hidden sm:inline">
-          {user.fullName?.split(" ")[0] || "Usuario"}
+          Conectado
         </span>
         <SignOutButton>
           <button
@@ -77,5 +65,15 @@ export function AuthButton({ variant = "navbar" }: { variant?: "navbar" | "app" 
         Ingresar
       </button>
     </SignInButton>
+  );
+}
+
+function UserAvatar() {
+  return (
+    <div className="w-7 h-7 rounded-full bg-white/10 ring-2 ring-white/10 flex items-center justify-center">
+      <svg className="w-3.5 h-3.5 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+    </div>
   );
 }

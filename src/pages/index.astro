@@ -1,0 +1,27 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { AppProviders } from "@/components/AppProviders";
+import Navbar from "@/components/landing/navbar";
+import HeroSection from "@/components/landing/hero";
+import FunnelAnimation from "@/components/landing/funnel-animation";
+import VideoSection from "@/components/landing/video-section";
+import FeaturesSection from "@/components/landing/features";
+import CtaSection from "@/components/landing/CtaSection.astro";
+import Footer from "@/components/landing/Footer.astro";
+---
+
+<Layout>
+  <AppProviders client:load>
+    <div class="min-h-screen flex flex-col">
+      <Navbar client:load />
+      <main class="flex-1">
+        <HeroSection client:load />
+        <FunnelAnimation client:visible />
+        <VideoSection client:visible />
+        <FeaturesSection client:visible />
+        <CtaSection />
+      </main>
+      <Footer />
+    </div>
+  </AppProviders>
+</Layout>

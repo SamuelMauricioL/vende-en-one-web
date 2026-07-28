@@ -1,0 +1,26 @@
+---
+// Footer Astro — zero JS
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-white/[0.04] py-12">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <div
+          class="w-8 h-8 rounded-xl flex items-center justify-center font-extrabold text-sm"
+          style="background: linear-gradient(135deg, #fe2c55, #25f4ee); color: white;"
+        >
+          LL
+        </div>
+        <span class="text-sm text-white/40">&copy; {year} Live Leads</span>
+      </div>
+      <div class="flex items-center gap-6">
+        <a href="/app" class="text-xs text-white/30 hover:text-white/60 transition-colors">Live Controller</a>
+        <a href="/privacy" class="text-xs text-white/30 hover:text-white/60 transition-colors">Privacidad</a>
+        <a href="/terms" class="text-xs text-white/30 hover:text-white/60 transition-colors">Términos</a>
+      </div>
+      <p class="text-xs text-white/20">Captura leads de TikTok Live en tiempo real</p>
+    </div>
+  </div>
+</footer>

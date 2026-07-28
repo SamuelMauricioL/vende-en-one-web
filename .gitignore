@@ -13,6 +13,13 @@
 # testing
 /coverage
 
+# build
+/build
+/dist
+
+# astro
+.astro/
+
 # next.js
 /.next/
 /out/
@@ -28,25 +35,9 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env
+.env*.local
 
 # vercel
 .vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# AI harness config (Impeccable, etc.)
-.agents/
-.claude/
-.codex/
-.cursor/
-.gemini/
-.grok/
-.kiro/
-.opencode/
-.env*.local

@@ -1,0 +1,8 @@
+---
+import AuthLayout from "@/layouts/AuthLayout.astro";
+const { SignUp } = await import("@clerk/astro/react");
+---
+
+<AuthLayout title="Crear cuenta — Live Leads">
+  <SignUp client:load />
+</AuthLayout>

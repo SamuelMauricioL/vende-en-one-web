@@ -1,0 +1,11 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { AppProviders } from "@/components/AppProviders";
+import AppPageClient from "@/components/AppPageClient";
+---
+
+<Layout title="Live Controller — Live Leads">
+  <AppProviders client:load>
+    <AppPageClient client:load />
+  </AppProviders>
+</Layout>
