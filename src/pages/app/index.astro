@@ -1,14 +1,11 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { AppProviders } from "@/components/AppProviders";
-import { AuthProvider } from "@/components/auth/provider";
 import AppPageClient from "@/components/AppPageClient";
 ---
 
 <Layout title="Live Controller — Live Leads">
   <AppProviders client:load>
-    <AuthProvider client:load>
-      <AppPageClient client:load />
-    </AuthProvider>
+    <AppPageClient client:load />
   </AppProviders>
 </Layout>

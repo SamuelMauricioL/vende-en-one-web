@@ -1,11 +1,8 @@
 ---
 import AuthLayout from "@/layouts/AuthLayout.astro";
-import { AuthProvider } from "@/components/auth/provider";
 const { SignUp } = await import("@clerk/astro/react");
 ---
 
 <AuthLayout title="Crear cuenta — Live Leads">
-  <AuthProvider client:load>
-    <SignUp client:load />
-  </AuthProvider>
+  <SignUp client:only="react" />
 </AuthLayout>
