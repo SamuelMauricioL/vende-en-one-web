@@ -251,7 +251,20 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center justify-between mb-3 shrink-0">
-        <h3 className="text-sm font-semibold text-white/80">Leads en vivo</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-white/80">Leads en vivo</h3>
+          <a
+            href="/app/filters"
+            className="text-[10px] font-medium transition-colors hover:opacity-80"
+            style={{
+              color: customFilters.length > 0 ? "rgba(254,44,85,0.6)" : "rgba(255,255,255,0.2)",
+            }}
+          >
+            {customFilters.length > 0
+              ? `Filtros (${customFilters.length})`
+              : "+ Filtros"}
+          </a>
+        </div>
         <div className="flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${connected ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" : "bg-red-500"}`} />
           <span className="text-xs text-white/40">{totalUsers} interactuaron</span>
