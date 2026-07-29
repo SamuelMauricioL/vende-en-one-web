@@ -18,7 +18,7 @@ export const es = {
   "hero.words.3": "seguimiento",
   "hero.words.4": "dinero",
   "hero.subtitle":
-    "Cada minuto que pasa, pierdes clientes en el chat. Nuestra IA detecta a los que quieren comprar con un 90% de precisión. Cuando el live termina, sus datos se quedan contigo.",
+    "Cada minuto que pasa, pierdes clientes en el chat. Nuestra IA detecta a los que quieren comprar con un 97% de precisión. Cuando el live termina, sus datos se quedan contigo.",
   "hero.cta.try": "Probar Live Controller",
   "hero.cta.watch": "Ver cómo funciona",
   "hero.social": "+50 vendedores ya no pierden ventas en vivo",
@@ -104,7 +104,7 @@ export const en: Record<TranslationKey, string> = {
   "hero.words.3": "follow-ups",
   "hero.words.4": "money",
   "hero.subtitle":
-    "Every minute that passes, you're losing customers in the chat. Our AI detects real buyers with 90% accuracy. When the live ends, their data stays with you.",
+    "Every minute that passes, you're losing customers in the chat. Our AI detects real buyers with 97% accuracy. When the live ends, their data stays with you.",
   "hero.cta.try": "Try Live Controller",
   "hero.cta.watch": "See how it works",
   "hero.social": "+50 sellers no longer lose live sales",
