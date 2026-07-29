@@ -505,8 +505,11 @@ function LeadRow({ user }: { user: EnrichedUser }) {
   const cfg = STAGE_CONFIG[user.stage];
   const displayName = user.nickname || user.displayId || "Anónimo";
 
-  const copyToDM = () => {
-    copyText(`@${displayName}`, "Usuario");
+  const openDm = () => {
+    const username = displayName.startsWith("@") ? displayName.slice(1) : displayName;
+    const profileUrl = `https://www.tiktok.com/@${username}`;
+    window.open(profileUrl, "_blank");
+    copyText(`@${username}`, "Usuario");
   };
 
   return (
@@ -546,8 +549,8 @@ function LeadRow({ user }: { user: EnrichedUser }) {
       <div className="flex items-center gap-1 shrink-0">
         <button
           type="button"
-          onClick={copyToDM}
-          title="Copiar @usuario para escribirle al DM"
+          onClick={openDm}
+          title="Abrir perfil de TikTok para escribirle al DM"
           className="h-8 px-3 flex items-center gap-1.5 rounded-lg transition-all duration-200 text-xs font-medium"
           style={{
             backgroundColor: `${cfg.color}12`,
