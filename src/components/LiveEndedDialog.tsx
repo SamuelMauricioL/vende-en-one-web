@@ -11,8 +11,8 @@ interface LiveEndedDialogProps {
 
 const STAGE_LABELS_SHORT: Record<LeadStage, string> = {
   compra: "Compra",
-  negociando: "Negoc.",
-  interesado: "Inter.",
+  negociando: "Negociando",
+  interesado: "Interesado",
 };
 
 export function LiveEndedDialog({ stageCounts, onClose, onGoToHistory }: LiveEndedDialogProps) {
@@ -84,7 +84,7 @@ export function LiveEndedDialog({ stageCounts, onClose, onGoToHistory }: LiveEnd
               return (
                 <div
                   key={stage}
-                  className="flex flex-1 flex-col items-center gap-0.5 rounded-xl px-3 py-2.5"
+                  className="flex flex-1 flex-col items-center gap-1 rounded-xl px-4 py-2.5"
                   style={{
                     backgroundColor: `${cfg.color}12`,
                     border: `1px solid ${cfg.color}25`,
@@ -97,7 +97,7 @@ export function LiveEndedDialog({ stageCounts, onClose, onGoToHistory }: LiveEnd
                     {count}
                   </span>
                   <span
-                    className="text-[10px] font-medium leading-none"
+                    className="text-xs font-medium leading-none"
                     style={{ color: `${cfg.color}bb` }}
                   >
                     {STAGE_LABELS_SHORT[stage]}
