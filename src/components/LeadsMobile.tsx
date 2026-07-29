@@ -34,9 +34,10 @@ interface LeadsMobileProps {
   attendedMap: Map<string, { attendedAt: number; commentCount: number }>;
   onToggleAttended: (userId: string, commentCount?: number) => void;
   onConnectionError?: (error: string) => void;
+  onStageCountsReport?: (counts: Record<LeadStage, number>) => void;
 }
 
-export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attendedMap, onToggleAttended, onConnectionError }: LeadsMobileProps) {
+export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attendedMap, onToggleAttended, onConnectionError, onStageCountsReport }: LeadsMobileProps) {
   const { data: users, connected, status, connectionError } = useSSE<TopUser>(
     getSSEUrl(`/lives/${sessionId}/stats/stream`),
   );
@@ -77,6 +78,14 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
         return b.firstSeen - a.firstSeen;
       }) as (TopUser & { stage: LeadStage; keyAction: string | null })[];
   }, [users]);
+
+  // Report stage counts to parent
+  useEffect(() => {
+    if (!onStageCountsReport || !enriched.length) return;
+    const counts = { compra: 0, negociando: 0, interesado: 0 };
+    for (const u of enriched) counts[u.stage]++;
+    onStageCountsReport(counts);
+  }, [enriched, onStageCountsReport]);
 
   // Auto-unattend: if an attended user sent new messages, move back to pending
   useEffect(() => {

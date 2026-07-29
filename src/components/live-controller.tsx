@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { TopUsers } from "./top-users";
 import { LiveChat } from "./live-chat";
 import { LeadsMobile } from "./LeadsMobile";
+import { LiveEndedDialog } from "./LiveEndedDialog";
 import { trackEvent } from "@/lib/plausible";
 
 const TIKTOK_URL_REGEX = /^(?:https?:\/\/)?(?:www\.)?tiktok\.com\/@([a-zA-Z0-9_.-]+)/;
@@ -64,6 +65,12 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   const [attendedMap, setAttendedMap] = useState<Map<string, { attendedAt: number; commentCount: number }>>(new Map());
   const [lastUsername, setLastUsername] = useState(initialTikTokUsername);
   const [showEditInput, setShowEditInput] = useState(false);
+  const [showLiveEndedDialog, setShowLiveEndedDialog] = useState(false);
+  const [stageCounts, setStageCounts] = useState<Record<string, number>>({ compra: 0, negociando: 0, interesado: 0 });
+
+  const onStageCountsReport = useCallback((counts: Record<string, number>) => {
+    setStageCounts(counts);
+  }, []);
 
   // ── Auto-reconnect on mount ──
   const autoReconnectAttempted = useRef(false);
@@ -117,8 +124,8 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     if (error === "El live ha finalizado") {
       if (liveEndedHandled.current) return;
       liveEndedHandled.current = true;
-      toast.info("El live ha finalizado — los datos quedan visibles para revisión");
       setActiveSessionId(null);
+      setShowLiveEndedDialog(true);
       // Keep the UI data + state visible so the user can review leads
       return;
     }
@@ -252,11 +259,10 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
 
       if (res.ok) {
         trackEvent("Live Stopped", { username: lastUsername });
-        toast.success(`Detenido: @${lastUsername}`);
         localStorage.removeItem(RECONNECT_KEY);
         setActiveSessionId(null);
-        setSelectedUserIds(new Set());
-        setAttendedMap(new Map());
+        setShowLiveEndedDialog(true);
+        // Keep selectedUserIds, attendedMap, lastUsername — data stays visible
       } else {
         trackEvent("Live Stop Failed", { username: lastUsername, status: res.status });
         toast.error(`Error al detener: ${data.message || res.status}`);
@@ -270,6 +276,10 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   };
 
   const extracted = input.trim() ? extractUsername(input.trim()) : null;
+
+  const goToHistory = useCallback(() => {
+    window.location.href = "/app/history";
+  }, []);
 
   return (
     <div className="space-y-4 h-full flex flex-col min-h-0">
@@ -521,6 +531,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
               onToggleAttended={toggleAttended}
               maxMobileItems={5}
               onConnectionError={handleConnectionError}
+              onStageCountsReport={onStageCountsReport}
             />
           </div>
           {/* Mobile leads card */}
@@ -532,6 +543,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
               attendedMap={attendedMap}
               onToggleAttended={toggleAttended}
               onConnectionError={handleConnectionError}
+              onStageCountsReport={onStageCountsReport}
             />
           </div>
           <div className="lg:col-span-3 lg:order-last flex flex-col min-h-0 overflow-hidden">
@@ -539,6 +551,14 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
           </div>
         </div>
       </>)}
+
+      {showLiveEndedDialog && (
+        <LiveEndedDialog
+          stageCounts={stageCounts}
+          onClose={() => setShowLiveEndedDialog(false)}
+          onGoToHistory={goToHistory}
+        />
+      )}
     </div>
   );
 });

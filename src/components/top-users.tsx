@@ -39,9 +39,10 @@ interface TopUsersProps {
   onToggleAttended: (userId: string, commentCount?: number) => void;
   maxMobileItems?: number;
   onConnectionError?: (error: string) => void;
+  onStageCountsReport?: (counts: Record<LeadStage, number>) => void;
 }
 
-export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap, onToggleAttended, maxMobileItems, onConnectionError }: TopUsersProps) {
+export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap, onToggleAttended, maxMobileItems, onConnectionError, onStageCountsReport }: TopUsersProps) {
   const { data: users, connected, status, connectionError } = useSSE<TopUser>(
     getSSEUrl(`/lives/${sessionId}/stats/stream`),
   );
@@ -82,6 +83,14 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
         return b.firstSeen - a.firstSeen;
       }) as (TopUser & { stage: LeadStage; keyAction: string | null })[];
   }, [users]);
+
+  // Report stage counts to parent
+  useEffect(() => {
+    if (!onStageCountsReport || !enriched.length) return;
+    const counts = { compra: 0, negociando: 0, interesado: 0 };
+    for (const u of enriched) counts[u.stage]++;
+    onStageCountsReport(counts);
+  }, [enriched, onStageCountsReport]);
 
   // Auto-unattend: if an attended user sent new messages, move back to pending
   useEffect(() => {
