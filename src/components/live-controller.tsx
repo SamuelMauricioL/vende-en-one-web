@@ -417,13 +417,13 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
               <form onSubmit={handleStart} className="space-y-4">
                 <div>
                   <label htmlFor="tiktok-url" className="block text-xs font-medium text-white/40 mb-1.5">
-                    Usuario de TikTok
+                    Enlace del perfil TikTok
                   </label>
                   <Input
                     id="tiktok-url"
-                    type="text"
-                    inputMode="text"
-                    placeholder="@usuario"
+                    type="url"
+                    inputMode="url"
+                    placeholder="https://www.tiktok.com/@usuario"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     spellCheck={false}
