@@ -94,12 +94,6 @@ export default function HeroSection() {
               </span>
             </h1>
 
-            {/* Explicit purpose — visible to Google's review bot */}
-            <p className="mt-4 text-sm text-white/40 max-w-lg leading-relaxed border-l-2 border-[#fe2c55]/30 pl-4">
-              <strong className="text-[#fe2c55]">Live Leads</strong>{" "}
-              <span className="text-white/50">es una plataforma que usa inteligencia artificial para capturar, clasificar y gestionar leads de ventas generados en transmisiones de TikTok Live, ayudando a creadores y vendedores a no perder oportunidades de venta.</span>
-            </p>
-
             {/* Subtitle */}
             <p className="mt-6 text-lg sm:text-xl text-white/40 max-w-lg leading-relaxed">
               {t("hero.subtitle")}
