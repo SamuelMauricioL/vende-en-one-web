@@ -277,13 +277,27 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
               key={stage}
               type="button"
               onClick={() => setActiveStage(isActive ? "all" : stage)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 relative"
               style={{
                 backgroundColor: isActive ? `${cfg.color}20` : "rgba(255,255,255,0.04)",
-                color: isActive ? cfg.color : "rgba(255,255,255,0.35)",
+                color: isActive ? cfg.color : `${cfg.color}99`,
               }}
             >
+              {/* Colored dot — always visible so stage-color association is clear even on Todos */}
+              {!isActive && (
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: cfg.color }}
+                />
+              )}
               {cfg.label}
+              {/* Underline accent on inactive chips */}
+              {!isActive && (
+                <span
+                  className="absolute bottom-0 left-2.5 right-2.5 h-[2px] rounded-full"
+                  style={{ backgroundColor: `${cfg.color}55` }}
+                />
+              )}
               <span className="font-mono tabular-nums text-[11px]" style={{ opacity: isActive ? 1 : 0.5 }}>{count}</span>
             </button>
           );
