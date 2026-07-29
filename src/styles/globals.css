@@ -126,15 +126,6 @@
   touch-action: manipulation;
 }
 
-/* Hide scrollbar but keep scroll functionality */
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
 @keyframes slideDownOut {
   0% {
     transform: translateY(0);
