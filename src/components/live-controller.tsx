@@ -80,14 +80,37 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     const saved = localStorage.getItem(RECONNECT_KEY);
     if (saved && !initialTikTokUsername) {
       autoReconnectAttempted.current = true;
-      startLive(saved);
+      startLive(saved, true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const startLive = async (username: string) => {
+  const startLive = async (username: string, isAutoReconnect = false) => {
     setLastUsername(username);
     setLoading(true);
+
+    // Check if the user is actually live on TikTok before starting
+    try {
+      const checkRes = await fetch(`/api/lives/check/${encodeURIComponent(username)}`);
+      if (checkRes.ok) {
+        const { isLive } = await checkRes.json();
+        if (!isLive) {
+          if (isAutoReconnect) {
+            // Silent cleanup — user came back and live already ended
+            localStorage.removeItem(RECONNECT_KEY);
+            setLoading(false);
+            return;
+          }
+          // User initiated — warn but let them proceed
+          toast.info(
+            `${username} no está en vivo ahora. Si empieza su live después, los leads se capturarán automáticamente.`,
+            { duration: 5000 },
+          );
+        }
+      }
+    } catch {
+      // If check fails, proceed anyway (network error, etc.)
+    }
 
     try {
       const res = await fetch("/api/lives/start", {
@@ -103,7 +126,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
           setActiveSessionId(sessionId);
         }
         localStorage.setItem(RECONNECT_KEY, username);
-        trackEvent("Live Reconnected", { username });
+        trackEvent(isAutoReconnect ? "Live Reconnected" : "Live Started", { username });
       } else {
         trackEvent("Live Start Failed", { username, status: res.status });
         toast.error(`Error al iniciar: ${data.message || res.status}`);
@@ -212,6 +235,22 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     setLastUsername(username);
     setShowEditInput(false);
     setLoading(true);
+
+    // Check if user is actually live
+    try {
+      const checkRes = await fetch(`/api/lives/check/${encodeURIComponent(username)}`);
+      if (checkRes.ok) {
+        const { isLive } = await checkRes.json();
+        if (!isLive) {
+          toast.info(
+            `${username} no está en vivo ahora. Si empieza su live después, los leads se capturarán automáticamente.`,
+            { duration: 5000 },
+          );
+        }
+      }
+    } catch {
+      // proceed anyway
+    }
 
     try {
       const res = await fetch("/api/lives/start", {
