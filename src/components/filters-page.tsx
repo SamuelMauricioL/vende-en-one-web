@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
@@ -98,19 +98,33 @@ export default function FiltersClient() {
       <AppNav current="filters" />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-          <div>
-            <h1 className="text-lg font-extrabold text-white/90 tracking-tight">
-              Filtros personalizados
-            </h1>
-            <p className="text-xs text-white/30 mt-1">
-              Palabras clave que se resaltarán en negrita dentro del chat
-            </p>
-          </div>
+        {/* Chat carousel — shows how filters work visually */}
+        <FilterCarousel categories={categories} />
+
+        {/* Hero copy */}
+        <div className="text-center mb-8 mt-6">
+          <h1 className="text-lg font-extrabold text-white/90 tracking-tight mb-2">
+            Filtros personalizados
+          </h1>
+          <p className="text-sm leading-relaxed max-w-md mx-auto" style={{ color: "rgba(255,255,255,0.5)" }}>
+            Agrega palabras clave y asígnales una categoría. Cuando un mensaje las contenga,{" "}
+            se clasificará automáticamente en{" "}
+            <span style={{ color: "#fe2c55" }}>Compra</span>,{" "}
+            <span style={{ color: "#facc15" }}>Negociando</span> o{" "}
+            <span style={{ color: "#4ade80" }}>Interesado</span>,{" "}
+            y la palabra se <strong style={{ color: "rgba(255,255,255,0.7)" }}>resaltará en negrita</strong> en el chat.
+          </p>
+        </div>
+
+        {/* Actions bar */}
+        <div className="flex items-center justify-between mb-6">
+          <span className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
+            {categories.length} {categories.length === 1 ? "categoría" : "categorías"}
+          </span>
           <button
             type="button"
             onClick={addCategory}
-            className="h-10 sm:h-9 w-full sm:w-auto px-4 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-semibold text-sm sm:text-xs rounded-xl transition-all shrink-0"
+            className="h-9 px-4 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-semibold text-xs rounded-xl transition-all shrink-0"
           >
             + Nueva categoría
           </button>
@@ -372,6 +386,133 @@ function CategoryCard({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Filter preview carousel ── */
+
+const DEMO_MESSAGES = [
+  { text: "¿Cuánto cuesta el envío a Lima?", stage: "negociando" },
+  { text: "Lo quiero, apartame uno 🙌", stage: "compra" },
+  { text: "Me interesa, mándame fotos 🤩", stage: "interesado" },
+  { text: "Ya te escribí al WhatsApp!", stage: "compra" },
+  { text: "¿Tiene garantía?", stage: "negociando" },
+  { text: "Hermoso producto 😍", stage: "interesado" },
+  { text: "Compro ahora, dónde pago?", stage: "compra" },
+  { text: "¿Todavía hay stock?", stage: "negociando" },
+];
+
+const STAGE_COLORS = {
+  compra: "#fe2c55",
+  negociando: "#facc15",
+  interesado: "#4ade80",
+};
+
+function FilterCarousel({ categories }) {
+  const [index, setIndex] = useState(0);
+  const [leaving, setLeaving] = useState(false);
+  const leavingRef = useRef(false);
+  const intervalRef = useRef(null);
+
+  const advance = useCallback(() => {
+    if (leavingRef.current) return;
+    leavingRef.current = true;
+    setLeaving(true);
+  }, []);
+
+  const handleAnimEnd = useCallback(() => {
+    leavingRef.current = false;
+    setIndex((prev) => (prev + 1) % DEMO_MESSAGES.length);
+    setLeaving(false);
+  }, []);
+
+  useEffect(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(advance, 3500);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [advance]);
+
+  const current = DEMO_MESSAGES[index];
+  const next = DEMO_MESSAGES[(index + 1) % DEMO_MESSAGES.length];
+
+  const allKeywords = categories.flatMap((c) => c.keywords.filter((k) => k.trim()));
+
+  const renderHighlighted = (text, stageColor) => {
+    if (allKeywords.length === 0) return text;
+    const matched = allKeywords.find((kw) => text.toLowerCase().includes(kw.toLowerCase()));
+    if (!matched) return text;
+    const idx = text.toLowerCase().indexOf(matched.toLowerCase());
+    const before = text.slice(0, idx);
+    const match = text.slice(idx, idx + matched.length);
+    const after = text.slice(idx + matched.length);
+    return [before, <strong key="h" style={{ color: stageColor }}>{match}</strong>, after];
+  };
+
+  const stageColor = STAGE_COLORS[current.stage];
+  const nextColor = STAGE_COLORS[next.stage];
+
+  return (
+    <div className="relative w-full max-w-sm mx-auto">
+      <div className="relative w-full overflow-hidden rounded-xl" style={{ height: 80 }}>
+        <div
+          key={leaving ? "incoming" : "static"}
+          className="absolute inset-x-0"
+          style={{
+            top: 0,
+            zIndex: leaving ? 10 : 1,
+            animation: leaving ? "slideDownIn 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards" : "none",
+          }}
+        >
+          <DemoMessage data={leaving ? next : current} color={leaving ? nextColor : stageColor} renderHighlighted={renderHighlighted} />
+        </div>
+        {leaving && (
+          <div
+            className="absolute inset-x-0"
+            style={{
+              top: 0,
+              zIndex: 5,
+              animation: "slideDownOut 400ms cubic-bezier(0.4, 0, 0.2, 1) forwards",
+            }}
+            onAnimationEnd={handleAnimEnd}
+          >
+            <DemoMessage data={current} color={stageColor} renderHighlighted={renderHighlighted} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DemoMessage({ data, color, renderHighlighted }) {
+  return (
+    <div
+      className="rounded-xl px-4 py-3 flex items-start gap-3 w-full"
+      style={{
+        background: "rgba(18, 22, 33, 0.95)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        backdropFilter: "blur(12px)",
+      }}
+    >
+      <span className="w-2.5 h-2.5 rounded-full mt-1 shrink-0" style={{ backgroundColor: color }} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span
+            className="text-[10px] font-bold px-1.5 py-0.5 rounded leading-none"
+            style={{ background: `${color}20`, color }}
+          >
+            {data.stage === "compra" ? "Compra" : data.stage === "negociando" ? "Negociando" : "Interesado"}
+          </span>
+          <span className="text-xs font-bold truncate" style={{ color: `${color}cc` }}>
+            usuario_ejemplo
+          </span>
+        </div>
+        <p className="text-sm text-white/90 leading-relaxed">
+          {renderHighlighted(data.text, color)}
+        </p>
+      </div>
     </div>
   );
 }
