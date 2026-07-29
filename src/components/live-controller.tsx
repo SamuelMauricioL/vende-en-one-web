@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useImperativeHandle, forwardRef, useEffect } from "react";
+import { useCallback, useRef, useState, useImperativeHandle, forwardRef, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { trackEvent } from "@/lib/plausible";
 
 const TIKTOK_URL_REGEX = /^(?:https?:\/\/)?(?:www\.)?tiktok\.com\/@([a-zA-Z0-9_.-]+)/;
 const TIKTOK_HANDLE_REGEX = /^@?([a-zA-Z0-9_.-]+)$/;
+const RECONNECT_KEY = "lastLiveUsername";
 
 function extractUsername(raw: string): string | null {
   const trimmed = raw.trim();
@@ -64,8 +65,55 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   const [lastUsername, setLastUsername] = useState(initialTikTokUsername);
   const [showEditInput, setShowEditInput] = useState(false);
 
+  // ── Auto-reconnect on mount ──
+  const autoReconnectAttempted = useRef(false);
+
+  useEffect(() => {
+    if (autoReconnectAttempted.current) return;
+    const saved = localStorage.getItem(RECONNECT_KEY);
+    if (saved && !initialTikTokUsername) {
+      autoReconnectAttempted.current = true;
+      startLive(saved);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const startLive = async (username: string) => {
+    setLastUsername(username);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/lives/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username }),
+      });
+      const data = await res.json().catch(() => ({ raw: "respuesta no-JSON" }));
+
+      if (res.ok) {
+        const sessionId = data.live?.sessionId;
+        if (sessionId) {
+          setActiveSessionId(sessionId);
+        }
+        localStorage.setItem(RECONNECT_KEY, username);
+        trackEvent("Live Reconnected", { username });
+      } else {
+        trackEvent("Live Start Failed", { username, status: res.status });
+        toast.error(`Error al iniciar: ${data.message || res.status}`);
+        localStorage.removeItem(RECONNECT_KEY);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error desconocido";
+      toast.error(`Fallo de red: ${msg}`);
+      localStorage.removeItem(RECONNECT_KEY);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleConnectionError = useCallback((error: string) => {
     toast.error(`Error al conectar: ${error}`);
+    localStorage.removeItem(RECONNECT_KEY);
     setActiveSessionId(null);
     setSelectedUserIds(new Set());
     setAttendedMap(new Map());
@@ -161,6 +209,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
         if (sessionId) {
           setActiveSessionId(sessionId);
         }
+        localStorage.setItem(RECONNECT_KEY, username);
         trackEvent("Live Started", { username });
         toast.success(`Live iniciado: @${username}`);
       } else {
@@ -194,6 +243,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
       if (res.ok) {
         trackEvent("Live Stopped", { username: lastUsername });
         toast.success(`Detenido: @${lastUsername}`);
+        localStorage.removeItem(RECONNECT_KEY);
         setActiveSessionId(null);
         setSelectedUserIds(new Set());
         setAttendedMap(new Map());
@@ -273,6 +323,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                     if (res.ok) {
                       const sessionId = data.live?.sessionId;
                       if (sessionId) setActiveSessionId(sessionId);
+                      localStorage.setItem(RECONNECT_KEY, username);
                       trackEvent("Live Started", { username });
                       toast.success(`Live iniciado: @${username}`);
                     } else {
