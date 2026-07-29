@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { LeadStage } from "@/lib/lead-classifier";
+import { STAGE_CONFIG, STAGE_ORDER, type LeadStage } from "@/lib/lead-classifier";
 
 interface LiveEndedDialogProps {
   stageCounts: Record<LeadStage, number>;
@@ -9,10 +9,10 @@ interface LiveEndedDialogProps {
   onGoToHistory: () => void;
 }
 
-const STAGE_LABELS: Record<LeadStage, { label: string; color: string }> = {
-  compra: { label: "Compra", color: "#fe2c55" },
-  negociando: { label: "Negociando", color: "#facc15" },
-  interesado: { label: "Interesado", color: "#4ade80" },
+const STAGE_LABELS_SHORT: Record<LeadStage, string> = {
+  compra: "Compra",
+  negociando: "Negoc.",
+  interesado: "Inter.",
 };
 
 export function LiveEndedDialog({ stageCounts, onClose, onGoToHistory }: LiveEndedDialogProps) {
@@ -41,77 +41,109 @@ export function LiveEndedDialog({ stageCounts, onClose, onGoToHistory }: LiveEnd
     >
       <div
         ref={dialogRef}
-        className="w-full max-w-sm rounded-2xl p-6 animate-in fade-in zoom-in duration-200"
+        className="w-full max-w-xs animate-in fade-in zoom-in duration-200"
         style={{
           background: "rgba(255,255,255,0.04)",
           border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: "20px",
+          padding: "28px 24px",
         }}
       >
-        {/* Icon */}
+        {/* Icon — checkmark circle: "data safely saved" */}
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 mx-auto"
-          style={{ background: "rgba(254,44,85,0.12)" }}
+          className="w-11 h-11 rounded-xl flex items-center justify-center mx-auto mb-4"
+          style={{ background: "rgba(34,197,94,0.12)" }}
         >
-          <svg className="w-5 h-5" style={{ color: "#fe2c55" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          <svg className="w-5.5 h-5.5" style={{ color: "#22C55E" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
 
         {/* Title */}
         <h2
-          className="text-center text-base font-semibold mb-2"
+          className="text-center text-base font-semibold mb-1"
           style={{ color: "rgba(255,255,255,0.9)" }}
         >
           Live finalizado
         </h2>
 
-        {/* Body */}
+        {/* Body — one line, confident */}
         <p
-          className="text-center text-sm leading-relaxed mb-4"
-          style={{ color: "rgba(255,255,255,0.5)" }}
+          className="text-center text-sm mb-5"
+          style={{ color: "rgba(255,255,255,0.45)" }}
         >
-          {hasLeads ? (
-            <>
-              Tus leads de este live están guardados:{" "}
-              {(["compra", "negociando", "interesado"] as const).filter((s) => stageCounts[s] > 0).map((s, i, arr) => (
-                <span key={s}>
-                  <span style={{ color: STAGE_LABELS[s].color }}>
-                    {STAGE_LABELS[s].label} ({stageCounts[s]})
-                  </span>
-                  {i < arr.length - 1 ? ", " : ""}
-                </span>
-              ))}
-              . Ve al Historial para copiar sus @usuarios, ver sus mensajes clave y contactarlos para cerrar la venta.
-            </>
-          ) : (
-            "Este live no capturó leads. Los datos están guardados por si necesitas revisarlos después."
-          )}
+          Tus leads están guardados
         </p>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 h-10 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-white/5"
-            style={{ color: "rgba(255,255,255,0.4)" }}
+        {/* Stage count pills — scannable, colored, consistent with app chips */}
+        {hasLeads && (
+          <div className="flex items-center justify-center gap-2 mb-6">
+            {STAGE_ORDER.filter((s) => stageCounts[s] > 0).map((stage) => {
+              const cfg = STAGE_CONFIG[stage];
+              const count = stageCounts[stage];
+              return (
+                <div
+                  key={stage}
+                  className="flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 min-w-[68px]"
+                  style={{
+                    backgroundColor: `${cfg.color}12`,
+                    border: `1px solid ${cfg.color}25`,
+                  }}
+                >
+                  <span
+                    className="text-lg font-bold tabular-nums leading-none"
+                    style={{ color: cfg.color }}
+                  >
+                    {count}
+                  </span>
+                  <span
+                    className="text-[10px] font-medium leading-none"
+                    style={{ color: `${cfg.color}bb` }}
+                  >
+                    {STAGE_LABELS_SHORT[stage]}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {!hasLeads && (
+          <p
+            className="text-center text-xs mb-6"
+            style={{ color: "rgba(255,255,255,0.35)" }}
           >
-            Cerrar
-          </button>
-          <button
-            type="button"
-            onClick={onGoToHistory}
-            className="flex-1 h-10 rounded-xl text-sm font-semibold transition-all duration-200 shadow-lg"
-            style={{
-              backgroundColor: "#fe2c55",
-              color: "#fff",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-          >
-            Ir al Historial →
-          </button>
-        </div>
+            Este live no capturó leads
+          </p>
+        )}
+
+        {/* Primary CTA — full-width, prominent */}
+        <button
+          type="button"
+          onClick={onGoToHistory}
+          className="w-full h-11 rounded-xl text-sm font-semibold transition-all duration-200 mb-3"
+          style={{
+            backgroundColor: "#fe2c55",
+            color: "#fff",
+            boxShadow: "0 4px 20px rgba(254,44,85,0.25)",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#e8254a"; e.currentTarget.style.boxShadow = "0 4px 24px rgba(254,44,85,0.35)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#fe2c55"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(254,44,85,0.25)"; }}
+        >
+          Ir al Historial →
+        </button>
+
+        {/* Secondary — text link, de-emphasized */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full text-center text-xs font-medium transition-all duration-200 cursor-pointer"
+          style={{ color: "rgba(255,255,255,0.3)" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}
+        >
+          Cerrar
+        </button>
       </div>
     </div>
   );
