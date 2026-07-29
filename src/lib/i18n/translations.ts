@@ -18,7 +18,7 @@ export const es = {
   "hero.words.3": "seguimiento",
   "hero.words.4": "dinero",
   "hero.subtitle":
-    "Captura, filtra y sigue cada persona que interactúa en tu transmisión. Nuestra IA identifica a los compradores reales con un 90% de precisión para que nunca más pierdas una venta en el caos del chat en vivo. Y cuando el live termina, te quedas con los datos de quienes querían comprar.",
+    "Cada minuto que pasa, pierdes clientes en el chat. Nuestra IA detecta a los que quieren comprar con un 90% de precisión. Cuando el live termina, sus datos se quedan contigo.",
   "hero.cta.try": "Probar Live Controller",
   "hero.cta.watch": "Ver cómo funciona",
   "hero.social": "+50 vendedores ya no pierden ventas en vivo",
