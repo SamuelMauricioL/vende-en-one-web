@@ -259,19 +259,19 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
 
       if (res.ok) {
         trackEvent("Live Stopped", { username: lastUsername });
-        localStorage.removeItem(RECONNECT_KEY);
-        setActiveSessionId(null);
-        setShowLiveEndedDialog(true);
-        // Keep selectedUserIds, attendedMap, lastUsername — data stays visible
       } else {
         trackEvent("Live Stop Failed", { username: lastUsername, status: res.status });
-        toast.error(`Error al detener: ${data.message || res.status}`);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error desconocido";
-      toast.error(`Fallo de red: ${msg}`);
+      trackEvent("Live Stop Failed", { username: lastUsername, status: msg });
     } finally {
+      // Always clean up locally — even if the API fails, the user just wants to stop
+      localStorage.removeItem(RECONNECT_KEY);
+      setActiveSessionId(null);
+      setShowLiveEndedDialog(true);
       setLoading(false);
+      // Keep selectedUserIds, attendedMap, lastUsername — data stays visible
     }
   };
 
