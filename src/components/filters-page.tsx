@@ -440,10 +440,11 @@ function FilterCarousel({ categories }) {
   const next = DEMO_MESSAGES[(index + 1) % DEMO_MESSAGES.length];
 
   const allKeywords = categories.flatMap((c) => c.keywords.filter((k) => k.trim()));
+  const demoKeywords = ["PS5", "PlayStation", "PlayStation 5"];
+  const effectiveKeywords = allKeywords.length > 0 ? allKeywords : demoKeywords;
 
   const renderHighlighted = (text, stageColor) => {
-    if (allKeywords.length === 0) return text;
-    const matched = allKeywords.find((kw) => text.toLowerCase().includes(kw.toLowerCase()));
+    const matched = effectiveKeywords.find((kw) => text.toLowerCase().includes(kw.toLowerCase()));
     if (!matched) return text;
     const idx = text.toLowerCase().indexOf(matched.toLowerCase());
     const before = text.slice(0, idx);
