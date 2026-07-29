@@ -278,8 +278,13 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   const extracted = input.trim() ? extractUsername(input.trim()) : null;
 
   const goToHistory = useCallback(() => {
-    window.location.href = "/app/history";
-  }, []);
+    const u = lastUsername || initialTikTokUsername;
+    if (u) {
+      window.location.href = `/app/history?username=${encodeURIComponent(u)}`;
+    } else {
+      window.location.href = "/app/history";
+    }
+  }, [lastUsername, initialTikTokUsername]);
 
   return (
     <div className="space-y-4 h-full flex flex-col min-h-0">
