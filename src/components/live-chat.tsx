@@ -48,7 +48,9 @@ export function LiveChat({ sessionId, selectedUserIds, onConnectionError }: Live
 
   // React to connection errors
   useEffect(() => {
-    if (status === "error" && connectionError && onConnectionError) {
+    if (status === "ended" && onConnectionError) {
+      onConnectionError("El live ha finalizado");
+    } else if (status === "error" && connectionError && onConnectionError) {
       onConnectionError(connectionError);
     }
   }, [status, connectionError, onConnectionError]);

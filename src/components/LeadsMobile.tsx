@@ -41,7 +41,9 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
   );
 
   useEffect(() => {
-    if (status === "error" && connectionError && onConnectionError) {
+    if (status === "ended" && onConnectionError) {
+      onConnectionError("El live ha finalizado");
+    } else if (status === "error" && connectionError && onConnectionError) {
       onConnectionError(connectionError);
     }
   }, [status, connectionError, onConnectionError]);
