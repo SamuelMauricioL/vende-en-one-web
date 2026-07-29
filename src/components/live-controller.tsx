@@ -69,6 +69,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     setActiveSessionId(null);
     setSelectedUserIds(new Set());
     setAttendedMap(new Map());
+    // Keep localStorage so data survives page reloads
     setLastUsername("");
     setShowEditInput(false);
   }, []);
@@ -94,6 +95,33 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
       return next;
     });
   }, []);
+
+  // Persist attendedMap to localStorage
+  useEffect(() => {
+    if (!activeSessionId) return;
+    const key = `attended_${activeSessionId}`;
+    const entries = Array.from(attendedMap.entries());
+    if (entries.length === 0) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(key, JSON.stringify(entries));
+    }
+  }, [attendedMap, activeSessionId]);
+
+  // Restore attendedMap from localStorage when session starts
+  useEffect(() => {
+    if (!activeSessionId) return;
+    const key = `attended_${activeSessionId}`;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const entries: [string, { attendedAt: number; commentCount: number }][] = JSON.parse(saved);
+        setAttendedMap(new Map(entries));
+      }
+    } catch {
+      // Ignore corrupt data
+    }
+  }, [activeSessionId]);
 
   const toggleUser = useCallback((userId: string) => {
     setSelectedUserIds((prev) => {
