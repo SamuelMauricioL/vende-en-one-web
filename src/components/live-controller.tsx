@@ -67,6 +67,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   const [showEditInput, setShowEditInput] = useState(false);
   const [showLiveEndedDialog, setShowLiveEndedDialog] = useState(false);
   const [stageCounts, setStageCounts] = useState<Record<string, number>>({ compra: 0, negociando: 0, interesado: 0 });
+  const [verifyResult, setVerifyResult] = useState<"idle" | "checking" | "not_live">("idle");
 
   const onStageCountsReport = useCallback((counts: Record<string, number>) => {
     setStageCounts(counts);
@@ -386,6 +387,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                   onClick={() => {
                     setInput(initialTikTokUsername ? `https://www.tiktok.com/@${initialTikTokUsername}` : "");
                     setShowEditInput(true);
+                    setVerifyResult("idle");
                   }}
                   className="text-[11px] text-white/30 hover:text-white/60 transition-colors px-2 py-1 shrink-0"
                 >
@@ -396,8 +398,10 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
               <Button
                 type="button"
                 onClick={async () => {
+                  if (verifyResult === "checking") return;
                   const username = initialTikTokUsername;
                   setLastUsername(username);
+                  setVerifyResult("checking");
                   setLoading(true);
                   try {
                     const res = await fetch("/api/lives/start", {
@@ -413,10 +417,12 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                       trackEvent("Live Started", { username });
                       toast.success(`Live iniciado: @${username}`);
                     } else {
+                      setVerifyResult("not_live");
                       trackEvent("Live Start Failed", { username, status: res.status });
                       toast.error(`Error al iniciar: ${data.message || res.status}`);
                     }
                   } catch (err) {
+                    setVerifyResult("not_live");
                     const msg = err instanceof Error ? err.message : "Error desconocido";
                     toast.error(`Fallo de red: ${msg}`);
                   } finally {
@@ -429,14 +435,21 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    Conectando...
+                    Verificando...
+                  </span>
+                ) : verifyResult === "not_live" ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    No está en vivo
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
                     </svg>
-                    Iniciar live
+                    Verificar si está en vivo
                   </span>
                 )}
               </Button>
@@ -515,6 +528,13 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                     <span className="flex items-center justify-center gap-2">
                       <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                       Conectando...
+                    </span>
+                  ) : extracted && initialTikTokUsername && extracted !== initialTikTokUsername ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                      </svg>
+                      Verificar si está en vivo
                     </span>
                   ) : (
                     <span className="flex items-center justify-center gap-2">
