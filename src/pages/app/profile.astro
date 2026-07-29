@@ -1,0 +1,10 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import ProfilePage from "@/components/profile-page";
+
+const title = "Perfil — Live Leads";
+---
+
+<Layout title={title}>
+  <ProfilePage client:load />
+</Layout>

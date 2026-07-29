@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@clerk/astro/react";
 
 interface AppNavProps {
-  current: "live" | "history" | "filters";
+  current: "live" | "history" | "filters" | "profile";
   /** Optional stop button for live page (mobile) */
   stopButton?: React.ReactNode;
 }
@@ -17,6 +17,7 @@ export function AppNav({ current, stopButton }: AppNavProps) {
     live: "Live Controller",
     history: "Historial",
     filters: "Filtros personalizados",
+    profile: "Perfil",
   };
   const title = labels[current] ?? "Live Leads";
 
@@ -176,6 +177,32 @@ export function AppNav({ current, stopButton }: AppNavProps) {
               />
             </svg>
             Filtros
+          </a>
+
+          <a
+            href="/app/profile"
+            onClick={() => setOpen(false)}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+              isActive("profile")
+                ? "bg-white/10 text-white"
+                : "text-white/50 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            {/* Profile icon */}
+            <svg
+              className={`w-4 h-4 ${isActive("profile") ? "text-[#fe2c55]" : "text-current"}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+              />
+            </svg>
+            Perfil
           </a>
         </nav>
 
