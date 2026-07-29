@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@clerk/astro/react";
 
 interface AppNavProps {
-  current: "live" | "history";
+  current: "live" | "history" | "filters";
   /** Optional stop button for live page (mobile) */
   stopButton?: React.ReactNode;
 }
@@ -13,8 +13,14 @@ export function AppNav({ current, stopButton }: AppNavProps) {
   const [open, setOpen] = useState(false);
   const { isSignedIn, signOut } = useAuth();
 
-  const isLive = current === "live";
-  const title = isLive ? "Live Controller" : "Historial";
+  const labels: Record<string, string> = {
+    live: "Live Controller",
+    history: "Historial",
+    filters: "Filtros personalizados",
+  };
+  const title = labels[current] ?? "Live Leads";
+
+  const isActive = (page: string) => current === page;
 
   return (
     <>
@@ -98,14 +104,14 @@ export function AppNav({ current, stopButton }: AppNavProps) {
             href="/app"
             onClick={() => setOpen(false)}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-              isLive
+              isActive("live")
                 ? "bg-white/10 text-white"
                 : "text-white/50 hover:text-white hover:bg-white/5"
             }`}
           >
             {/* Live icon */}
             <svg
-              className="w-4 h-4"
+              className={`w-4 h-4 ${isActive("live") ? "text-[#fe2c55]" : "text-current"}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -124,14 +130,14 @@ export function AppNav({ current, stopButton }: AppNavProps) {
             href="/app/history"
             onClick={() => setOpen(false)}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-              !isLive
+              isActive("history")
                 ? "bg-white/10 text-white"
                 : "text-white/50 hover:text-white hover:bg-white/5"
             }`}
           >
             {/* History icon */}
             <svg
-              className="w-4 h-4"
+              className={`w-4 h-4 ${isActive("history") ? "text-[#25f4ee]" : "text-current"}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -149,11 +155,15 @@ export function AppNav({ current, stopButton }: AppNavProps) {
           <a
             href="/app/filters"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-all duration-200"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+              isActive("filters")
+                ? "bg-white/10 text-white"
+                : "text-white/50 hover:text-white hover:bg-white/5"
+            }`}
           >
             {/* Filter icon */}
             <svg
-              className="w-4 h-4"
+              className={`w-4 h-4 ${isActive("filters") ? "text-[#facc15]" : "text-current"}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"

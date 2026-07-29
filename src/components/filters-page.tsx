@@ -95,7 +95,7 @@ export default function FiltersClient() {
       className="min-h-screen flex flex-col"
       style={{ backgroundColor: "#0b0f1a" }}
     >
-      <AppNav current="live" />
+      <AppNav current="filters" />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-6">
         <div className="flex items-center justify-between mb-6">
