@@ -107,9 +107,11 @@ export default function FiltersClient() {
             Filtros personalizados
           </h1>
           <p className="text-sm leading-relaxed max-w-sm mx-auto" style={{ color: "rgba(255,255,255,0.5)" }}>
-            Vendes PS5, ropa o cualquier producto?{" "}
+            Vendes <strong style={{ color: "#fe2c55" }}>PS5</strong>, ropa o cualquier producto?{" "}
             Atrapa a los que preguntan por él en el chat.{" "}
-            Agrega palabras clave como "PS5" o "PlayStation" y cada vez que alguien las mencione,{" "}
+            Agrega palabras clave como{" "}
+            <strong style={{ color: "#fe2c55" }}>PS5</strong> o{" "}
+            <strong style={{ color: "#facc15" }}>PlayStation</strong> y cada vez que alguien las mencione,{" "}
             se clasificará automáticamente como comprador.{" "}
             <strong style={{ color: "rgba(255,255,255,0.7)" }}>Mientras más filtros agregues, más clientes convertirás.</strong>
           </p>
