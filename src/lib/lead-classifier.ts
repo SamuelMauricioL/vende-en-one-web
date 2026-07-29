@@ -43,7 +43,7 @@ const OFFENSIVE_PATTERNS: RegExp[] = [
   /nudes/i, /pack/i, /xxx/i, /porno/i,
   /contenido expl[ií]cito/i,
   // Palabras sexuales graves que no tienen ambigüedad en Perú
-  /perr[oa]/i, /pij[aá]/i, /verga/i, /\bpen[eo]s?\b/i,
+  /perr[oa]/i, /pij[aá]/i, /verga/i, /\bpen[eo]s?\b/i, /\bvaginas?\b/i, /\bconchas?\b/i, /\bchuchas?\b/i,
   /cul[ií]to/i, /cul[ií]ta/i,
   /culo roto/i,
   // Acoso / comentarios sobre la vendedora o participantes
