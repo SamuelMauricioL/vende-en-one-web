@@ -38,7 +38,7 @@ export function useSSE<T>(
       try {
         const parsed: SSEEvent<T> = JSON.parse(event.data);
 
-        if (parsed.type === "initial") {
+        if (parsed.type === "initial" || parsed.type === "update") {
           setData(parsed.stats || parsed.chat || null);
         } else if (parsed.type === "delta") {
           if (parsed.stats) {
