@@ -114,9 +114,10 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
   const [tick, setTick] = useState(0);
   const [activeStage, setActiveStage] = useState<"all" | LeadStage>("all");
 
-  // Auto-select best stage when messages arrive
+  // Auto-select best stage once on first load, never override manual tab
+  const hasAutoSelected = useRef(false);
   useEffect(() => {
-    if (activeStage !== "all" || !enriched.length) return;
+    if (hasAutoSelected.current || !enriched.length) return;
     const priority: LeadStage[] = ["compra", "negociando", "interesado"];
     for (const stage of priority) {
       if (grouped[stage].length > 0) {
@@ -124,7 +125,8 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
         break;
       }
     }
-  }, [enriched, activeStage, grouped]);
+    hasAutoSelected.current = true;
+  }, [enriched, grouped]);
 
   useEffect(() => {
     const iv = setInterval(() => setTick((t) => t + 1), 1000);
