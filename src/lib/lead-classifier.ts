@@ -18,7 +18,7 @@ export const FUNNEL_BAR_PCT: Record<LeadStage, number> = {
 
 const OFFENSIVE_PATTERNS: RegExp[] = [
   // Groserías directas (LATAM)
-  /put[oa]/i, /huev[oó]n/i, /we[oó]n/i, /weona/i,
+  /put[oa]/i, /huev[oó]n/i, /we[oó]n/i, /weona/i, /\b(wevada|huevada)s?\b/i,
   /pendej[oa]/i, /cojud[oa]/i,
   /conchetumare/i, /conchesumare/i, /conchadesumadre/i,
   /mierda/i, /carajo/i, /mond[aá]/i,
@@ -28,6 +28,9 @@ const OFFENSIVE_PATTERNS: RegExp[] = [
   // Perú-specific
   /webon/i, /webona/i, /webadas/i,
   /soplame/i, /sopla[st]/i,
+  // Abreviaciones groseras
+  /\bhdp\b/i, /\bptmr\b/i, /\bmrd\b/i, /\bhbd\b/i,
+  /\bgonorrea\b/i,
   // Amenazas y hostilidad
   /te (voy a )?(mat[oó]|romp[oó]|part[oó]|revient[oó]|busco|encuentro)/i,
   /te (voy a )?dar (tu )?(merecido|castigo|palo|golpe|susto)/i,
