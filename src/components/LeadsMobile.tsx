@@ -266,17 +266,18 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
               key={stage}
               type="button"
               onClick={() => setActiveTab(stage)}
-              className="flex-1 relative py-2 text-[11px] font-semibold transition-all duration-200"
-              style={{ color: isActive ? cfg.color : "rgba(255,255,255,0.35)" }}
+              className="flex-1 py-2 text-[11px] font-semibold transition-all duration-200 flex items-center justify-center gap-1"
+              style={{ color: isActive ? cfg.color : `${cfg.color}99` }}
             >
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ backgroundColor: cfg.color }}
+              />
               {cfg.label}
               {count > 0 && (
-                <span className="ml-1 text-[10px] font-mono" style={{ opacity: isActive ? 1 : 0.4 }}>
+                <span className="text-[10px] font-mono" style={{ opacity: isActive ? 1 : 0.5 }}>
                   {count}
                 </span>
-              )}
-              {isActive && (
-                <div className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full" style={{ backgroundColor: cfg.color }} />
               )}
             </button>
           );
