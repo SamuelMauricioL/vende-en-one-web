@@ -206,11 +206,9 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
               {user.keyAction && (
                 <p className="text-xs text-white/50 leading-relaxed line-clamp-1 italic"
                    style={{ textDecoration: isAttended ? "line-through" : "none" }}>
-                  &ldquo;
                   {getHighlightParts(user.keyAction, customFilters).map((part, i) =>
                     part.bold ? <strong key={i} className="font-bold text-white/80">{part.text}</strong> : part.text,
                   )}
-                  &rdquo;
                 </p>
               )}
             </div>
