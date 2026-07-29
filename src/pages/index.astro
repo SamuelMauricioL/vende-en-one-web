@@ -11,6 +11,9 @@ import Footer from "@/components/landing/Footer.astro";
 ---
 
 <Layout>
+  <Fragment slot="head">
+    <link rel="preload" href="/video/demo.mp4" as="fetch" type="video/mp4" crossorigin="anonymous" />
+  </Fragment>
   <AppProviders client:load>
     <div class="min-h-screen flex flex-col">
       <Navbar client:load />
