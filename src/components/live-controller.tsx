@@ -265,47 +265,69 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     <div className="space-y-4 h-full flex flex-col min-h-0">
       {/* Form */}
       {!activeSessionId && initialTikTokUsername && !showEditInput ? (
-        /* ── Saved account: compact button ── */
-        <div
-          className="rounded-2xl p-4 shrink-0"
-          style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.06)",
-          }}
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+        /* ── Saved account: hero card ── */
+        <div className="max-w-lg mx-auto w-full shrink-0 pt-8 md:pt-12">
+          <div
+            className="rounded-3xl overflow-hidden"
+            style={{
+              background: "linear-gradient(135deg, rgba(254,44,85,0.08) 0%, rgba(37,244,238,0.04) 100%)",
+              border: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            {/* Accent bar */}
+            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #fe2c55, #25f4ee)" }} />
+
+            <div className="p-6 sm:p-8">
+              {/* Icon */}
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
                 style={{
                   background: "linear-gradient(135deg, #fe2c55, #e8254a)",
+                  boxShadow: "0 8px 32px rgba(254,44,85,0.25)",
                 }}
               >
-                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
                 </svg>
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-white/80 truncate">
-                  @{initialTikTokUsername}
-                </p>
-                <p className="text-[11px] text-white/30">
-                  Listo para iniciar live
-                </p>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setInput(initialTikTokUsername ? `https://www.tiktok.com/@${initialTikTokUsername}` : "");
-                  setShowEditInput(true);
-                }}
-                className="text-[11px] text-white/30 hover:text-white/50 transition-colors px-2 py-1"
+              <h2 className="text-xl font-extrabold text-white/90 tracking-tight mb-1">
+                Monitorear live
+              </h2>
+              <p className="text-sm text-white/40 mb-6">
+                Captura leads de tu TikTok Live en tiempo real con <span className="text-[#25f4ee] font-semibold">97% de precisión</span>
+              </p>
+
+              {/* Account info */}
+              <div className="flex items-center justify-between gap-3 p-4 rounded-2xl mb-5"
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
               >
-                Cambiar
-              </button>
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-[#fe2c55]/20">
+                    <svg className="w-5 h-5 text-[#fe2c55]" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.4 2.89 2.89 0 01-2.2-4.87 2.89 2.89 0 014.19.08V8.82a6.27 6.27 0 005.11 6.07 6.27 6.27 0 002.9.06V11.5a2.89 2.89 0 01-1.9.68 2.89 2.89 0 01-2.88-2.89V5.57a4.84 4.84 0 003.78 4.29l.1.02V6.69z" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white/80 truncate">
+                      @{initialTikTokUsername}
+                    </p>
+                    <p className="text-[11px] text-white/30">
+                      Listo para iniciar
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInput(initialTikTokUsername ? `https://www.tiktok.com/@${initialTikTokUsername}` : "");
+                    setShowEditInput(true);
+                  }}
+                  className="text-[11px] text-white/30 hover:text-white/60 transition-colors px-2 py-1 shrink-0"
+                >
+                  Cambiar
+                </button>
+              </div>
 
               <Button
                 type="button"
@@ -338,74 +360,115 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                   }
                 }}
                 disabled={loading}
-                className="h-10 px-5 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-semibold text-xs rounded-xl shadow-lg shadow-[#fe2c55]/25 disabled:opacity-40 transition-all"
+                className="w-full h-12 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-bold text-sm rounded-xl shadow-lg shadow-[#fe2c55]/25 disabled:opacity-40 transition-all"
               >
                 {loading ? (
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                     Conectando...
                   </span>
                 ) : (
-                  `Iniciar live`
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                    </svg>
+                    Iniciar live
+                  </span>
                 )}
               </Button>
             </div>
           </div>
+
+          <p className="text-xs text-white/15 text-center mt-5 leading-relaxed max-w-sm mx-auto">
+            Lo que no vendiste en el live, véndelo después.{' '}
+            <span className="text-white/25">Captura sus datos, escríbeles y cierra la venta.</span>
+          </p>
         </div>
       ) : !activeSessionId ? (
         /* ── Manual input ── */
-        <div
-          className={`rounded-2xl p-4 shrink-0`}
-          style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.06)",
-          }}
-        >
-          <p className="text-xs text-white/50 mb-4 leading-relaxed">
-            Pega el enlace del perfil de TikTok del live que quieres monitorear.{" "}
-            <span className="text-[#fe2c55] font-medium">
-              ¡No pierdas ventas por TikTok Live!
-            </span>
-          </p>
-          <form onSubmit={handleStart} className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <Input
-                id="tiktok-url"
-                type="text"
-                placeholder="https://www.tiktok.com/@tiktok"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                spellCheck={false}
-                autoComplete="off"
-                className="h-11 text-sm bg-white/5 border-white/10 text-white/90 placeholder:text-white/25 focus-visible:ring-[#fe2c55]/50"
-                disabled={!!activeSessionId}
-              />
-              {input.trim() && extracted && !activeSessionId && (
-                <p className="mt-1.5 text-[11px] text-white/20 font-mono">
-                  @{extracted}
-                </p>
-              )}
-              {input.trim() && !extracted && !activeSessionId && (
-                <p className="mt-1.5 text-[11px] text-[#fe2c55]/60">
-                  Enlace no válido — debe ser tiktok.com/@usuario
-                </p>
-              )}
-            </div>
-            <div className="flex gap-2 self-start">
-              {!activeSessionId ? (
+        <div className="max-w-lg mx-auto w-full shrink-0 pt-8 md:pt-12">
+          <div
+            className="rounded-3xl overflow-hidden"
+            style={{
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <div className="p-6 sm:p-8">
+              {/* Icon */}
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
+                style={{
+                  background: "linear-gradient(135deg, #fe2c55, #e8254a)",
+                  boxShadow: "0 8px 32px rgba(254,44,85,0.25)",
+                }}
+              >
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                </svg>
+              </div>
+
+              <h2 className="text-xl font-extrabold text-white/90 tracking-tight mb-1">
+                Monitorear live
+              </h2>
+              <p className="text-sm text-white/40 mb-6">
+                Captura leads de tu TikTok Live en tiempo real con <span className="text-[#25f4ee] font-semibold">97% de precisión</span>
+              </p>
+
+              <form onSubmit={handleStart} className="space-y-4">
+                <div>
+                  <label htmlFor="tiktok-url" className="block text-xs font-medium text-white/40 mb-1.5">
+                    Enlace o usuario de TikTok
+                  </label>
+                  <Input
+                    id="tiktok-url"
+                    type="url"
+                    inputMode="url"
+                    placeholder="https://www.tiktok.com/@usuario"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    spellCheck={false}
+                    autoComplete="off"
+                    className="h-12 text-sm bg-white/5 border-white/10 text-white/90 placeholder:text-white/25 focus-visible:ring-[#fe2c55]/50"
+                  />
+                  {input.trim() && extracted && (
+                    <p className="mt-1.5 text-[11px] text-white/20 font-mono text-center">
+                      @{extracted}
+                    </p>
+                  )}
+                  {input.trim() && !extracted && (
+                    <p className="mt-1.5 text-[11px] text-[#fe2c55]/60 text-center">
+                      Enlace no válido — debe ser tiktok.com/@usuario
+                    </p>
+                  )}
+                </div>
+
                 <Button
                   type="submit"
                   disabled={loading || !extracted}
-                  className="h-11 px-6 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-semibold text-sm rounded-xl shadow-lg shadow-[#fe2c55]/25 disabled:opacity-40"
+                  className="w-full h-12 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-bold text-sm rounded-xl shadow-lg shadow-[#fe2c55]/25 disabled:opacity-40 transition-all"
                 >
-                  {loading && (
-                    <span className="mr-2 h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                      Conectando...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                      </svg>
+                      Iniciar live
+                    </span>
                   )}
-                  {loading ? "Conectando..." : "Iniciar"}
                 </Button>
-              ) : null}
+              </form>
             </div>
-          </form>
+          </div>
+
+          <p className="text-xs text-white/15 text-center mt-5 leading-relaxed max-w-sm mx-auto">
+            Lo que no vendiste en el live, véndelo después.{' '}
+            <span className="text-white/25">Captura sus datos, escríbeles y cierra la venta.</span>
+          </p>
         </div>
       ) : null}
 
