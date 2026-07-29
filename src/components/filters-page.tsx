@@ -103,16 +103,15 @@ export default function FiltersClient() {
 
         {/* Hero copy */}
         <div className="text-center mb-8 mt-6">
-          <h1 className="text-lg font-extrabold text-white/90 tracking-tight mb-2">
+          <h1 className="text-lg font-extrabold text-white/90 tracking-tight mb-3">
             Filtros personalizados
           </h1>
-          <p className="text-sm leading-relaxed max-w-md mx-auto" style={{ color: "rgba(255,255,255,0.5)" }}>
-            Agrega palabras clave y asígnales una categoría. Cuando un mensaje las contenga,{" "}
-            se clasificará automáticamente en{" "}
-            <span style={{ color: "#fe2c55" }}>Compra</span>,{" "}
-            <span style={{ color: "#facc15" }}>Negociando</span> o{" "}
-            <span style={{ color: "#4ade80" }}>Interesado</span>,{" "}
-            y la palabra se <strong style={{ color: "rgba(255,255,255,0.7)" }}>resaltará en negrita</strong> en el chat.
+          <p className="text-sm leading-relaxed max-w-sm mx-auto" style={{ color: "rgba(255,255,255,0.5)" }}>
+            Vendes PS5, ropa o cualquier producto?{" "}
+            Atrapa a los que preguntan por él en el chat.{" "}
+            Agrega palabras clave como "PS5" o "PlayStation" y cada vez que alguien las mencione,{" "}
+            se clasificará automáticamente como comprador.{" "}
+            <strong style={{ color: "rgba(255,255,255,0.7)" }}>Mientras más filtros agregues, más clientes convertirás.</strong>
           </p>
         </div>
 
