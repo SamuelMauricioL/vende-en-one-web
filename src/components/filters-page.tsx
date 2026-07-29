@@ -22,9 +22,33 @@ function getColor(index: number): string {
   return PALETTE[index % PALETTE.length];
 }
 
+const STAGE_COLORS: Record<LeadStage, string> = {
+  compra: "#fe2c55",
+  negociando: "#facc15",
+  interesado: "#4ade80",
+};
+
+const STAGE_LABELS: Record<LeadStage, string> = {
+  compra: "Compra",
+  negociando: "Negociando",
+  interesado: "Interesado",
+};
+
+const STAGE_ORDER: LeadStage[] = ["compra", "negociando", "interesado"];
+
+/** Guess the best stage for a keyword based on simple heuristics */
+function guessStage(keyword: string): LeadStage {
+  const kw = keyword.toLowerCase();
+  if (/compro|pago|transferir|ya te/i.test(kw)) return "compra";
+  if (/precio|cuánto|cuesta|envío|garantía|stock|talla|color/i.test(kw)) return "negociando";
+  return "interesado";
+}
+
 export default function FiltersClient() {
   const [categories, setCategories] = useState<KeywordCategory[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [newKeyword, setNewKeyword] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setCategories(loadFilters());
@@ -35,70 +59,48 @@ export default function FiltersClient() {
     if (loaded) saveFilters(categories);
   }, [categories, loaded]);
 
-  const addCategory = useCallback(() => {
+  const addFilter = useCallback(() => {
+    const kw = newKeyword.trim();
+    if (!kw) return;
+    // Check if already exists
+    if (categories.some((c) => c.keywords.some((k) => k.toLowerCase() === kw.toLowerCase()))) {
+      toast.error(`"${kw}" ya está agregado`);
+      return;
+    }
+    const stage = guessStage(kw);
     setCategories((prev) => [
       ...prev,
-      { id: generateId(), name: "", keywords: [], color: getColor(prev.length), stage: "interesado" },
+      { id: generateId(), name: kw, keywords: [kw], color: getColor(prev.length), stage },
     ]);
+    setNewKeyword("");
+    inputRef.current?.focus();
+  }, [newKeyword, categories]);
+
+  const changeStage = useCallback((id: string) => {
+    setCategories((prev) =>
+      prev.map((c) => {
+        if (c.id !== id) return c;
+        const idx = STAGE_ORDER.indexOf(c.stage);
+        const nextStage = STAGE_ORDER[(idx + 1) % STAGE_ORDER.length];
+        return { ...c, stage: nextStage };
+      }),
+    );
   }, []);
 
-  const updateCategory = useCallback(
-    (id: string, patch: Partial<KeywordCategory>) => {
-      setCategories((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, ...patch } : c)),
-      );
-    },
-    [],
-  );
-
-  const removeCategory = useCallback((id: string) => {
+  const removeFilter = useCallback((id: string) => {
     setCategories((prev) => prev.filter((c) => c.id !== id));
-    toast.success("Categoría eliminada");
   }, []);
 
-  const addKeyword = useCallback((catId: string) => {
-    setCategories((prev) =>
-      prev.map((c) =>
-        c.id === catId ? { ...c, keywords: [...c.keywords, ""] } : c,
-      ),
-    );
-  }, []);
-
-  const updateKeyword = useCallback(
-    (catId: string, index: number, value: string) => {
-      setCategories((prev) =>
-        prev.map((c) =>
-          c.id === catId
-            ? {
-                ...c,
-                keywords: c.keywords.map((kw, i) => (i === index ? value : kw)),
-              }
-            : c,
-        ),
-      );
-    },
-    [],
-  );
-
-  const removeKeyword = useCallback((catId: string, index: number) => {
-    setCategories((prev) =>
-      prev.map((c) =>
-        c.id === catId
-          ? { ...c, keywords: c.keywords.filter((_, i) => i !== index) }
-          : c,
-      ),
-    );
-  }, []);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") addFilter();
+  };
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ backgroundColor: "#0b0f1a" }}
-    >
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0b0f1a" }}>
       <AppNav current="filters" />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-6">
-        {/* Chat carousel — shows how filters work visually */}
+        {/* Carousel */}
         <FilterCarousel categories={categories} />
 
         {/* Hero copy */}
@@ -117,66 +119,127 @@ export default function FiltersClient() {
           </p>
         </div>
 
-        {/* Actions bar */}
-        <div className="flex items-center justify-between mb-6">
-          <span className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
-            {categories.length} {categories.length === 1 ? "categoría" : "categorías"}
-          </span>
+        {/* Add filter input */}
+        <div className="flex items-center gap-2 mb-8">
+          <input
+            ref={inputRef}
+            type="text"
+            value={newKeyword}
+            onChange={(e) => setNewKeyword(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Escribe una palabra clave (ej: PS5)"
+            className="flex-1 h-11 px-4 rounded-xl text-sm outline-none transition-all duration-200"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              color: "rgba(255,255,255,0.85)",
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(254,44,85,0.5)")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
+          />
           <button
             type="button"
-            onClick={addCategory}
-            className="h-9 px-4 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-semibold text-xs rounded-xl transition-all shrink-0"
+            onClick={addFilter}
+            disabled={!newKeyword.trim()}
+            className="h-11 px-5 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0"
+            style={{
+              backgroundColor: newKeyword.trim() ? "#fe2c55" : "rgba(255,255,255,0.06)",
+              color: newKeyword.trim() ? "#fff" : "rgba(255,255,255,0.25)",
+              boxShadow: newKeyword.trim() ? "0 4px 16px rgba(254,44,85,0.2)" : "none",
+              cursor: newKeyword.trim() ? "pointer" : "not-allowed",
+            }}
+            onMouseEnter={(e) => {
+              if (newKeyword.trim()) {
+                e.currentTarget.style.backgroundColor = "#e8254a";
+                e.currentTarget.style.boxShadow = "0 4px 20px rgba(254,44,85,0.3)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (newKeyword.trim()) {
+                e.currentTarget.style.backgroundColor = "#fe2c55";
+                e.currentTarget.style.boxShadow = "0 4px 16px rgba(254,44,85,0.2)";
+              }
+            }}
           >
-            + Nueva categoría
+            Agregar
           </button>
         </div>
 
+        {/* Filter list */}
         {!loaded ? (
           <div className="flex items-center justify-center py-16">
             <div className="w-6 h-6 rounded-full border-2 border-white/10 border-t-[#fe2c55] animate-spin" />
           </div>
         ) : categories.length === 0 ? (
-          <div className="text-center py-20">
+          <div className="text-center py-16">
             <div
               className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center"
               style={{ background: "rgba(255,255,255,0.04)" }}
             >
-              <svg
-                className="w-6 h-6 text-white/20"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"
-                />
+              <svg className="w-6 h-6 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
               </svg>
             </div>
-            <p className="text-sm text-white/30">
-              No hay filtros personalizados
-            </p>
-            <p className="text-xs text-white/20 mt-1">
-              Agrega categorías con palabras clave para resaltar productos en el
-              chat
-            </p>
+            <p className="text-sm text-white/30">No hay filtros todavía</p>
+            <p className="text-xs text-white/20 mt-1">Escribe una palabra arriba y presiona Agregar</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {categories.map((cat, index) => (
-              <CategoryCard
-                key={cat.id}
-                category={cat}
-                index={index}
-                onUpdate={(patch) => updateCategory(cat.id, patch)}
-                onRemove={() => removeCategory(cat.id)}
-                onAddKeyword={() => addKeyword(cat.id)}
-                onUpdateKeyword={(i, v) => updateKeyword(cat.id, i, v)}
-                onRemoveKeyword={(i) => removeKeyword(cat.id, i)}
-              />
-            ))}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
+                Tus filtros ({categories.length})
+              </span>
+            </div>
+            {categories.map((cat) => {
+              const cfg = STAGE_COLORS[cat.stage];
+              return (
+                <div
+                  key={cat.id}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
+                  style={{
+                    background: "rgba(255,255,255,0.02)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                  }}
+                >
+                  {/* Color dot */}
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: cfg }}
+                  />
+
+                  {/* Keyword name */}
+                  <span className="flex-1 text-sm font-semibold min-w-0 truncate" style={{ color: "rgba(255,255,255,0.85)" }}>
+                    {cat.name}
+                  </span>
+
+                  {/* Stage badge — tap to cycle */}
+                  <button
+                    type="button"
+                    onClick={() => changeStage(cat.id)}
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all duration-200 shrink-0"
+                    style={{
+                      backgroundColor: `${cfg}18`,
+                      color: cfg,
+                    }}
+                    title="Toca para cambiar la categoría"
+                  >
+                    {STAGE_LABELS[cat.stage]} ▾
+                  </button>
+
+                  {/* Remove */}
+                  <button
+                    type="button"
+                    onClick={() => removeFilter(cat.id)}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition-all shrink-0"
+                    title="Eliminar filtro"
+                  >
+                    <svg className="w-3.5 h-3.5 text-white/25 hover:text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </main>
@@ -194,229 +257,26 @@ export default function FiltersClient() {
   );
 }
 
-/* ── Category card ── */
-
-function CategoryCard({
-  category,
-  index,
-  onUpdate,
-  onRemove,
-  onAddKeyword,
-  onUpdateKeyword,
-  onRemoveKeyword,
-}: {
-  category: KeywordCategory;
-  index: number;
-  onUpdate: (patch: Partial<KeywordCategory>) => void;
-  onRemove: () => void;
-  onAddKeyword: () => void;
-  onUpdateKeyword: (i: number, v: string) => void;
-  onRemoveKeyword: (i: number) => void;
-}) {
-  const [collapsed, setCollapsed] = useState(false);
-
-  return (
-    <div
-      className="rounded-2xl overflow-hidden transition-all"
-      style={{
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.06)",
-      }}
-    >
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <span
-            className="w-3 h-3 rounded-full shrink-0"
-            style={{ backgroundColor: category.color }}
-          />
-          <input
-            type="text"
-            value={category.name}
-            onChange={(e) => onUpdate({ name: e.target.value })}
-            placeholder="Nombre de la categoría (ej: PS5)"
-            className="flex-1 bg-transparent text-sm font-semibold text-white/80 placeholder:text-white/20 focus:outline-none min-w-0"
-          />
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {(["compra", "negociando", "interesado"] as LeadStage[]).map((s) => {
-            const isActive = category.stage === s;
-            const stageColor =
-              s === "compra" ? "#fe2c55" : s === "negociando" ? "#facc15" : "#4ade80";
-            return (
-              <button
-                key={s}
-                type="button"
-                onClick={() => onUpdate({ stage: s })}
-                className="px-2 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all"
-                style={{
-                  backgroundColor: isActive ? `${stageColor}20` : "rgba(255,255,255,0.04)",
-                  color: isActive ? stageColor : "rgba(255,255,255,0.3)",
-                }}
-              >
-                {s === "compra" ? "Compra" : s === "negociando" ? "Negociando" : "Interesado"}
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            onClick={onRemove}
-            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition-all shrink-0"
-            title="Eliminar categoría"
-          >
-            <svg
-              className="w-3.5 h-3.5 text-white/30 hover:text-[#fe2c55]"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-              />
-            </svg>
-          </button>
-          <button
-            type="button"
-            onClick={() => setCollapsed((p) => !p)}
-            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition-all shrink-0"
-          >
-            <svg
-              className={`w-3.5 h-3.5 text-white/30 transition-transform ${collapsed ? "-rotate-90" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19.5 8.25l-7.5 7.5-7.5-7.5"
-              />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {!collapsed && (
-        <div className="px-4 pb-4 space-y-2">
-          {/* Existing keywords */}
-          {category.keywords.map((kw, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <input
-                type="text"
-                value={kw}
-                onChange={(e) => onUpdateKeyword(i, e.target.value)}
-                placeholder="Palabra clave (ej: PS5, PlayStation 5)"
-                className="flex-1 h-9 px-3 rounded-lg text-sm bg-white/5 border border-white/10 text-white/70 placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-[#fe2c55]/50"
-              />
-              <button
-                type="button"
-                onClick={() => onRemoveKeyword(i)}
-                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition-all shrink-0"
-              >
-                <svg
-                  className="w-3 h-3 text-white/25 hover:text-white/50"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-          ))}
-
-          {/* Add keyword */}
-          <button
-            type="button"
-            onClick={onAddKeyword}
-            className="flex items-center gap-1.5 text-xs text-white/30 hover:text-white/50 transition-colors py-1"
-          >
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 4.5v15m7.5-7.5h-15"
-              />
-            </svg>
-            Añadir palabra clave
-          </button>
-
-          {/* Preview */}
-          {category.name && category.keywords.some((k) => k.trim()) && (
-            <div
-              className="mt-3 px-3 py-2 rounded-lg text-sm"
-              style={{
-                background: `${category.color}08`,
-                border: `1px solid ${category.color}15`,
-              }}
-            >
-              <div className="flex items-center gap-2 text-white/40 text-[10px] uppercase tracking-wider font-semibold">
-                <span>Vista previa</span>
-                <span className="text-white/20">·</span>
-                <span>
-                  {category.stage === "compra"
-                    ? "Compra"
-                    : category.stage === "negociando"
-                      ? "Negociando"
-                      : "Interesado"}
-                </span>
-              </div>
-              <p className="mt-1 text-white/60 text-xs">
-                Mensaje de ejemplo con{" "}
-                <strong style={{ color: category.color }}>
-                  {category.keywords.find((k) => k.trim())}
-                </strong>{" "}
-                resaltado
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ── Filter preview carousel ── */
 
 const DEMO_MESSAGES = [
-  { text: "Apartame el PS5 porfa 🙏", stage: "compra" },
-  { text: "Me interesa el PS5, mándame fotos 🤩", stage: "interesado" },
-  { text: "Pasame tu número para la PS5", stage: "compra" },
-  { text: "¿Tiene garantía el PlayStation?", stage: "negociando" },
-  { text: "Hermosa la PS5, quiero una 😍", stage: "interesado" },
-  { text: "Compro la PS5 ahora, dónde pago?", stage: "compra" },
-  { text: "¿Todavía hay stock del PS5?", stage: "negociando" },
-  { text: "El PS5 viene con accesorios?", stage: "negociando" },
-  { text: "Me interesa el PlayStation 5 🙏", stage: "interesado" },
-  { text: "Ya te transferí por la PS5!", stage: "compra" },
+  { text: "Apartame el PS5 porfa 🙏", stage: "compra" as LeadStage },
+  { text: "Me interesa el PS5, mándame fotos 🤩", stage: "interesado" as LeadStage },
+  { text: "Pasame tu número para la PS5", stage: "compra" as LeadStage },
+  { text: "¿Tiene garantía el PlayStation?", stage: "negociando" as LeadStage },
+  { text: "Hermosa la PS5, quiero una 😍", stage: "interesado" as LeadStage },
+  { text: "Compro la PS5 ahora, dónde pago?", stage: "compra" as LeadStage },
+  { text: "¿Todavía hay stock del PS5?", stage: "negociando" as LeadStage },
+  { text: "El PS5 viene con accesorios?", stage: "negociando" as LeadStage },
+  { text: "Me interesa el PlayStation 5 🙏", stage: "interesado" as LeadStage },
+  { text: "Ya te transferí por la PS5!", stage: "compra" as LeadStage },
 ];
 
-const STAGE_COLORS = {
-  compra: "#fe2c55",
-  negociando: "#facc15",
-  interesado: "#4ade80",
-};
-
-function FilterCarousel({ categories }) {
+function FilterCarousel({ categories }: { categories: KeywordCategory[] }) {
   const [index, setIndex] = useState(0);
   const [leaving, setLeaving] = useState(false);
   const leavingRef = useRef(false);
-  const intervalRef = useRef(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const advance = useCallback(() => {
     if (leavingRef.current) return;
@@ -445,7 +305,7 @@ function FilterCarousel({ categories }) {
   const demoKeywords = ["PS5", "PlayStation", "PlayStation 5"];
   const effectiveKeywords = allKeywords.length > 0 ? allKeywords : demoKeywords;
 
-  const renderHighlighted = (text, stageColor) => {
+  const renderHighlighted = (text: string, stageColor: string) => {
     const matched = effectiveKeywords.find((kw) => text.toLowerCase().includes(kw.toLowerCase()));
     if (!matched) return text;
     const idx = text.toLowerCase().indexOf(matched.toLowerCase());
@@ -490,7 +350,7 @@ function FilterCarousel({ categories }) {
   );
 }
 
-function DemoMessage({ data, color, renderHighlighted }) {
+function DemoMessage({ data, color, renderHighlighted }: { data: typeof DEMO_MESSAGES[number]; color: string; renderHighlighted: (text: string, color: string) => React.ReactNode }) {
   return (
     <div
       className="rounded-xl px-4 py-3 flex items-start gap-3 w-full"
