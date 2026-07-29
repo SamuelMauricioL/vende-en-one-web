@@ -111,7 +111,17 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     }
   };
 
+  const liveEndedHandled = useRef(false);
+
   const handleConnectionError = useCallback((error: string) => {
+    if (error === "El live ha finalizado") {
+      if (liveEndedHandled.current) return;
+      liveEndedHandled.current = true;
+      toast.info("El live ha finalizado — los datos quedan visibles para revisión");
+      setActiveSessionId(null);
+      // Keep the UI data + state visible so the user can review leads
+      return;
+    }
     toast.error(`Error al conectar: ${error}`);
     localStorage.removeItem(RECONNECT_KEY);
     setActiveSessionId(null);
