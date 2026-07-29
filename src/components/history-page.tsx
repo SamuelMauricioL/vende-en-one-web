@@ -100,12 +100,6 @@ function statusLabel(status: string): { text: string; color: string } {
   return map[status] ?? { text: status, color: "#fff" };
 }
 
-const STAGE_EMOJI: Record<LeadStage, string> = {
-  compra: "🔥",
-  negociando: "💬",
-  interesado: "👀",
-};
-
 const STAGE_FILTERS: { key: "all" | LeadStage; label: string }[] = [
   { key: "all", label: "Todos" },
   { key: "compra", label: "Compra" },
@@ -204,7 +198,7 @@ export default function HistoryPageClient({
     fetchHistory(u);
   };
 
-  const sessionsWithSummary = sessions.filter((s) => s.summary);
+  const sessionsWithSummary = sessions.filter((s) => s.summary && s.status !== "error");
   const totalLeads = sessionsWithSummary.reduce(
     (acc, s) => acc + (s.summary?.topUsers?.length ?? 0),
     0,
@@ -372,9 +366,8 @@ function SessionCard({
         <div className="flex items-center gap-3 shrink-0">
           {hasSummary && enriched.length > 0 && (
             <div className="flex items-center gap-1.5">
-              {STAGE_ORDER.map((stage) => {
+              {STAGE_ORDER.filter((stage) => stageCounts[stage] > 0).map((stage) => {
                 const count = stageCounts[stage];
-                if (count === 0) return null;
                 const cfg = STAGE_CONFIG[stage];
                 return (
                   <span
@@ -385,7 +378,7 @@ function SessionCard({
                       color: cfg.color,
                     }}
                   >
-                    {STAGE_EMOJI[stage]} {count}
+                    {cfg.label} {count}
                   </span>
                 );
               })}
@@ -529,8 +522,16 @@ function LeadRow({ user }: { user: EnrichedUser }) {
         background: "rgba(255,255,255,0.02)",
       }}
     >
-      {/* Stage emoji */}
-      <span className="text-sm shrink-0">{STAGE_EMOJI[user.stage]}</span>
+      {/* Stage label */}
+      <span
+        className="text-[10px] font-semibold shrink-0 px-1.5 py-0.5 rounded-md"
+        style={{
+          backgroundColor: `${cfg.color}15`,
+          color: cfg.color,
+        }}
+      >
+        {cfg.label}
+      </span>
 
       {/* User info */}
       <div className="flex-1 min-w-0">
