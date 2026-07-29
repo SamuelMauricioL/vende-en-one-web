@@ -15,6 +15,15 @@ export const onRequest = clerkMiddleware(async (auth, context, next) => {
   const isProtected = protectedPaths.some(
     (p) => pathname === p || pathname.startsWith(p + "/")
   );
+
+  // Redirect signed-in users from landing to /app
+  if (pathname === "/" || pathname === "/index.html") {
+    const { userId } = auth();
+    if (userId) {
+      return context.redirect("/app");
+    }
+  }
+
   if (isProtected) {
     const { userId } = auth();
     if (!userId) {
