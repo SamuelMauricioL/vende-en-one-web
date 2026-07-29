@@ -240,11 +240,12 @@ const INTENT_PATTERNS: IntentGroup[] = [
   },
 ];
 
-/** Returns null if user has no comment data or contains offensive/harassing content.
+/** Returns null if user has no comment data, contains offensive/harassing content, or only emojis.
  *  Otherwise returns { stage, keyAction } — stage classification + the comment that triggered it. */
 export function classifyLead(comments: string[]): { stage: LeadStage; keyAction: string | null } | null {
   if (!comments || comments.length === 0) return null;
   if (isOffensive(comments)) return null;
+  if (comments.every((c) => /^[\p{Emoji_Presentation}\p{Emoji_Modifier}\p{Extended_Pictographic}\uFE0F\u200D\s]+$/u.test(c.trim()))) return null;
 
   const allText = comments.join(" ");
   for (const group of INTENT_PATTERNS) {
