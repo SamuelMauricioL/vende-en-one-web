@@ -68,28 +68,55 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   const [showLiveEndedDialog, setShowLiveEndedDialog] = useState(false);
   const [stageCounts, setStageCounts] = useState<Record<string, number>>({ compra: 0, negociando: 0, interesado: 0 });
   const [liveStatus, setLiveStatus] = useState<"idle" | "checking" | "live" | "not_live">("idle");
+  const [livePollingUsername, setLivePollingUsername] = useState<string | null>(null);
   const checkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const onStageCountsReport = useCallback((counts: Record<string, number>) => {
     setStageCounts(counts);
   }, []);
 
-  // Check if a username is live (debounced)
-  const checkIsLive = useCallback(async (username: string) => {
+  // Check if a username is live
+  const checkIsLive = useCallback(async (username: string, isPoll = false) => {
     if (!username) { setLiveStatus("idle"); return; }
-    setLiveStatus("checking");
+    if (!isPoll) setLiveStatus("checking");
     try {
       const res = await fetch(`/api/lives/check/${encodeURIComponent(username)}`);
       if (res.ok) {
         const { isLive } = await res.json();
-        setLiveStatus(isLive ? "live" : "not_live");
-      } else {
+        if (isLive) {
+          setLiveStatus("live");
+          setLivePollingUsername(null);
+          if (isPoll) {
+            toast.success(`@${username} está en vivo!`, { duration: 5000 });
+          }
+        } else if (!isPoll) {
+          setLiveStatus("not_live");
+          setLivePollingUsername(username);
+        }
+      } else if (!isPoll) {
         setLiveStatus("idle");
       }
     } catch {
-      setLiveStatus("idle");
+      if (!isPoll) setLiveStatus("idle");
     }
   }, []);
+
+  // Poll when user is not live — notify when they go live
+  useEffect(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    if (liveStatus === "not_live" && livePollingUsername) {
+      pollIntervalRef.current = setInterval(() => {
+        checkIsLive(livePollingUsername, true);
+      }, 30000);
+    }
+    return () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    };
+  }, [liveStatus, livePollingUsername, checkIsLive]);
 
   // ── Auto-reconnect on mount ──
   const autoReconnectAttempted = useRef(false);
@@ -113,10 +140,11 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     }
     if (activeSessionId || !input.trim()) {
       setLiveStatus("idle");
+      setLivePollingUsername(null);
       return;
     }
     const extracted = extractUsername(input);
-    if (!extracted) { setLiveStatus("idle"); return; }
+    if (!extracted) { setLiveStatus("idle"); setLivePollingUsername(null); return; }
 
     if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current);
     checkTimeoutRef.current = setTimeout(() => checkIsLive(extracted), 800);
@@ -574,7 +602,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                   )}
                   {input.trim() && extracted && liveStatus === "not_live" && (
                     <p className="mt-1.5 text-[11px] text-white/30 text-center">
-                      No está en vivo ahora — igual puedes iniciar cuando empiece
+                      No está en vivo — te avisaré cuando empiece
                     </p>
                   )}
                   {input.trim() && extracted && liveStatus === "live" && (
