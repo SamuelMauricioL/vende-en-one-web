@@ -1,17 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "@clerk/astro/react";
+import { toast } from "sonner";
 import { AppNav } from "@/components/app-nav";
 import { Toaster } from "@/components/ui/sonner";
 import {
   classifyLead,
   getKeyAction,
-  getStageIndex,
   STAGE_CONFIG,
   STAGE_ORDER,
   type LeadStage,
 } from "@/lib/lead-classifier";
+import { useEffect } from "react";
 
 /* ── Types matching Convex response ── */
 
@@ -57,6 +58,11 @@ interface HistorySession {
   summary: LiveSessionSummary | null;
 }
 
+type EnrichedUser = (LiveSessionSummary["topUsers"][number]) & {
+  stage: LeadStage;
+  keyAction: string | null;
+};
+
 /* ── Helpers ── */
 
 function formatDate(ts: number): string {
@@ -76,7 +82,7 @@ function formatTime(ts: number): string {
   });
 }
 
-function durationMs(start: number, end?: number): string {
+function durationStr(start: number, end?: number): string {
   const ms = (end ?? Date.now()) - start;
   const min = Math.floor(ms / 60000);
   if (min < 60) return `${min} min`;
@@ -95,6 +101,48 @@ function statusLabel(status: string): { text: string; color: string } {
   return map[status] ?? { text: status, color: "#fff" };
 }
 
+const STAGE_EMOJI: Record<LeadStage, string> = {
+  compra: "🔥",
+  negociando: "💬",
+  interesado: "👀",
+};
+
+const STAGE_FILTERS: { key: "all" | LeadStage; label: string }[] = [
+  { key: "all", label: "Todos" },
+  { key: "compra", label: "Compra" },
+  { key: "negociando", label: "Negociando" },
+  { key: "interesado", label: "Interesado" },
+];
+
+/* ── Enrich users with stage classification ── */
+
+function enrichUsers(users: LiveSessionSummary["topUsers"]): EnrichedUser[] {
+  return users
+    .map((u) => {
+      const stage = classifyLead(u.commentTexts);
+      if (!stage) return null;
+      return { ...u, stage, keyAction: getKeyAction(u.commentTexts) };
+    })
+    .filter(Boolean) as EnrichedUser[];
+}
+
+function getStageCounts(users: EnrichedUser[]): Record<LeadStage, number> {
+  const counts = { compra: 0, negociando: 0, interesado: 0 };
+  for (const u of users) counts[u.stage]++;
+  return counts;
+}
+
+/* ── Copy helpers ── */
+
+async function copyText(text: string, label: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success(`${label} copiado al portapapeles`);
+  } catch {
+    toast.error("No se pudo copiar");
+  }
+}
+
 /* ── Component ── */
 
 export default function HistoryPageClient({
@@ -109,7 +157,7 @@ export default function HistoryPageClient({
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
   const { userId, isLoaded: authLoaded } = useAuth();
 
-  // Auto-fetch TikTok username from user profile if no initialUsername
+  // Auto-fetch TikTok username from user profile
   useEffect(() => {
     if (!authLoaded || !userId || defaultUsername) return;
     fetch(`/api/users/profile/${userId}`)
@@ -122,7 +170,7 @@ export default function HistoryPageClient({
         }
       })
       .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, authLoaded]);
 
   const fetchHistory = useCallback(async (u: string) => {
@@ -153,13 +201,12 @@ export default function HistoryPageClient({
     e.preventDefault();
     const u = username.trim();
     if (!u) return;
-    // Update URL without full navigation (browser-history-friendly)
     window.history.pushState(null, "", `/app/history?username=${encodeURIComponent(u)}`);
     fetchHistory(u);
   };
 
-  const allSessionsExpanded = sessions.filter((s) => s.summary);
-  const totalLeads = allSessionsExpanded.reduce(
+  const sessionsWithSummary = sessions.filter((s) => s.summary);
+  const totalLeads = sessionsWithSummary.reduce(
     (acc, s) => acc + (s.summary?.topUsers?.length ?? 0),
     0,
   );
@@ -169,7 +216,7 @@ export default function HistoryPageClient({
       <AppNav current="history" />
 
       {/* Search */}
-      <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 pt-6 pb-2">
+      <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 pt-6 pb-2">
         <form onSubmit={handleSearch} className="flex gap-3">
           <input
             type="text"
@@ -181,7 +228,7 @@ export default function HistoryPageClient({
           <button
             type="submit"
             disabled={loading || !username.trim()}
-            className="h-11 px-6 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-semibold text-sm rounded-xl shadow-lg shadow-[#fe2c55]/25 disabled:opacity-40 transition-all"
+            className="h-11 px-6 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-semibold text-sm rounded-xl shadow-lg shadow-[#fe2c55]/25 disabled:opacity-40 transition-all shrink-0"
           >
             {loading ? "Buscando..." : "Buscar"}
           </button>
@@ -189,123 +236,66 @@ export default function HistoryPageClient({
       </div>
 
       {/* Content */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 pb-8">
-        {/* Summary bar */}
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 pb-8">
+        {/* Stats bar */}
         {sessions.length > 0 && (
-          <div className="flex items-center gap-4 py-3 text-xs text-white/40">
-            <span>{sessions.length} sesiones</span>
+          <div className="flex items-center gap-3 py-3 text-xs text-white/30">
+            <span className="font-mono tabular-nums">{sessions.length} sesiones</span>
             <span className="text-white/10">·</span>
-            <span>{totalLeads} leads capturados</span>
+            <span className="font-mono tabular-nums">{totalLeads} leads</span>
           </div>
         )}
 
+        {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-[#fe2c55] animate-spin" />
           </div>
         )}
 
+        {/* Empty state */}
         {!loading && loaded && sessions.length === 0 && (
-          <div className="text-center py-20">
-            <p className="text-white/40 text-sm">
+          <div className="text-center py-24">
+            <div className="w-16 h-16 mx-auto mb-5 rounded-2xl flex items-center justify-center"
+              style={{ background: "rgba(255,255,255,0.04)" }}>
+              <svg className="w-7 h-7 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-sm text-white/30">
               {username
                 ? "No se encontraron sesiones para este usuario"
-                : "Ingresa un usuario de TikTok para ver su historial"}
+                : "Busca un usuario de TikTok para ver su historial"}
             </p>
+            {username && (
+              <p className="text-xs text-white/20 mt-2">
+                Asegúrate de haber monitoreado sus lives con Live Leads
+              </p>
+            )}
           </div>
         )}
 
+        {/* Session list */}
         {!loading && (
-          <div className="space-y-3">
-            {sessions.map((session) => {
-              const status = statusLabel(session.status);
-              const hasSummary = !!session.summary;
-              const isExpanded = expandedSession === session._id;
-
-              return (
-                <div
-                  key={session._id}
-                  className="rounded-2xl overflow-hidden transition-all duration-200"
-                  style={{
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                  }}
-                >
-                  {/* Session header — always visible */}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedSession(isExpanded ? null : session._id)
-                    }
-                    className="w-full text-left p-4 flex items-center justify-between gap-4 hover:bg-white/[0.02] transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span
-                        className="w-2 h-2 rounded-full shrink-0"
-                        style={{ backgroundColor: status.color }}
-                      />
-                      <div className="min-w-0">
-                        <span className="text-sm font-semibold text-white/80">
-                          @{session.username}
-                        </span>
-                        <span className="text-xs text-white/30 ml-2">
-                          {formatDate(session.startedAt)} · {formatTime(session.startedAt)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span
-                        className="text-[11px] font-medium px-2 py-0.5 rounded-full"
-                        style={{
-                          backgroundColor: `${status.color}15`,
-                          color: status.color,
-                        }}
-                      >
-                        {status.text}
-                      </span>
-                      <span className="text-xs text-white/30">
-                        {durationMs(session.startedAt, session.endedAt)}
-                      </span>
-                      {hasSummary && (
-                        <span className="text-xs text-white/30">
-                          {session.summary!.totalUsers} leads
-                        </span>
-                      )}
-                      <svg
-                        className={`w-3.5 h-3.5 text-white/30 transition-transform duration-200 ${
-                          isExpanded ? "rotate-90" : ""
-                        }`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </button>
-
-                  {/* Expanded content */}
-                  {isExpanded && hasSummary && (
-                    <SessionDetail session={session} />
-                  )}
-                  {isExpanded && !hasSummary && (
-                    <div className="px-4 pb-4">
-                      <p className="text-xs text-white/30">
-                        Esta sesión no tiene datos de leads guardados.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <div className="space-y-2.5">
+            {sessions.map((session) => (
+              <SessionCard
+                key={session._id}
+                session={session}
+                isExpanded={expandedSession === session._id}
+                onToggle={() =>
+                  setExpandedSession(
+                    expandedSession === session._id ? null : session._id,
+                  )
+                }
+              />
+            ))}
           </div>
         )}
       </main>
 
       <footer className="border-t border-white/[0.04] py-3 shrink-0">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <span className="text-[10px] text-white/20">
             Live Leads &copy; {new Date().getFullYear()}
           </span>
@@ -317,175 +307,274 @@ export default function HistoryPageClient({
   );
 }
 
-/* ── Session detail (expanded leads) ── */
+/* ── Session card ── */
 
-function SessionDetail({ session }: { session: HistorySession }) {
-  const summary = session.summary!;
-  const enriched = summary.topUsers
-    .map((u) => {
-      const stage = classifyLead(u.commentTexts);
-      if (!stage) return null;
-      return { ...u, stage, keyAction: getKeyAction(u.commentTexts) };
-    })
-    .filter(Boolean) as Array<
-    (typeof summary.topUsers)[number] & {
-      stage: LeadStage;
-      keyAction: string | null;
-    }
-  >;
+function SessionCard({
+  session,
+  isExpanded,
+  onToggle,
+}: {
+  session: HistorySession;
+  isExpanded: boolean;
+  onToggle: () => void;
+}) {
+  const status = statusLabel(session.status);
+  const hasSummary = !!session.summary;
 
-  const grouped: Record<LeadStage, typeof enriched> = {
-    interesado: [],
-    negociando: [],
-    compra: [],
-  };
-  for (const u of enriched) {
-    if (grouped[u.stage]) grouped[u.stage].push(u);
-  }
+  const enriched = useMemo(
+    () => (session.summary ? enrichUsers(session.summary.topUsers) : []),
+    [session.summary],
+  );
+
+  const stageCounts = useMemo(() => getStageCounts(enriched), [enriched]);
 
   return (
-    <div className="px-4 pb-4 space-y-4">
-      {/* Mini funnel */}
-      <div className="rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.02)" }}>
-        <div className="p-3">
-          <div className="flex flex-col items-center gap-1">
-            {STAGE_ORDER.map((stage) => {
-              const count = grouped[stage].length;
-              const cfg = STAGE_CONFIG[stage];
-              const maxCount = Math.max(
-                ...STAGE_ORDER.map((s) => grouped[s].length),
-                1,
-              );
-              const pctWidth =
-                stage === "compra" ? 15 : stage === "negociando" ? 40 : 75;
-              const barHeight = Math.max(
-                6,
-                count === 0 ? 4 : (count / maxCount) * 20,
-              );
-
-              return (
-                <div key={stage} className="flex items-center gap-2 w-full">
-                  <span
-                    className="text-[10px] font-medium w-14 text-right shrink-0"
-                    style={{ color: cfg.color }}
-                  >
-                    {cfg.label}
-                  </span>
-                  <div className="flex-1 flex justify-center">
-                    <div
-                      className="rounded-full transition-all duration-500"
-                      style={{
-                        width: `${pctWidth}%`,
-                        height: barHeight,
-                        backgroundColor: `${cfg.color}25`,
-                        border: `1px solid ${cfg.color}30`,
-                        position: "relative",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width:
-                            count === 0
-                              ? "0%"
-                              : `${Math.max(5, (count / maxCount) * 100)}%`,
-                          backgroundColor: cfg.color,
-                          opacity: 0.6,
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-white/40 w-6 text-left shrink-0 font-mono">
-                    {count}
-                  </span>
-                </div>
-              );
-            })}
+    <div
+      className="rounded-2xl overflow-hidden transition-all duration-200"
+      style={{
+        background: "rgba(255,255,255,0.02)",
+        border: "1px solid rgba(255,255,255,0.06)",
+      }}
+    >
+      {/* ── Header ── */}
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full text-left p-4 flex items-center justify-between gap-4 hover:bg-white/[0.02] transition-colors cursor-pointer"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span
+            className="w-2 h-2 rounded-full shrink-0"
+            style={{ backgroundColor: status.color }}
+          />
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-white/80 truncate">
+                @{session.username}
+              </span>
+              <span
+                className="text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0"
+                style={{
+                  backgroundColor: `${status.color}15`,
+                  color: status.color,
+                }}
+              >
+                {status.text}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-[11px] text-white/25 mt-0.5">
+              <span>{formatDate(session.startedAt)} · {formatTime(session.startedAt)}</span>
+              <span>·</span>
+              <span>{durationStr(session.startedAt, session.endedAt)}</span>
+            </div>
           </div>
         </div>
+
+        <div className="flex items-center gap-3 shrink-0">
+          {hasSummary && enriched.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              {STAGE_ORDER.map((stage) => {
+                const count = stageCounts[stage];
+                if (count === 0) return null;
+                const cfg = STAGE_CONFIG[stage];
+                return (
+                  <span
+                    key={stage}
+                    className="text-[11px] font-mono tabular-nums px-1.5 py-0.5 rounded-md"
+                    style={{
+                      backgroundColor: `${cfg.color}12`,
+                      color: cfg.color,
+                    }}
+                  >
+                    {STAGE_EMOJI[stage]} {count}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          <span className="text-xs text-white/25 font-mono tabular-nums">
+            {enriched.length} leads
+          </span>
+          <svg
+            className={`w-3.5 h-3.5 text-white/25 transition-transform duration-200 ${
+              isExpanded ? "rotate-90" : ""
+            }`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </button>
+
+      {/* ── Expanded content ── */}
+      {isExpanded && hasSummary && enriched.length > 0 && (
+        <SessionDetail enriched={enriched} />
+      )}
+      {isExpanded && !hasSummary && (
+        <div className="px-4 pb-4">
+          <p className="text-xs text-white/25">
+            Esta sesión no tiene datos de leads guardados.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Session detail (expanded leads) ── */
+
+function SessionDetail({ enriched }: { enriched: EnrichedUser[] }) {
+  const [stageFilter, setStageFilter] = useState<"all" | LeadStage>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const stageCounts = useMemo(() => getStageCounts(enriched), [enriched]);
+
+  const filtered = useMemo(() => {
+    let list = enriched;
+    if (stageFilter !== "all") {
+      list = list.filter((u) => u.stage === stageFilter);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (u) =>
+          (u.nickname?.toLowerCase() ?? "").includes(q) ||
+          (u.displayId?.toLowerCase() ?? "").includes(q),
+      );
+    }
+    return list;
+  }, [enriched, stageFilter, searchQuery]);
+
+  return (
+    <div className="px-4 pb-4 space-y-3">
+      {/* Stage pills + search */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {STAGE_FILTERS.map(({ key, label }) => {
+          const isActive = stageFilter === key;
+          const cfg = key !== "all" ? STAGE_CONFIG[key] : null;
+          const count = key !== "all" ? stageCounts[key] : enriched.length;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setStageFilter(key)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-200"
+              style={{
+                backgroundColor: isActive
+                  ? cfg ? `${cfg.color}20` : "rgba(255,255,255,0.1)"
+                  : "rgba(255,255,255,0.04)",
+                color: isActive
+                  ? cfg ? cfg.color : "rgba(255,255,255,0.8)"
+                  : "rgba(255,255,255,0.35)",
+              }}
+            >
+              <span className="font-mono tabular-nums">{count}</span>
+              <span>{label}</span>
+            </button>
+          );
+        })}
+
+        {/* Lead search */}
+        {enriched.length > 5 && (
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar lead..."
+            className="ml-auto h-7 w-32 text-[11px] px-2.5 rounded-lg bg-white/5 border border-white/10 text-white/60 placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
+          />
+        )}
       </div>
 
       {/* Lead list */}
       <div className="space-y-1">
-        {enriched.map((user) => {
-          const cfg = STAGE_CONFIG[user.stage];
-          const stageIndex = getStageIndex(user.stage);
-          return (
-            <div
-              key={user.tiktokUserId}
-              className="rounded-xl overflow-hidden"
-              style={{
-                background: "rgba(255,255,255,0.03)",
-                borderLeft: `3px solid ${cfg.color}`,
-              }}
-            >
-              {/* Stage progress */}
-              <div className="flex h-0.5 w-full bg-white/[0.03]">
-                {STAGE_ORDER.map((s, i) => (
-                  <div
-                    key={s}
-                    className="h-full transition-all duration-300"
-                    style={{
-                      flex: 1,
-                      backgroundColor:
-                        i <= stageIndex ? STAGE_CONFIG[s].color : "transparent",
-                      opacity: i === stageIndex ? 1 : 0.3,
-                    }}
-                  />
-                ))}
-              </div>
+        {filtered.length === 0 ? (
+          <p className="text-xs text-white/20 text-center py-6">
+            {searchQuery
+              ? "No hay leads que coincidan con la búsqueda"
+              : "No hay leads en esta etapa"}
+          </p>
+        ) : (
+          filtered.map((user) => (
+            <LeadRow key={user.tiktokUserId} user={user} />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
 
-              <div className="p-2.5 pt-2">
-                <div className="flex items-start gap-2.5">
-                  <div
-                    className="w-2.5 h-2.5 rounded-full mt-1 shrink-0"
-                    style={{
-                      backgroundColor: cfg.color,
-                      boxShadow:
-                        user.stage === "compra"
-                          ? `0 0 8px ${cfg.color}60`
-                          : "none",
-                    }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span
-                        className="font-semibold text-sm truncate"
-                        style={{ color: cfg.color }}
-                      >
-                        {user.nickname || user.displayId || "Anónimo"}
-                      </span>
-                      <span
-                        className="text-[9px] font-bold px-1.5 py-0.5 rounded leading-none shrink-0"
-                        style={{
-                          backgroundColor: `${cfg.color}18`,
-                          color: cfg.color,
-                        }}
-                      >
-                        {cfg.funnelPct}
-                      </span>
-                      <span className="text-[10px] text-white/25 shrink-0">
-                        {user.comments} msgs
-                      </span>
-                    </div>
+/* ── Lead row ── */
 
-                    {user.keyAction && (
-                      <p className="text-xs text-white/50 leading-relaxed line-clamp-1 italic">
-                        &ldquo;{user.keyAction}&rdquo;
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-        {enriched.length === 0 && (
-          <p className="text-xs text-white/30 text-center py-4">
-            Sin leads en esta sesión
+function LeadRow({ user }: { user: EnrichedUser }) {
+  const cfg = STAGE_CONFIG[user.stage];
+  const displayName = user.nickname || user.displayId || "Anónimo";
+
+  const copyLead = () => {
+    const text = `@${displayName}${user.keyAction ? `: "${user.keyAction}"` : ""}`;
+    copyText(text, "Lead");
+  };
+
+  const copyUsername = () => {
+    copyText(`@${displayName}`, "Usuario");
+  };
+
+  return (
+    <div
+      className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-colors hover:bg-white/[0.02]"
+      style={{
+        borderLeft: `3px solid ${cfg.color}`,
+        background: "rgba(255,255,255,0.02)",
+      }}
+    >
+      {/* Stage emoji */}
+      <span className="text-sm shrink-0">{STAGE_EMOJI[user.stage]}</span>
+
+      {/* User info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span
+            className="text-sm font-semibold truncate max-w-[200px] sm:max-w-none"
+            style={{ color: cfg.color }}
+          >
+            {displayName}
+          </span>
+          <span className="text-[10px] text-white/20 shrink-0 font-mono tabular-nums">
+            {user.comments} msgs
+          </span>
+        </div>
+        {user.keyAction && (
+          <p className="text-xs text-white/40 leading-relaxed truncate italic mt-0.5">
+            &ldquo;{user.keyAction}&rdquo;
           </p>
         )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-1 shrink-0">
+        <button
+          type="button"
+          onClick={copyLead}
+          title="Copiar datos del lead"
+          className="w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 hover:bg-white/10"
+        >
+          <svg className="w-3.5 h-3.5 text-white/30 hover:text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={copyUsername}
+          title="Copiar @usuario para contactar"
+          className="w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 hover:bg-white/10"
+        >
+          <svg className="w-3.5 h-3.5 text-white/30 hover:text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+          </svg>
+        </button>
       </div>
     </div>
   );
