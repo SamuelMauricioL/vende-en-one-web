@@ -7,7 +7,6 @@ import { AppNav } from "@/components/app-nav";
 import { Toaster } from "@/components/ui/sonner";
 import {
   classifyLead,
-  getKeyAction,
   STAGE_CONFIG,
   STAGE_ORDER,
   type LeadStage,
@@ -119,9 +118,9 @@ const STAGE_FILTERS: { key: "all" | LeadStage; label: string }[] = [
 function enrichUsers(users: LiveSessionSummary["topUsers"]): EnrichedUser[] {
   return users
     .map((u) => {
-      const stage = classifyLead(u.commentTexts);
-      if (!stage) return null;
-      return { ...u, stage, keyAction: getKeyAction(u.commentTexts) };
+      const result = classifyLead(u.commentTexts);
+      if (!result) return null;
+      return { ...u, ...result };
     })
     .filter(Boolean) as EnrichedUser[];
 }

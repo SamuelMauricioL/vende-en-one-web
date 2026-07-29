@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 interface SSEEvent<T> {
-  type: "initial" | "update" | "status";
+  type: "initial" | "update" | "delta" | "status";
   stats?: T[];
   chat?: T[];
   status?: string;
@@ -37,8 +37,31 @@ export function useSSE<T>(
     eventSource.onmessage = (event) => {
       try {
         const parsed: SSEEvent<T> = JSON.parse(event.data);
-        if (parsed.type === "initial" || parsed.type === "update") {
+
+        if (parsed.type === "initial") {
           setData(parsed.stats || parsed.chat || null);
+        } else if (parsed.type === "delta") {
+          if (parsed.stats) {
+            // Merge by tiktokUserId — replace existing or add new
+            setData((prev) => {
+              if (!prev) return parsed.stats;
+              const map = new Map(
+                (prev as any[]).map((u: any) => [u.tiktokUserId, u]),
+              );
+              for (const u of parsed.stats) {
+                map.set((u as any).tiktokUserId, u);
+              }
+              return Array.from(map.values()) as T[];
+            });
+          }
+          if (parsed.chat) {
+            // Append new messages, keep max ~50
+            setData((prev) => {
+              const next = [...(prev || []), ...parsed.chat!];
+              if (next.length > 50) next.splice(0, next.length - 50);
+              return next;
+            });
+          }
         } else if (parsed.type === "status") {
           setStatus(parsed.status ?? null);
           if (parsed.status === "error" && parsed.error) {

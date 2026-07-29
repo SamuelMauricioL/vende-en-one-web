@@ -240,31 +240,22 @@ const INTENT_PATTERNS: IntentGroup[] = [
   },
 ];
 
-/** Returns null if user has no comment data or contains offensive/harassing content */
-export function classifyLead(comments: string[]): LeadStage | null {
+/** Returns null if user has no comment data or contains offensive/harassing content.
+ *  Otherwise returns { stage, keyAction } — stage classification + the comment that triggered it. */
+export function classifyLead(comments: string[]): { stage: LeadStage; keyAction: string | null } | null {
   if (!comments || comments.length === 0) return null;
   if (isOffensive(comments)) return null;
 
   const allText = comments.join(" ");
   for (const group of INTENT_PATTERNS) {
     for (const pattern of group.keywords) {
-      if (pattern.test(allText)) return group.stage;
-    }
-  }
-  return "interesado";
-}
-
-export function getKeyAction(comments: string[]): string | null {
-  const allText = comments.join(" ");
-  for (const group of INTENT_PATTERNS) {
-    for (const pattern of group.keywords) {
       if (pattern.test(allText)) {
-        const matchedComment = comments.find((c) => pattern.test(c));
-        if (matchedComment) return matchedComment;
+        const matchedComment = comments.find((c) => pattern.test(c)) ?? null;
+        return { stage: group.stage, keyAction: matchedComment };
       }
     }
   }
-  return comments[0] ?? null;
+  return { stage: "interesado", keyAction: comments[0] ?? null };
 }
 
 export function getStageIndex(stage: LeadStage): number {

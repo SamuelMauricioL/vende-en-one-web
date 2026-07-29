@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
 import {
   classifyLead,
-  getKeyAction,
   getStageIndex,
   STAGE_CONFIG,
   STAGE_ORDER,
@@ -48,14 +47,20 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
     }
   }, [status, connectionError, onConnectionError]);
 
+  const classifierCache = useRef<Map<string, { stage: LeadStage; keyAction: string | null }>>(new Map());
+
   const enriched = useMemo(() => {
     if (!users) return [];
     return users
       .map((u) => {
-        const stage = classifyLead(u.commentTexts);
-        if (!stage) return null;
-        const keyAction = getKeyAction(u.commentTexts);
-        return { ...u, stage, keyAction };
+        const cacheKey = `${u.tiktokUserId}|${u.commentTexts.join("|")}`;
+        const cached = classifierCache.current.get(cacheKey);
+        if (cached) return { ...u, ...cached };
+
+        const result = classifyLead(u.commentTexts);
+        if (!result) return null;
+        classifierCache.current.set(cacheKey, result);
+        return { ...u, ...result };
       })
       .filter(Boolean)
       .sort((a, b) => {
