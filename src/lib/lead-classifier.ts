@@ -14,6 +14,47 @@ export const FUNNEL_BAR_PCT: Record<LeadStage, number> = {
   compra: 15,
 };
 
+/* ── Filtro de contenido ofensivo / acosador ── */
+
+const OFFENSIVE_PATTERNS: RegExp[] = [
+  // Groserías directas (LATAM)
+  /put[oa]/i, /huev[oó]n/i, /we[oó]n/i, /weona/i,
+  /pendej[oa]/i, /cojud[oa]/i,
+  /conchetumare/i, /conchesumare/i, /conchadesumadre/i,
+  /mierda/i, /carajo/i, /mond[aá]/i,
+  /imb[eé]cil/i, /idiota/i, /est[uú]pid[oa]/i,
+  /tarad[oa]/i, /babos[oa]/i, /desgraciad[oa]/i,
+  /maldit[oa]/i, /estúpid[oa]/i,
+  // Perú-specific
+  /webon/i, /webona/i, /webadas/i,
+  /soplame/i, /sopla[st]/i,
+  // Amenazas y hostilidad
+  /te (voy a )?(mat[oó]|romp[oó]|part[oó]|revient[oó]|busco|encuentro)/i,
+  /te (voy a )?dar (tu )?(merecido|castigo|palo|golpe|susto)/i,
+  /c[aá]llate/i, /c[aá]llese/i,
+  /vete (a la mierda|al carajo|a la verga|al diablo)/i,
+  /vaya(se)? a la mierda/i,
+  // Acoso sexual explícito
+  /te (mamo|chupo|como|cojo|folio|penetro)/i,
+  /mamacita/i, /mamasota/i,
+  /ens[eé][ntr]ame/i, /mu[eé]strame (las tetas|el culo|la concha|la vagina)/i,
+  /ens[eé][ntr]a (tus|las) tetas/i,
+  /saca (tus|las) tetas/i,
+  /nudes/i, /pack/i, /xxx/i, /porno/i,
+  /contenido expl[ií]cito/i,
+  // Palabras sexuales graves que no tienen ambigüedad en Perú
+  /perr[oa]/i, /pij[aá]/i, /verga/i,
+  /cul[ií]to/i, /cul[ií]ta/i,
+  /culo roto/i,
+];
+
+/** Returns true si algún mensaje del usuario contiene contenido ofensivo, acosador o provocador. */
+export function isOffensive(comments: string[]): boolean {
+  if (!comments || comments.length === 0) return false;
+  const allText = comments.join(" ");
+  return OFFENSIVE_PATTERNS.some((pattern) => pattern.test(allText));
+}
+
 interface IntentGroup {
   stage: LeadStage;
   keywords: RegExp[];
@@ -152,9 +193,10 @@ const INTENT_PATTERNS: IntentGroup[] = [
   },
 ];
 
-/** Returns null if user has no comment data (can't determine intent) */
+/** Returns null if user has no comment data or contains offensive/harassing content */
 export function classifyLead(comments: string[]): LeadStage | null {
   if (!comments || comments.length === 0) return null;
+  if (isOffensive(comments)) return null;
 
   const allText = comments.join(" ");
   for (const group of INTENT_PATTERNS) {
