@@ -392,14 +392,14 @@ function CategoryCard({
 /* ── Filter preview carousel ── */
 
 const DEMO_MESSAGES = [
-  { text: "¿Cuánto cuesta el envío a Lima?", stage: "negociando" },
-  { text: "Lo quiero, apartame uno 🙌", stage: "compra" },
+  { text: "Apartame el PS5 porfa 🙏", stage: "compra" },
   { text: "Me interesa el PS5, mándame fotos 🤩", stage: "interesado" },
-  { text: "Ya te escribí al WhatsApp!", stage: "compra" },
+  { text: "Pasame tu número para la PS5", stage: "compra" },
   { text: "¿Tiene garantía el PlayStation?", stage: "negociando" },
   { text: "Hermosa la PS5, quiero una 😍", stage: "interesado" },
   { text: "Compro la PS5 ahora, dónde pago?", stage: "compra" },
   { text: "¿Todavía hay stock del PS5?", stage: "negociando" },
+  { text: "El PS5 viene con accesorios?", stage: "negociando" },
   { text: "Me interesa el PlayStation 5 🙏", stage: "interesado" },
   { text: "Ya te transferí por la PS5!", stage: "compra" },
 ];
