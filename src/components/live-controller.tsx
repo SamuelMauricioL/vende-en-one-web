@@ -67,9 +67,28 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   const [showEditInput, setShowEditInput] = useState(false);
   const [showLiveEndedDialog, setShowLiveEndedDialog] = useState(false);
   const [stageCounts, setStageCounts] = useState<Record<string, number>>({ compra: 0, negociando: 0, interesado: 0 });
+  const [liveStatus, setLiveStatus] = useState<"idle" | "checking" | "live" | "not_live">("idle");
+  const checkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const onStageCountsReport = useCallback((counts: Record<string, number>) => {
     setStageCounts(counts);
+  }, []);
+
+  // Check if a username is live (debounced)
+  const checkIsLive = useCallback(async (username: string) => {
+    if (!username) { setLiveStatus("idle"); return; }
+    setLiveStatus("checking");
+    try {
+      const res = await fetch(`/api/lives/check/${encodeURIComponent(username)}`);
+      if (res.ok) {
+        const { isLive } = await res.json();
+        setLiveStatus(isLive ? "live" : "not_live");
+      } else {
+        setLiveStatus("idle");
+      }
+    } catch {
+      setLiveStatus("idle");
+    }
   }, []);
 
   // ── Auto-reconnect on mount ──
@@ -84,6 +103,28 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Check live status when input changes (debounced)
+  useEffect(() => {
+    if (!activeSessionId && initialTikTokUsername) {
+      // Check saved account on mount
+      checkIsLive(initialTikTokUsername);
+      return;
+    }
+    if (activeSessionId || !input.trim()) {
+      setLiveStatus("idle");
+      return;
+    }
+    const extracted = extractUsername(input);
+    if (!extracted) { setLiveStatus("idle"); return; }
+
+    if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current);
+    checkTimeoutRef.current = setTimeout(() => checkIsLive(extracted), 800);
+    return () => {
+      if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [input, activeSessionId]);
 
   const startLive = async (username: string, isAutoReconnect = false) => {
     setLastUsername(username);
@@ -378,6 +419,21 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                     <p className="text-[11px] text-white/30">
                       Listo para iniciar
                     </p>
+                    {liveStatus === "checking" && (
+                      <p className="text-[11px] text-yellow-500/60 mt-1">
+                        Verificando...
+                      </p>
+                    )}
+                    {liveStatus === "not_live" && (
+                      <p className="text-[11px] text-white/30 mt-1">
+                        No está en vivo
+                      </p>
+                    )}
+                    {liveStatus === "live" && (
+                      <p className="text-[11px] text-green-500/60 mt-1">
+                        Está en vivo ✅
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -423,13 +479,25 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                     setLoading(false);
                   }
                 }}
-                disabled={loading}
+                disabled={loading || liveStatus === "checking" || liveStatus === "not_live"}
                 className="w-full h-12 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-bold text-sm rounded-xl shadow-lg shadow-[#fe2c55]/25 disabled:opacity-40 transition-all"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                     Conectando...
+                  </span>
+                ) : liveStatus === "checking" ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    Verificando...
+                  </span>
+                ) : liveStatus === "not_live" ? (
+                  <span className="flex items-center justify-center gap-2" style={{ color: "rgba(255,255,255,0.5)" }}>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                    </svg>
+                    No está en vivo
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
@@ -499,6 +567,21 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                       @{extracted}
                     </p>
                   )}
+                  {input.trim() && extracted && liveStatus === "checking" && (
+                    <p className="mt-1.5 text-[11px] text-yellow-500/60 text-center">
+                      Verificando si está en vivo...
+                    </p>
+                  )}
+                  {input.trim() && extracted && liveStatus === "not_live" && (
+                    <p className="mt-1.5 text-[11px] text-white/30 text-center">
+                      No está en vivo ahora — igual puedes iniciar cuando empiece
+                    </p>
+                  )}
+                  {input.trim() && extracted && liveStatus === "live" && (
+                    <p className="mt-1.5 text-[11px] text-green-500/60 text-center">
+                      Está en vivo ✅
+                    </p>
+                  )}
                   {input.trim() && !extracted && (
                     <p className="mt-1.5 text-[11px] text-[#fe2c55]/60 text-center">
                       Enlace no válido — debe ser tiktok.com/@usuario
@@ -508,13 +591,25 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
 
                 <Button
                   type="submit"
-                  disabled={loading || !extracted}
+                  disabled={loading || !extracted || liveStatus === "checking" || liveStatus === "not_live"}
                   className="w-full h-12 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-bold text-sm rounded-xl shadow-lg shadow-[#fe2c55]/25 disabled:opacity-40 transition-all"
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
                       <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                       Conectando...
+                    </span>
+                  ) : liveStatus === "checking" ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                      Verificando...
+                    </span>
+                  ) : liveStatus === "not_live" ? (
+                    <span className="flex items-center justify-center gap-2" style={{ color: "rgba(255,255,255,0.5)" }}>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                      </svg>
+                      No está en vivo
                     </span>
                   ) : (
                     <span className="flex items-center justify-center gap-2">
