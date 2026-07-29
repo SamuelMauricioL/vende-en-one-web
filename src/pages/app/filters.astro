@@ -1,0 +1,10 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import FiltersClient from "@/components/filters-page";
+
+const title = "Filtros personalizados — Live Leads";
+---
+
+<Layout title={title}>
+  <FiltersClient client:load />
+</Layout>
