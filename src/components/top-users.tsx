@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
 import { getSSEUrl } from "@/lib/api";
+import { loadFilters, customStageOverride } from "@/lib/keyword-filters";
 import {
   classifyLead,
   getStageIndex,
@@ -51,6 +52,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
   }, [status, connectionError, onConnectionError]);
 
   const classifierCache = useRef<Map<string, { stage: LeadStage; keyAction: string | null }>>(new Map());
+  const customFilters = useMemo(() => loadFilters(), []);
 
   const enriched = useMemo(() => {
     if (!users) return [];
@@ -62,6 +64,13 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
 
         const result = classifyLead(u.commentTexts);
         if (!result) return null;
+
+        // Custom keyword filters override the stage if matched
+        const override = customStageOverride(u.commentTexts, customFilters);
+        if (override) {
+          result.stage = override;
+        }
+
         classifierCache.current.set(cacheKey, result);
         return { ...u, ...result };
       })

@@ -10,6 +10,7 @@ import {
   saveFilters,
   generateId,
 } from "@/lib/keyword-filters";
+import type { LeadStage } from "@/lib/lead-classifier";
 
 const PALETTE = [
   "#fe2c55", "#25f4ee", "#facc15", "#4ade80",
@@ -37,7 +38,7 @@ export default function FiltersClient() {
   const addCategory = useCallback(() => {
     setCategories((prev) => [
       ...prev,
-      { id: generateId(), name: "", keywords: [], color: getColor(prev.length) },
+      { id: generateId(), name: "", keywords: [], color: getColor(prev.length), stage: "interesado" },
     ]);
   }, []);
 
@@ -220,6 +221,27 @@ function CategoryCard({
           placeholder="Nombre de la categoría (ej: PS5)"
           className="flex-1 bg-transparent text-sm font-semibold text-white/80 placeholder:text-white/20 focus:outline-none"
         />
+        <div className="flex items-center gap-1 shrink-0">
+          {(["compra", "negociando", "interesado"] as LeadStage[]).map((s) => {
+            const isActive = category.stage === s;
+            const stageColor =
+              s === "compra" ? "#fe2c55" : s === "negociando" ? "#facc15" : "#4ade80";
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => onUpdate({ stage: s })}
+                className="px-2 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all"
+                style={{
+                  backgroundColor: isActive ? `${stageColor}20` : "rgba(255,255,255,0.04)",
+                  color: isActive ? stageColor : "rgba(255,255,255,0.3)",
+                }}
+              >
+                {s === "compra" ? "🔥" : s === "negociando" ? "💬" : "👀"}
+              </button>
+            );
+          })}
+        </div>
         <button
           type="button"
           onClick={onRemove}
@@ -326,9 +348,17 @@ function CategoryCard({
                 border: `1px solid ${category.color}15`,
               }}
             >
-              <span className="text-white/40 text-[10px] uppercase tracking-wider font-semibold">
-                Vista previa
-              </span>
+              <div className="flex items-center gap-2 text-white/40 text-[10px] uppercase tracking-wider font-semibold">
+                <span>Vista previa</span>
+                <span className="text-white/20">·</span>
+                <span>
+                  {category.stage === "compra"
+                    ? "🔥 Compra"
+                    : category.stage === "negociando"
+                      ? "💬 Negociando"
+                      : "👀 Interesado"}
+                </span>
+              </div>
               <p className="mt-1 text-white/60 text-xs">
                 Mensaje de ejemplo con{" "}
                 <strong style={{ color: category.color }}>

@@ -1,8 +1,11 @@
+import type { LeadStage } from "./lead-classifier";
+
 export interface KeywordCategory {
   id: string;
   name: string;
   keywords: string[];
   color: string;
+  stage: LeadStage; // ← etapa asociada: "compra" | "negociando" | "interesado"
 }
 
 const STORAGE_KEY = "customKeywordFilters";
@@ -26,6 +29,48 @@ export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
+/* ── Clasificación por keywords personalizadas ── */
+
+/**
+ * Revisa si algún mensaje coincide con keywords de filtros personalizados.
+ * Si hay match, retorna la etapa asociada al filtro.
+ * Si hay múltiples matches de distintas etapas, prioriza: compra > negociando > interesado.
+ */
+export function customStageOverride(
+  comments: string[],
+  filters: KeywordCategory[],
+): LeadStage | null {
+  if (!comments || !comments.length || !filters.length) return null;
+
+  const allText = comments.join(" ");
+  let matchedStage: LeadStage | null = null;
+  let matchedPriority = -1;
+
+  const stagePriority: Record<LeadStage, number> = {
+    compra: 3,
+    negociando: 2,
+    interesado: 1,
+  };
+
+  for (const cat of filters) {
+    if (!cat.stage) continue;
+    for (const kw of cat.keywords) {
+      if (!kw.trim()) continue;
+      const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(escaped, "gi");
+      if (regex.test(allText)) {
+        const pri = stagePriority[cat.stage] ?? 0;
+        if (pri > matchedPriority) {
+          matchedPriority = pri;
+          matchedStage = cat.stage;
+        }
+      }
+    }
+  }
+
+  return matchedStage;
+}
+
 /* ── Resaltado en mensajes ── */
 
 export interface HighlightPart {
@@ -38,10 +83,6 @@ interface RawMatch {
   end: number;
 }
 
-/**
- * Encuentra todas las coincidencias de keywords en el texto.
- * Case-insensitive, preserva el texto original.
- */
 function findRawMatches(text: string, filters: KeywordCategory[]): RawMatch[] {
   if (!filters.length) return [];
 
@@ -74,10 +115,6 @@ function findRawMatches(text: string, filters: KeywordCategory[]): RawMatch[] {
   return merged;
 }
 
-/**
- * Divide el texto en partes, marcando cuáles deben ir en negrita.
- * Retorna un array de HighlightPart para que el componente lo renderice.
- */
 export function getHighlightParts(
   text: string,
   filters: KeywordCategory[],
