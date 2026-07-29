@@ -9,6 +9,7 @@ import { LiveChat } from "./live-chat";
 import { LeadsMobile } from "./LeadsMobile";
 import { LiveEndedDialog } from "./LiveEndedDialog";
 import { trackEvent } from "@/lib/plausible";
+import { getMonitorWS } from "@/lib/api";
 
 const TIKTOK_URL_REGEX = /^(?:https?:\/\/)?(?:www\.)?tiktok\.com\/@([a-zA-Z0-9_.-]+)/;
 const TIKTOK_HANDLE_REGEX = /^@?([a-zA-Z0-9_.-]+)$/;
@@ -67,7 +68,8 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   const [showEditInput, setShowEditInput] = useState(false);
   const [showLiveEndedDialog, setShowLiveEndedDialog] = useState(false);
   const [stageCounts, setStageCounts] = useState<Record<string, number>>({ compra: 0, negociando: 0, interesado: 0 });
-  const [verifyResult, setVerifyResult] = useState<"idle" | "checking" | "not_live">("idle");
+  const [monitorStatus, setMonitorStatus] = useState<"idle" | "connecting" | "waiting" | "live" | "error">("idle");
+  const wsRef = useRef<WebSocket | null>(null);
 
   const onStageCountsReport = useCallback((counts: Record<string, number>) => {
     setStageCounts(counts);
@@ -85,6 +87,50 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Live monitor WebSocket ──
+  useEffect(() => {
+    if (activeSessionId || !initialTikTokUsername) {
+      // Close WS when session starts or no username
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      return;
+    }
+
+    setMonitorStatus("connecting");
+    const ws = new WebSocket(getMonitorWS(initialTikTokUsername));
+    wsRef.current = ws;
+
+    ws.onopen = () => setMonitorStatus("waiting");
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "status") {
+          setMonitorStatus(data.live ? "live" : "waiting");
+        }
+      } catch {
+        // ignore malformed messages
+      }
+    };
+
+    ws.onerror = () => {
+      setMonitorStatus("error");
+    };
+
+    ws.onclose = () => {
+      if (wsRef.current === ws) {
+        setMonitorStatus("idle");
+      }
+    };
+
+    return () => {
+      ws.close();
+      if (wsRef.current === ws) wsRef.current = null;
+    };
+  }, [activeSessionId, initialTikTokUsername]);
 
   const startLive = async (username: string, isAutoReconnect = false) => {
     setLastUsername(username);
@@ -377,7 +423,11 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                       @{initialTikTokUsername}
                     </p>
                     <p className="text-[11px] text-white/30">
-                      Listo para iniciar
+                      {monitorStatus === "connecting" ? "Conectando..." :
+                       monitorStatus === "waiting" ? "Esperando live..." :
+                       monitorStatus === "live" ? "🔴 En vivo!" :
+                       monitorStatus === "error" ? "Error de conexión" :
+                       "Listo para iniciar"}
                     </p>
                   </div>
                 </div>
@@ -387,7 +437,6 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                   onClick={() => {
                     setInput(initialTikTokUsername ? `https://www.tiktok.com/@${initialTikTokUsername}` : "");
                     setShowEditInput(true);
-                    setVerifyResult("idle");
                   }}
                   className="text-[11px] text-white/30 hover:text-white/60 transition-colors px-2 py-1 shrink-0"
                 >
@@ -398,10 +447,13 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
               <Button
                 type="button"
                 onClick={async () => {
-                  if (verifyResult === "checking") return;
+                  // Close monitor WS, will auto-reconnect later if needed
+                  if (wsRef.current) {
+                    wsRef.current.close();
+                    wsRef.current = null;
+                  }
                   const username = initialTikTokUsername;
                   setLastUsername(username);
-                  setVerifyResult("checking");
                   setLoading(true);
                   try {
                     const res = await fetch("/api/lives/start", {
@@ -417,39 +469,40 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                       trackEvent("Live Started", { username });
                       toast.success(`Live iniciado: @${username}`);
                     } else {
-                      setVerifyResult("not_live");
                       trackEvent("Live Start Failed", { username, status: res.status });
                       toast.error(`Error al iniciar: ${data.message || res.status}`);
                     }
                   } catch (err) {
-                    setVerifyResult("not_live");
                     const msg = err instanceof Error ? err.message : "Error desconocido";
                     toast.error(`Fallo de red: ${msg}`);
                   } finally {
                     setLoading(false);
                   }
                 }}
-                disabled={loading}
+                disabled={loading || (monitorStatus !== "live" && monitorStatus !== "idle")}
                 className="w-full h-12 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-bold text-sm rounded-xl shadow-lg shadow-[#fe2c55]/25 disabled:opacity-40 transition-all"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    Verificando...
+                    Conectando...
                   </span>
-                ) : verifyResult === "not_live" ? (
+                ) : monitorStatus === "live" ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#fe2c55] animate-pulse" />
+                    Iniciar Live
+                  </span>
+                ) : monitorStatus === "error" ? (
                   <span className="flex items-center justify-center gap-2">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                    No está en vivo
+                    Reintentar
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
-                    </svg>
-                    Verificar si está en vivo
+                    <span className="w-4 h-4 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+                    {monitorStatus === "connecting" ? "Conectando..." : "Esperando live..."}
                   </span>
                 )}
               </Button>
