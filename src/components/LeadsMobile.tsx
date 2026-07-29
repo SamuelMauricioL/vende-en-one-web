@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
+import { getSSEUrl } from "@/lib/api";
 import {
   classifyLead,
   getStageIndex,
@@ -36,7 +37,7 @@ interface LeadsMobileProps {
 
 export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attendedMap, onToggleAttended, onConnectionError }: LeadsMobileProps) {
   const { data: users, connected, status, connectionError } = useSSE<TopUser>(
-    `/api/lives/${sessionId}/stats/stream`,
+    getSSEUrl(`/lives/${sessionId}/stats/stream`),
   );
 
   useEffect(() => {

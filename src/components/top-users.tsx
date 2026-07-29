@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
+import { getSSEUrl } from "@/lib/api";
 import {
   classifyLead,
   getStageIndex,
@@ -38,7 +39,7 @@ interface TopUsersProps {
 
 export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap, onToggleAttended, maxMobileItems, onConnectionError }: TopUsersProps) {
   const { data: users, connected, status, connectionError } = useSSE<TopUser>(
-    `/api/lives/${sessionId}/stats/stream`,
+    getSSEUrl(`/lives/${sessionId}/stats/stream`),
   );
 
   useEffect(() => {
