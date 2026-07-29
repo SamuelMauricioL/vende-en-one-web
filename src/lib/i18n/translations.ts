@@ -104,7 +104,7 @@ export const en: Record<TranslationKey, string> = {
   "hero.words.3": "follow-ups",
   "hero.words.4": "money",
   "hero.subtitle":
-    "Capture, filter, and follow every person who interacts in your stream. Our AI identifies real buyers with 90% accuracy so you never lose a sale in the live chat chaos again. And when the live ends, you keep the data of everyone who wanted to buy.",
+    "Every minute that passes, you're losing customers in the chat. Our AI detects real buyers with 90% accuracy. When the live ends, their data stays with you.",
   "hero.cta.try": "Try Live Controller",
   "hero.cta.watch": "See how it works",
   "hero.social": "+50 sellers no longer lose live sales",
