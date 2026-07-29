@@ -100,14 +100,18 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
   );
 
   const [tick, setTick] = useState(0);
+  const [activeStage, setActiveStage] = useState<"all" | LeadStage>("all");
   useEffect(() => {
     const iv = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(iv);
   }, []);
 
-  const pendingList = enriched.filter((u) => !attendedMap.has(u.tiktokUserId));
+  const pendingList = enriched
+    .filter((u) => !attendedMap.has(u.tiktokUserId))
+    .filter((u) => activeStage === "all" || u.stage === activeStage);
   const attendedList = enriched
     .filter((u) => attendedMap.has(u.tiktokUserId))
+    .filter((u) => activeStage === "all" || u.stage === activeStage)
     .sort((a, b) => {
       const aTime = attendedMap.get(a.tiktokUserId)?.attendedAt ?? 0;
       const bTime = attendedMap.get(b.tiktokUserId)?.attendedAt ?? 0;
@@ -241,48 +245,39 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
         </div>
       </div>
 
-      <div className="mb-5 rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="px-3 pt-2.5 pb-3">
-          <div className="flex flex-col items-center gap-1">
-            {STAGE_ORDER.map((stage) => {
-              const count = grouped[stage].length;
-              const cfg = STAGE_CONFIG[stage];
-              const pctWidth = FUNNEL_BAR_PCT[stage];
-              const barHeight = Math.max(6, count === 0 ? 4 : (count / maxStageCount) * 20);
-
-              return (
-                <div key={stage} className="flex items-center gap-2 w-full">
-                  <span className="text-[10px] font-medium w-14 text-right shrink-0" style={{ color: cfg.color }}>
-                    {cfg.label}
-                  </span>
-                  <div className="flex-1 flex justify-center">
-                    <div
-                      className="rounded-full transition-all duration-500"
-                      style={{
-                        width: `${pctWidth}%`,
-                        height: barHeight,
-                        backgroundColor: `${cfg.color}25`,
-                        border: `1px solid ${cfg.color}30`,
-                        position: "relative",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: count === 0 ? "0%" : `${Math.max(5, (count / Math.max(maxStageCount, 1)) * 100)}%`,
-                          backgroundColor: cfg.color,
-                          opacity: 0.6,
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-white/40 w-6 text-left shrink-0 font-mono">{count}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* Stage filter tabs */}
+      <div className="flex items-center gap-1 mb-3 shrink-0 overflow-x-auto no-scrollbar">
+        <button
+          type="button"
+          onClick={() => setActiveStage("all")}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200"
+          style={{
+            backgroundColor: activeStage === "all" ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.04)",
+            color: activeStage === "all" ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.35)",
+          }}
+        >
+          Todos <span className="font-mono tabular-nums text-[11px]">{totalUsers}</span>
+        </button>
+        {STAGE_ORDER.map((stage) => {
+          const count = grouped[stage].length;
+          const cfg = STAGE_CONFIG[stage];
+          const isActive = activeStage === stage;
+          return (
+            <button
+              key={stage}
+              type="button"
+              onClick={() => setActiveStage(isActive ? "all" : stage)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200"
+              style={{
+                backgroundColor: isActive ? `${cfg.color}20` : "rgba(255,255,255,0.04)",
+                color: isActive ? cfg.color : "rgba(255,255,255,0.35)",
+              }}
+            >
+              {cfg.label}
+              <span className="font-mono tabular-nums text-[11px]" style={{ opacity: isActive ? 1 : 0.5 }}>{count}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0 pr-1">
