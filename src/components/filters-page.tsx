@@ -184,59 +184,84 @@ export default function FiltersClient() {
             <p className="text-xs text-white/20 mt-1">Escribe una palabra arriba y presiona Agregar</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 mb-1">
+          <div className="space-y-5">
+            <div className="flex items-center gap-2">
               <span className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
                 Tus filtros ({categories.length})
               </span>
             </div>
-            {categories.map((cat) => {
-              const cfg = STAGE_COLORS[cat.stage];
+            {STAGE_ORDER.map((stage) => {
+              const group = categories.filter((c) => c.stage === stage);
+              if (group.length === 0) return null;
+              const grpColor = STAGE_COLORS[stage];
               return (
-                <div
-                  key={cat.id}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
-                  style={{
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                  }}
-                >
-                  {/* Color dot */}
-                  <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: cfg }}
-                  />
+                <div key={stage}>
+                  {/* Group header */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: grpColor }}
+                    />
+                    <span
+                      className="text-xs font-semibold tracking-wider uppercase"
+                      style={{ color: `${grpColor}bb` }}
+                    >
+                      {STAGE_LABELS[stage]}
+                    </span>
+                    <span
+                      className="text-[10px] font-mono tabular-nums"
+                      style={{ color: `${grpColor}55` }}
+                    >
+                      {group.length}
+                    </span>
+                  </div>
 
-                  {/* Keyword name */}
-                  <span className="flex-1 text-sm font-semibold min-w-0 truncate" style={{ color: "rgba(255,255,255,0.85)" }}>
-                    {cat.name}
-                  </span>
-
-                  {/* Stage badge — tap to cycle */}
-                  <button
-                    type="button"
-                    onClick={() => changeStage(cat.id)}
-                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all duration-200 shrink-0"
-                    style={{
-                      backgroundColor: `${cfg}18`,
-                      color: cfg,
-                    }}
-                    title="Toca para cambiar la categoría"
-                  >
-                    {STAGE_LABELS[cat.stage]} ▾
-                  </button>
-
-                  {/* Remove */}
-                  <button
-                    type="button"
-                    onClick={() => removeFilter(cat.id)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition-all shrink-0"
-                    title="Eliminar filtro"
-                  >
-                    <svg className="w-3.5 h-3.5 text-white/25 hover:text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                  {/* Group items */}
+                  <div className="space-y-1">
+                    {group.map((cat) => {
+                      const cfg = STAGE_COLORS[cat.stage];
+                      return (
+                        <div
+                          key={cat.id}
+                          className="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all"
+                          style={{
+                            background: "rgba(255,255,255,0.02)",
+                            border: "1px solid rgba(255,255,255,0.06)",
+                          }}
+                        >
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: cfg }}
+                          />
+                          <span className="flex-1 text-sm font-semibold min-w-0 truncate" style={{ color: "rgba(255,255,255,0.85)" }}>
+                            {cat.name}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => changeStage(cat.id)}
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-semibold transition-all duration-200 shrink-0"
+                            style={{
+                              backgroundColor: `${cfg}15`,
+                              color: cfg,
+                            }}
+                            title="Toca para cambiar"
+                          >
+                            {STAGE_LABELS[cat.stage]} ▾
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeFilter(cat.id)}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition-all shrink-0"
+                            title="Eliminar filtro"
+                          >
+                            <svg className="w-3 h-3 text-white/25 hover:text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
