@@ -237,7 +237,7 @@ function CategoryCard({
                   color: isActive ? stageColor : "rgba(255,255,255,0.3)",
                 }}
               >
-                {s === "compra" ? "🔥" : s === "negociando" ? "💬" : "👀"}
+                {s === "compra" ? "Compra" : s === "negociando" ? "Negociando" : "Interesado"}
               </button>
             );
           })}
@@ -353,10 +353,10 @@ function CategoryCard({
                 <span className="text-white/20">·</span>
                 <span>
                   {category.stage === "compra"
-                    ? "🔥 Compra"
+                    ? "Compra"
                     : category.stage === "negociando"
-                      ? "💬 Negociando"
-                      : "👀 Interesado"}
+                      ? "Negociando"
+                      : "Interesado"}
                 </span>
               </div>
               <p className="mt-1 text-white/60 text-xs">
