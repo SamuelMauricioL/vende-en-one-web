@@ -19,7 +19,7 @@ export function LazySignIn() {
     );
   }
 
-  return <Component />;
+  return <Component afterSignInUrl="/app" />;
 }
 
 export function LazySignUp() {

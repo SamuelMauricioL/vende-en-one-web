@@ -53,7 +53,7 @@ export function AuthButton({ variant = "navbar" }: { variant?: "navbar" | "app" 
   }
 
   return (
-    <SignInButton mode="redirect" fallbackRedirectUrl="/link-tiktok">
+    <SignInButton mode="redirect" fallbackRedirectUrl="/app">
       <button
         type="button"
         className="text-xs font-semibold px-4 py-2 rounded-lg transition-all duration-200 hover:scale-[1.02]"
