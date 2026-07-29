@@ -501,8 +501,8 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 flex-1 min-h-0">
-          {/* Desktop leads card */}
-          <div className="max-md:hidden lg:col-span-2 rounded-2xl p-4 flex flex-col min-h-0 overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+          {/* Desktop leads list */}
+          <div className="max-md:hidden lg:col-span-2 flex flex-col min-h-0 overflow-hidden">
             <TopUsers
               sessionId={activeSessionId}
               selectedUserIds={selectedUserIds}
@@ -513,8 +513,8 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
               onConnectionError={handleConnectionError}
             />
           </div>
-          {/* Mobile leads card with tabs */}
-          <div className="md:hidden rounded-2xl p-4 flex flex-col min-h-0 overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+          {/* Mobile leads list */}
+          <div className="md:hidden flex flex-col min-h-0 overflow-hidden">
             <LeadsMobile
               sessionId={activeSessionId}
               selectedUserIds={selectedUserIds}
@@ -524,7 +524,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
               onConnectionError={handleConnectionError}
             />
           </div>
-          <div className="lg:col-span-3 lg:order-last rounded-2xl p-4 flex flex-col min-h-0 overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="lg:col-span-3 lg:order-last flex flex-col min-h-0 overflow-hidden">
             <LiveChat sessionId={activeSessionId} selectedUserIds={selectedUserIds} onConnectionError={handleConnectionError} />
           </div>
         </div>

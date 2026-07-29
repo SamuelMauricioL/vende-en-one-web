@@ -95,7 +95,7 @@ export function LiveChat({ sessionId, selectedUserIds, onConnectionError }: Live
         </div>
       </div>
 
-      <div ref={chatContainerRef} className="flex-1 overflow-y-auto space-y-2 min-h-0 pr-1 scroll-smooth">
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto space-y-1 min-h-0 pr-1 scroll-smooth">
         {!filtered || filtered.length === 0 ? (
           <p className="text-sm text-white/30 text-center py-12">
             {status === "error"
@@ -114,7 +114,7 @@ export function LiveChat({ sessionId, selectedUserIds, onConnectionError }: Live
             return (
               <div
                 key={msg.id}
-                className="flex gap-2 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+                className="flex gap-2 py-1.5"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
