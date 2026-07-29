@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 interface UserMessagesDialogProps {
   nickname: string;
@@ -37,6 +37,20 @@ export function UserMessagesDialog({ nickname, commentTexts, onClose }: UserMess
   const handleBackdrop = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) onClose();
   };
+
+  // Group consecutive duplicate messages: [{text, count}, ...]
+  const grouped = useMemo(() => {
+    const result: { text: string; count: number }[] = [];
+    for (const msg of commentTexts) {
+      const last = result[result.length - 1];
+      if (last && last.text === msg) {
+        last.count++;
+      } else {
+        result.push({ text: msg, count: 1 });
+      }
+    }
+    return result;
+  }, [commentTexts]);
 
   return (
     <div
@@ -82,16 +96,26 @@ export function UserMessagesDialog({ nickname, commentTexts, onClose }: UserMess
 
         {/* Messages */}
         <div className="overflow-y-auto px-4 py-3 space-y-2">
-          {commentTexts.length === 0 ? (
+          {grouped.length === 0 ? (
             <p className="text-sm text-white/30 text-center py-8">Sin mensajes guardados</p>
           ) : (
-            commentTexts.map((text, i) => (
+            grouped.map((item, i) => (
               <div
                 key={i}
                 className="rounded-xl px-3.5 py-2.5"
                 style={{ background: "rgba(255,255,255,0.03)" }}
               >
-                <p className="text-sm text-white/90 leading-relaxed break-words">{text}</p>
+                <div className="flex items-start gap-2">
+                  <p className="text-sm text-white/90 leading-relaxed break-words flex-1 min-w-0">{item.text}</p>
+                  {item.count > 1 && (
+                    <span
+                      className="shrink-0 text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-md mt-0.5"
+                      style={{ backgroundColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" }}
+                    >
+                      ×{item.count}
+                    </span>
+                  )}
+                </div>
               </div>
             ))
           )}
