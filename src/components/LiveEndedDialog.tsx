@@ -36,14 +36,14 @@ export function LiveEndedDialog({ stageCounts, onClose, onGoToHistory }: LiveEnd
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(11,15,26,0.7)" }}
+      style={{ backgroundColor: "rgba(11,15,26,0.85)" }}
       onClick={handleBackdrop}
     >
       <div
         ref={dialogRef}
         className="w-full max-w-md"
         style={{
-          background: "rgba(255,255,255,0.04)",
+          background: "rgba(16, 20, 32, 0.96)",
           border: "1px solid rgba(255,255,255,0.08)",
           borderRadius: "20px",
           padding: "32px 28px",
