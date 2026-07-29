@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
 import { getSSEUrl } from "@/lib/api";
-import { loadFilters, getHighlightParts } from "@/lib/keyword-filters";
 import { formatElapsed } from "@/lib/time";
 
 interface ChatMessage {
@@ -46,9 +45,6 @@ export function LiveChat({ sessionId, selectedUserIds, onConnectionError }: Live
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [, setTick] = useState(0);
-
-  // Load custom keyword filters for highlighting
-  const filters = useMemo(() => loadFilters(), []);
 
   // React to connection errors
   useEffect(() => {
@@ -135,17 +131,7 @@ export function LiveChat({ sessionId, selectedUserIds, onConnectionError }: Live
                     )}
                     <span className="text-[11px] text-white/20 ml-auto font-mono tabular-nums">{formatElapsed(msg.createdAt)}</span>
                   </div>
-                  <p className="text-sm text-white/90 leading-relaxed break-words">
-                    {filters.length > 0
-                      ? getHighlightParts(msg.comment, filters).map((part, i) =>
-                          part.bold ? (
-                            <strong key={i} className="font-bold text-white">{part.text}</strong>
-                          ) : (
-                            <span key={i}>{part.text}</span>
-                          ),
-                        )
-                      : msg.comment}
-                  </p>
+                  <p className="text-sm text-white/90 leading-relaxed break-words">{msg.comment}</p>
                 </div>
               </div>
             );

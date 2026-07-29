@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
 import { getSSEUrl } from "@/lib/api";
-import { loadFilters, customStageOverride } from "@/lib/keyword-filters";
+import { loadFilters, getHighlightParts, customStageOverride } from "@/lib/keyword-filters";
 import {
   classifyLead,
   getStageIndex,
@@ -206,7 +206,11 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
               {user.keyAction && (
                 <p className="text-xs text-white/50 leading-relaxed line-clamp-1 italic"
                    style={{ textDecoration: isAttended ? "line-through" : "none" }}>
-                  &ldquo;{user.keyAction}&rdquo;
+                  &ldquo;
+                  {getHighlightParts(user.keyAction, customFilters).map((part, i) =>
+                    part.bold ? <strong key={i} className="font-bold text-white/80">{part.text}</strong> : part.text,
+                  )}
+                  &rdquo;
                 </p>
               )}
             </div>
