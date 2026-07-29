@@ -333,11 +333,13 @@ function FilterCarousel({ categories }: { categories: KeywordCategory[] }) {
   const renderHighlighted = (text: string, stageColor: string) => {
     const matched = effectiveKeywords.find((kw) => text.toLowerCase().includes(kw.toLowerCase()));
     if (!matched) return text;
-    const idx = text.toLowerCase().indexOf(matched.toLowerCase());
-    const before = text.slice(0, idx);
-    const match = text.slice(idx, idx + matched.length);
-    const after = text.slice(idx + matched.length);
-    return [before, <strong key="h" style={{ color: stageColor }}>{match}</strong>, after];
+    const escaped = matched.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const parts = text.split(new RegExp(`(${escaped})`, "gi"));
+    return parts.map((part, i) =>
+      i % 2 === 1
+        ? <span key={i} style={{ color: stageColor, fontWeight: 700 }}>{part}</span>
+        : part,
+    );
   };
 
   const stageColor = STAGE_COLORS[current.stage];
