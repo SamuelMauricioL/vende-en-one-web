@@ -90,7 +90,11 @@ export function LiveChat({ sessionId, selectedUserIds, onConnectionError }: Live
           )}
         </h3>
         <div className="flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${connected ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" : "bg-red-500"}`} />
+          <span className={`w-2 h-2 rounded-full ${
+            status === "live" ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" :
+            status === "connecting" ? "bg-yellow-500 animate-pulse" :
+            "bg-red-500"
+          }`} />
           <span className="text-xs text-white/40">{filtered?.length ?? 0} mensajes</span>
         </div>
       </div>
