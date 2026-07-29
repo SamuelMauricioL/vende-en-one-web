@@ -46,6 +46,25 @@ const OFFENSIVE_PATTERNS: RegExp[] = [
   /perr[oa]/i, /pij[aá]/i, /verga/i,
   /cul[ií]to/i, /cul[ií]ta/i,
   /culo roto/i,
+  // Acoso / comentarios sobre la vendedora o participantes
+  /la chica de atr[áa]s/i,
+  /la (chica|otra|vendedora) (que )?est[áa] (detr[áa]s|atr[áa]s)/i,
+  /y tu hermosa d[oó]nde/i,
+  /la vendedora est[áa] hermosa/i,
+  /ig de (la bandida|la otra|la chica|ella)/i,
+  /pasa(me)? (tu )?(ig|instagram|wasap|whatsapp|wsp|wp)/i,
+  /dame tu (ig|instagram|n[uú]mero|wasap|whatsapp|wsp|wp)/i,
+  /no disimula (el |la )?pata/i,
+  /parpadea si te gusta/i,
+  /la vendedora cu[aá]nto (est[áa]|cuesta|vale)/i,
+  /(est[áa]s? )?solter[oa]/i,
+  /eres (tan |muy |re )?(bonit[oa]|hermos[oa])/i,
+  /qu[eé] (bonit[oa]|hermos[oa]) (eres|est[áa]s)/i,
+  /^((oye|hey|eh) )?bonita/i,
+  /anazo/i,
+  /tienes (enamorad[oa]|pareja|novi[oa]|espos[oa])/i,
+  /te ves (bien|rica|buena|linda|hermosa)/i,
+  /est[áa]s (bien )?(rica|buena|hermosa)/i,
 ];
 
 /** Returns true si algún mensaje del usuario contiene contenido ofensivo, acosador o provocador. */
