@@ -110,6 +110,19 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
 
   const [tick, setTick] = useState(0);
   const [activeStage, setActiveStage] = useState<"all" | LeadStage>("all");
+
+  // Auto-select best stage when messages arrive
+  useEffect(() => {
+    if (activeStage !== "all" || !enriched.length) return;
+    const priority: LeadStage[] = ["compra", "negociando", "interesado"];
+    for (const stage of priority) {
+      if (grouped[stage].length > 0) {
+        setActiveStage(stage);
+        break;
+      }
+    }
+  }, [enriched, activeStage, grouped]);
+
   useEffect(() => {
     const iv = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(iv);
