@@ -511,10 +511,9 @@ function LeadRow({ user }: { user: EnrichedUser }) {
 
   return (
     <div
-      className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-colors hover:bg-white/[0.02]"
+      className="flex items-center gap-2.5 px-3 py-2"
       style={{
-        borderLeft: `3px solid ${cfg.color}`,
-        background: "rgba(255,255,255,0.02)",
+        borderBottom: "1px solid rgba(255,255,255,0.04)",
       }}
     >
       {/* Stage dot — same style as live view */}
