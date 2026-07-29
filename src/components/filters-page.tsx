@@ -394,12 +394,14 @@ function CategoryCard({
 const DEMO_MESSAGES = [
   { text: "¿Cuánto cuesta el envío a Lima?", stage: "negociando" },
   { text: "Lo quiero, apartame uno 🙌", stage: "compra" },
-  { text: "Me interesa, mándame fotos 🤩", stage: "interesado" },
+  { text: "Me interesa el PS5, mándame fotos 🤩", stage: "interesado" },
   { text: "Ya te escribí al WhatsApp!", stage: "compra" },
-  { text: "¿Tiene garantía?", stage: "negociando" },
-  { text: "Hermoso producto 😍", stage: "interesado" },
-  { text: "Compro ahora, dónde pago?", stage: "compra" },
-  { text: "¿Todavía hay stock?", stage: "negociando" },
+  { text: "¿Tiene garantía el PlayStation?", stage: "negociando" },
+  { text: "Hermosa la PS5, quiero una 😍", stage: "interesado" },
+  { text: "Compro la PS5 ahora, dónde pago?", stage: "compra" },
+  { text: "¿Todavía hay stock del PS5?", stage: "negociando" },
+  { text: "Me interesa el PlayStation 5 🙏", stage: "interesado" },
+  { text: "Ya te transferí por la PS5!", stage: "compra" },
 ];
 
 const STAGE_COLORS = {
