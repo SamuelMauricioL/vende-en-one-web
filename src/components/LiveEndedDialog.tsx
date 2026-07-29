@@ -41,12 +41,12 @@ export function LiveEndedDialog({ stageCounts, onClose, onGoToHistory }: LiveEnd
     >
       <div
         ref={dialogRef}
-        className="w-full max-w-sm animate-in fade-in zoom-in duration-200"
+        className="w-full max-w-md"
         style={{
           background: "rgba(255,255,255,0.04)",
           border: "1px solid rgba(255,255,255,0.08)",
           borderRadius: "20px",
-          padding: "28px 24px",
+          padding: "32px 28px",
         }}
       >
         {/* Icon — checkmark circle: "data safely saved" */}
@@ -84,7 +84,7 @@ export function LiveEndedDialog({ stageCounts, onClose, onGoToHistory }: LiveEnd
               return (
                 <div
                   key={stage}
-                  className="flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 min-w-[68px]"
+                  className="flex flex-1 flex-col items-center gap-0.5 rounded-xl px-3 py-2.5"
                   style={{
                     backgroundColor: `${cfg.color}12`,
                     border: `1px solid ${cfg.color}25`,
