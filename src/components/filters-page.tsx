@@ -98,7 +98,7 @@ export default function FiltersClient() {
       <AppNav current="filters" />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <div>
             <h1 className="text-lg font-extrabold text-white/90 tracking-tight">
               Filtros personalizados
@@ -110,7 +110,7 @@ export default function FiltersClient() {
           <button
             type="button"
             onClick={addCategory}
-            className="h-9 px-4 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-semibold text-xs rounded-xl transition-all shrink-0"
+            className="h-10 sm:h-9 w-full sm:w-auto px-4 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-semibold text-sm sm:text-xs rounded-xl transition-all shrink-0"
           >
             + Nueva categoría
           </button>
@@ -209,18 +209,20 @@ function CategoryCard({
       }}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 p-4">
-        <span
-          className="w-3 h-3 rounded-full shrink-0"
-          style={{ backgroundColor: category.color }}
-        />
-        <input
-          type="text"
-          value={category.name}
-          onChange={(e) => onUpdate({ name: e.target.value })}
-          placeholder="Nombre de la categoría (ej: PS5)"
-          className="flex-1 bg-transparent text-sm font-semibold text-white/80 placeholder:text-white/20 focus:outline-none"
-        />
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <span
+            className="w-3 h-3 rounded-full shrink-0"
+            style={{ backgroundColor: category.color }}
+          />
+          <input
+            type="text"
+            value={category.name}
+            onChange={(e) => onUpdate({ name: e.target.value })}
+            placeholder="Nombre de la categoría (ej: PS5)"
+            className="flex-1 bg-transparent text-sm font-semibold text-white/80 placeholder:text-white/20 focus:outline-none min-w-0"
+          />
+        </div>
         <div className="flex items-center gap-1 shrink-0">
           {(["compra", "negociando", "interesado"] as LeadStage[]).map((s) => {
             const isActive = category.stage === s;
