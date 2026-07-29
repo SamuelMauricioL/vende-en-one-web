@@ -517,16 +517,11 @@ function LeadRow({ user }: { user: EnrichedUser }) {
         background: "rgba(255,255,255,0.02)",
       }}
     >
-      {/* Stage label */}
+      {/* Stage dot — same style as live view */}
       <span
-        className="text-[10px] font-semibold shrink-0 px-1.5 py-0.5 rounded-md"
-        style={{
-          backgroundColor: `${cfg.color}15`,
-          color: cfg.color,
-        }}
-      >
-        {cfg.label}
-      </span>
+        className="w-2 h-2 rounded-full mt-1.5 shrink-0"
+        style={{ backgroundColor: cfg.color }}
+      />
 
       {/* User info */}
       <div className="flex-1 min-w-0">
