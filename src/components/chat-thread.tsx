@@ -96,7 +96,7 @@ export function ChatThread({ conversation, store, state, onStateChange, onBack }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: "#0b0f1a" }}>
+    <div className="flex flex-col h-full w-full" style={{ backgroundColor: "#0b0f1a" }}>
       {/* Header */}
       <header
         className="shrink-0 px-4 py-3 flex items-center gap-3"
@@ -106,7 +106,7 @@ export function ChatThread({ conversation, store, state, onStateChange, onBack }
           type="button"
           onClick={onBack}
           aria-label="Volver a la lista"
-          className="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/5 transition-colors"
+          className="md:hidden w-8 h-8 shrink-0 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/5 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />

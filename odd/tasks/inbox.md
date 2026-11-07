@@ -85,3 +85,11 @@ El inbox es una pantalla nueva (`/app/inbox`) y no reemplaza `/app/history`: el 
 - Sin endpoint propio: el inbox usa `GET /lives/history/:username`, que devuelve todas las sesiones con `chat[]` completo. Funciona, pero no escala y hay que moverlo a T3 cuando exista auth.
 - El estado vive solo en `localStorage`: no viaja entre dispositivos y borrar el navegador borra el avance. Migra cuando exista la tabla de leads.
 - El hilo no pagina: pinta todos los mensajes de la persona.
+
+### L9 (layout desktop, pedido del humano)
+
+> en la vista desktop se debe de ver como whatsapp web osea a la izquierda una columna de los mensajes y a la derecha se ve el historial de mensajes, cuando no hay ningun chat seleccionado se ve una pantalla que indique al usuario seleccionar un chat
+
+`InboxLayout` (`src/components/inbox-layout.tsx`) es el shell presentacional: dos columnas en desktop (`md:w-[22rem]` + `flex-1`), overlay a pantalla completa en móvil, y pantalla "Selecciona una conversación" cuando no hay selección.
+
+Verificado en Chromium: desktop 1440x900 sin selección → aside 352px en x=144 y sección 800px en x=496 con el empty state; con chat → misma geometría, la lista sigue visible y el botón de volver queda `display:none`. Móvil 390x844 → sin selección el aside ocupa el ancho y la sección es `display:none`; con chat el aside desaparece y la sección ocupa 390x844 con el botón de volver visible. Sin scroll horizontal en ningún caso.

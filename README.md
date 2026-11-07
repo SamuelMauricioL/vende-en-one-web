@@ -56,6 +56,7 @@ Los pasos 3 y 4 salen del prototipo (`liveleads-demo`) sin el paso de correo. Co
 
 El bucle de rescate vive aquí, separado del Historial (que es el reporte de sesiones).
 
+- En desktop se ve como WhatsApp Web: columna de conversaciones a la izquierda e hilo a la derecha, con "Selecciona una conversación" cuando no hay ninguna abierta. En móvil es lista → hilo a pantalla completa.
 - Lista de conversaciones agrupadas por persona entre lives, con chip por live (`7 nov`) y contador de mensajes. Un chip se apaga cuando ya no le debes nada a ese live.
 - El hilo muestra todos los mensajes de la persona con separador de fecha y tres desenlaces: **Abrir en TikTok** (contactado), **guardar número** (whatsapp) e **Ignorar** con motivo (no cliente / spam / ya compró).
 - El estado se guarda en `localStorage.ll_inbox_state`, indexado por `tienda:tiktokUserId`. Una conversación cerrada **se reabre** si la persona vuelve a escribir.

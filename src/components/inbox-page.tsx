@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/astro/react";
 import { AppNav } from "@/components/app-nav";
 import { ChatThread } from "@/components/chat-thread";
+import { InboxLayout } from "@/components/inbox-layout";
 import { InboxList } from "@/components/inbox-list";
 import { Toaster } from "@/components/ui/sonner";
 import {
@@ -84,54 +85,52 @@ export default function InboxPageClient() {
   const pendingTotal = conversations.filter((c) => !c.closed).length;
   const openConversation = conversations.find((c) => c.key === openKey) ?? null;
 
-  if (openConversation && store) {
-    return (
-      <>
-        <ChatThread
-          conversation={openConversation}
-          store={store}
-          state={inbox}
-          onStateChange={applyState}
-          onBack={() => setOpenKey(null)}
-        />
-        <Toaster richColors position="bottom-center" />
-      </>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0b0f1a" }}>
+    <div className="h-dvh flex flex-col" style={{ backgroundColor: "#0b0f1a" }}>
       <AppNav current="inbox" pendingCount={pendingTotal} />
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-5">
-        {loading && (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-[#fe2c55] animate-spin" />
-          </div>
-        )}
-
-        {!loading && loaded && !store && (
-          <div className="text-center py-20">
-            <p className="text-sm text-white/35">Primero vincula tu TikTok</p>
-            <a
-              href="/onboarding"
-              className="inline-block mt-3 h-9 px-4 leading-9 rounded-xl text-xs font-semibold text-white"
-              style={{ background: "#fe2c55" }}
-            >
-              Ir al onboarding
-            </a>
-          </div>
-        )}
-
-        {!loading && store && (
-          <InboxList
-            conversations={conversations}
-            lives={lives}
-            inbox={inbox}
-            onOpen={setOpenKey}
-          />
-        )}
-      </main>
+      <InboxLayout
+        list={
+          loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-[#fe2c55] animate-spin" />
+            </div>
+          ) : !loaded || !store ? (
+            <div className="text-center py-20">
+              <p className="text-sm text-white/35">
+                {loaded ? "Primero vincula tu TikTok" : "Cargando tus conversaciones…"}
+              </p>
+              {loaded && !store && (
+                <a
+                  href="/onboarding"
+                  className="inline-block mt-3 h-9 px-4 leading-9 rounded-xl text-xs font-semibold text-white"
+                  style={{ background: "#fe2c55" }}
+                >
+                  Ir al onboarding
+                </a>
+              )}
+            </div>
+          ) : (
+            <InboxList
+              conversations={conversations}
+              lives={lives}
+              inbox={inbox}
+              onOpen={setOpenKey}
+            />
+          )
+        }
+        detail={
+          openConversation && store ? (
+            <ChatThread
+              conversation={openConversation}
+              store={store}
+              state={inbox}
+              onStateChange={applyState}
+              onBack={() => setOpenKey(null)}
+            />
+          ) : null
+        }
+      />
 
       <Toaster richColors position="bottom-center" />
     </div>
