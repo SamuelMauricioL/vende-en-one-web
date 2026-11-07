@@ -147,7 +147,7 @@ const FIRST_LIVE_STEPS = [
   "Abre tu live en TikTok, como siempre.",
   "Entra a Live Controller y presiona Iniciar live.",
   "Vende tranquilo: clasificamos los comentarios por ti.",
-  "Al terminar, abre Historial y escribe primero a quienes insistieron.",
+  "Al terminar, abre la Bandeja de rescate y escribe primero a quienes insistieron.",
 ];
 
 /** Paso 4: qué va a pasar en su primer live, y salida a la app. */

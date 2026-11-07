@@ -381,14 +381,10 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
 
   const extracted = input.trim() ? extractUsername(input.trim()) : null;
 
-  const goToHistory = useCallback(() => {
-    const u = lastUsername || initialTikTokUsername;
-    if (u) {
-      window.location.href = `/app/history?username=${encodeURIComponent(u)}`;
-    } else {
-      window.location.href = "/app/history";
-    }
-  }, [lastUsername, initialTikTokUsername]);
+  // Después del live se trabaja la bandeja: es donde se cierra el bucle.
+  const goToInbox = useCallback(() => {
+    window.location.href = "/app/inbox";
+  }, []);
 
   return (
     <div className="space-y-4 h-full flex flex-col min-h-0">
@@ -699,7 +695,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
         <LiveEndedDialog
           stageCounts={stageCounts}
           onClose={() => setShowLiveEndedDialog(false)}
-          onGoToHistory={goToHistory}
+          onGoToInbox={goToInbox}
         />
       )}
     </div>

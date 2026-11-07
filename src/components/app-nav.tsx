@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@clerk/astro/react";
 
 interface AppNavProps {
-  current: "live" | "inbox" | "history" | "filters" | "profile";
+  current: "live" | "inbox" | "filters" | "profile";
   /** Optional stop button for live page (mobile) */
   stopButton?: React.ReactNode;
   /** Conversaciones sin desenlace: badge de la bandeja de rescate */
@@ -18,7 +18,6 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
   const labels: Record<string, string> = {
     live: "Live Controller",
     inbox: "Bandeja de rescate",
-    history: "Historial",
     filters: "Filtros personalizados",
     profile: "Perfil",
   };
@@ -164,31 +163,6 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
             ) : null}
           </a>
 
-          <a
-            href="/app/history"
-            onClick={() => setOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-              isActive("history")
-                ? "bg-white/10 text-white"
-                : "text-white/50 hover:text-white hover:bg-white/5"
-            }`}
-          >
-            {/* History icon */}
-            <svg
-              className={`w-4 h-4 ${isActive("history") ? "text-[#25f4ee]" : "text-current"}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            Historial
-          </a>
 
           <a
             href="/app/filters"

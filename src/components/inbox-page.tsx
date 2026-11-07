@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/astro/react";
 import { authHeaders } from "@/lib/api-auth";
 import { AppNav } from "@/components/app-nav";
+import { classifyLead } from "@/lib/lead-classifier";
 import { ChatThread } from "@/components/chat-thread";
 import { InboxLayout } from "@/components/inbox-layout";
 import { InboxList } from "@/components/inbox-list";
@@ -70,7 +71,10 @@ export default function InboxPageClient() {
   }, [userId, isLoaded, fetchHistory]);
 
   const conversations = useMemo(
-    () => (store ? buildConversations(sessions, store, inbox) : []),
+    () =>
+      store
+        ? buildConversations(sessions, store, inbox, (texts) => classifyLead(texts)?.stage ?? null)
+        : [],
     [sessions, store, inbox],
   );
 
@@ -83,7 +87,15 @@ export default function InboxPageClient() {
     return [...seen.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 6)
-      .map(([sessionId, endedAt]) => ({ sessionId, label: liveLabel(endedAt) }));
+      .map(([sessionId, endedAt]) => {
+        const session = sessions.find((x) => x._id === sessionId);
+        return {
+          sessionId,
+          label: liveLabel(endedAt),
+          startedAt: session?.startedAt ?? endedAt,
+          endedAt,
+        };
+      });
   }, [sessions]);
 
   const pendingTotal = conversations.filter((c) => !c.closed).length;

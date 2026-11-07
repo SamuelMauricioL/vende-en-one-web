@@ -6,7 +6,7 @@ import { STAGE_CONFIG, STAGE_ORDER, type LeadStage } from "@/lib/lead-classifier
 interface LiveEndedDialogProps {
   stageCounts: Record<LeadStage, number>;
   onClose: () => void;
-  onGoToHistory: () => void;
+  onGoToInbox: () => void;
 }
 
 const STAGE_LABELS_SHORT: Record<LeadStage, string> = {
@@ -15,7 +15,7 @@ const STAGE_LABELS_SHORT: Record<LeadStage, string> = {
   interesado: "Interesado",
 };
 
-export function LiveEndedDialog({ stageCounts, onClose, onGoToHistory }: LiveEndedDialogProps) {
+export function LiveEndedDialog({ stageCounts, onClose, onGoToInbox }: LiveEndedDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const hasLeads = Object.values(stageCounts).some((c) => c > 0);
 
@@ -120,7 +120,7 @@ export function LiveEndedDialog({ stageCounts, onClose, onGoToHistory }: LiveEnd
         {/* Primary CTA — full-width, prominent */}
         <button
           type="button"
-          onClick={onGoToHistory}
+          onClick={onGoToInbox}
           className="w-full h-11 rounded-xl text-sm font-semibold transition-all duration-200 mb-3"
           style={{
             backgroundColor: "#fe2c55",
@@ -130,7 +130,7 @@ export function LiveEndedDialog({ stageCounts, onClose, onGoToHistory }: LiveEnd
           onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#e8254a"; e.currentTarget.style.boxShadow = "0 4px 24px rgba(254,44,85,0.35)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#fe2c55"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(254,44,85,0.25)"; }}
         >
-          Ir al Historial →
+          Rescatar mis ventas →
         </button>
 
         {/* Secondary — text link, de-emphasized */}

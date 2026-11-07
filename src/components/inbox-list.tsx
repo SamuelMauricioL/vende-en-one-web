@@ -2,17 +2,20 @@
 
 import { useMemo, useState } from "react";
 import {
+  durationLabel,
   isUnread,
   pendingForLive,
+  stageCountsForLive,
   type Conversation,
   type InboxState,
 } from "@/lib/inbox-state";
+import { STAGE_CONFIG } from "@/lib/lead-classifier";
 
 export type InboxFilter = { kind: "all" } | { kind: "closed" } | { kind: "live"; sessionId: string };
 
 interface InboxListProps {
   conversations: Conversation[];
-  lives: { sessionId: string; label: string }[];
+  lives: { sessionId: string; label: string; startedAt: number; endedAt: number }[];
   inbox: InboxState;
   onOpen: (key: string) => void;
 }
@@ -90,6 +93,28 @@ export function InboxList({ conversations, lives, inbox, onOpen }: InboxListProp
           Cerrados
         </button>
       </div>
+
+      {/* Métricas del live seleccionado: duración y leads por etapa */}
+      {filter.kind === "live" && (() => {
+        const live = lives.find((l) => l.sessionId === filter.sessionId);
+        if (!live) return null;
+        const counts = stageCountsForLive(conversations, live.sessionId);
+        const hasLeads = Object.values(counts).some((c) => c > 0);
+        return (
+          <p className="text-[11px] text-white/30 mt-2 flex items-center gap-1.5 flex-wrap">
+            <span className="tabular-nums">{durationLabel(live.startedAt, live.endedAt)}</span>
+            {hasLeads &&
+              (["compra", "negociando", "interesado"] as const)
+                .filter((stage) => counts[stage] > 0)
+                .map((stage) => (
+                  <span key={stage} style={{ color: STAGE_CONFIG[stage].color }}>
+                    · {counts[stage]} {STAGE_CONFIG[stage].label.toLowerCase()}
+                  </span>
+                ))}
+            {!hasLeads && <span>· sin leads con intención</span>}
+          </p>
+        );
+      })()}
 
       {/* Buscador */}
       <input

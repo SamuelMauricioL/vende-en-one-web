@@ -54,7 +54,7 @@ Los pasos 3 y 4 salen del prototipo (`liveleads-demo`) sin el paso de correo. Co
 
 ## Bandeja de rescate (`/app/inbox`)
 
-El bucle de rescate vive aquí, separado del Historial (que es el reporte de sesiones).
+Es la única pantalla de rescate: reemplazó al Historial. Al terminar un live, la app manda aquí. Las métricas por live (duración y leads por etapa) se ven al elegir el chip del live.
 
 - En desktop se ve como WhatsApp Web: columna de conversaciones a la izquierda e hilo a la derecha, con "Selecciona una conversación" cuando no hay ninguna abierta. En móvil es lista → hilo a pantalla completa.
 - Lista de conversaciones agrupadas por persona entre lives, con chip por live (`7 nov`) y contador de mensajes. Un chip se apaga cuando ya no le debes nada a ese live.

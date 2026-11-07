@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   buildConversations,
   closedOutcome,
+  durationLabel,
+  stageCountsForLive,
   isUnread,
   liveLabel,
   loadState,
@@ -12,6 +14,9 @@ import {
   type InboxSessionInput,
   type InboxState,
 } from "./inbox-state.ts";
+import { classifyLead } from "./lead-classifier.ts";
+
+const classify = (texts: string[]) => classifyLead(texts)?.stage ?? null;
 
 const STORE = "tutienda";
 const ROSA = "uid-rosa";
@@ -46,10 +51,10 @@ const LIVE_6 = new Date(2026, 10, 6, 21, 0).getTime();
 const sessions: InboxSessionInput[] = [
   session("s7", LIVE_7, [
     [ROSA, "cuanto cuesta?", LIVE_7 + 1_000],
-    [LUZ, "me la separas", LIVE_7 + 2_000],
+    [LUZ, "reservame la B12 en M", LIVE_7 + 2_000],
     [ROSA, "precio porfa", LIVE_7 + 3_000],
   ]),
-  session("s6", LIVE_6, [[ROSA, "hola", LIVE_6 + 1_000]]),
+  session("s6", LIVE_6, [[ROSA, "❤️❤️", LIVE_6 + 1_000]]),
 ];
 
 test("agrupa por persona entre lives y cuenta mensajes", () => {
@@ -141,4 +146,28 @@ test("el cierre cubre hasta el último mensaje visto, no hasta el reloj", () => 
   const despues = [session("s7", LIVE_7, [[ROSA, "nuevo mensaje", LIVE_7 + 60_000]])];
   const conv = buildConversations(despues, STORE, state).find((c) => c.tiktokUserId === ROSA);
   assert.equal(conv?.closed, null, "un mensaje posterior al cierre lo reabre");
+});
+
+test("la etapa se deriva de los comentarios de cada live", () => {
+  const list = buildConversations(sessions, STORE, {}, classify);
+  const rosa = list.find((c) => c.tiktokUserId === ROSA);
+  const luz = list.find((c) => c.tiktokUserId === LUZ);
+  const rosaLive7 = rosa?.liveTags.find((t) => t.sessionId === "s7");
+  const rosaLive6 = rosa?.liveTags.find((t) => t.sessionId === "s6");
+  assert.equal(rosaLive7?.stage, "negociando", "en ese live solo preguntó precio");
+  assert.equal(rosaLive6?.stage, null, "en el live 6 solo mandó emojis");
+  assert.equal(luz?.liveTags[0]?.stage, "compra", "reservar la prenda");
+});
+
+test("conteo por etapa se limita a las personas de ese live", () => {
+  const list = buildConversations(sessions, STORE, {}, classify);
+  const live7 = stageCountsForLive(list, "s7");
+  assert.deepEqual(live7, { compra: 1, negociando: 1, interesado: 0 });
+  const live6 = stageCountsForLive(list, "s6");
+  assert.deepEqual(live6, { compra: 0, negociando: 0, interesado: 0 }, "un emoji no es lead");
+});
+
+test("duración legible en minutos y horas", () => {
+  assert.equal(durationLabel(LIVE_7 - 2_700_000, LIVE_7), "45 min");
+  assert.equal(durationLabel(LIVE_7 - 4_320_000, LIVE_7), "1h 12min");
 });

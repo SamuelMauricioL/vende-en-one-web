@@ -7,6 +7,8 @@
  * vuelve a escribir después de ese cierre.
  */
 
+import type { LeadStage } from "./lead-classifier";
+
 export type Outcome = "contactado" | "whatsapp" | "ignorado";
 export type IgnoreReason = "no_cliente" | "spam" | "ya_compro";
 
@@ -34,6 +36,9 @@ export interface InboxEntry {
 }
 
 export type InboxState = Record<string, InboxEntry>;
+
+/** Se inyecta desde la app para que este módulo no dependa del clasificador. */
+export type ClassifyStage = (texts: string[]) => LeadStage | null;
 
 export interface InboxMessage {
   at: number;
@@ -65,6 +70,8 @@ export interface LiveTag {
   endedAt: number;
   count: number;
   label: string;
+  /** Etapa detectada solo con los comentarios de ESE live. */
+  stage: LeadStage | null;
 }
 
 export interface Conversation {
@@ -169,6 +176,7 @@ export function buildConversations(
   sessions: InboxSessionInput[],
   store: string,
   state: InboxState,
+  classifyStage?: ClassifyStage,
 ): Conversation[] {
   const byUser = new Map<string, { name: string; messages: InboxMessage[] }>();
 
@@ -194,15 +202,23 @@ export function buildConversations(
   const list: Conversation[] = [...byUser.entries()].map(([id, { name, messages }]) => {
     messages.sort((a, b) => a.at - b.at);
     const tags = new Map<string, LiveTag>();
+    const textsByLive = new Map<string, string[]>();
     for (const m of messages) {
       const tag = tags.get(m.sessionId) ?? {
         sessionId: m.sessionId,
         endedAt: m.liveEndedAt,
         count: 0,
         label: liveLabel(m.liveEndedAt),
+        stage: null,
       };
       tag.count++;
       tags.set(m.sessionId, tag);
+      const texts = textsByLive.get(m.sessionId) ?? [];
+      texts.push(m.text);
+      textsByLive.set(m.sessionId, texts);
+    }
+    for (const [sessionId, tag] of tags) {
+      tag.stage = classifyStage ? classifyStage(textsByLive.get(sessionId) ?? []) : null;
     }
     const entry = state[keyOf(store, id)];
     const lastAt = messages[messages.length - 1].at;
@@ -232,6 +248,26 @@ export function buildConversations(
     if (!!a.closed !== !!b.closed) return a.closed ? 1 : -1;
     return b.lastAt - a.lastAt;
   });
+}
+
+/** "1h 12min" — duración de una sesión. */
+export function durationLabel(startedAt: number, endedAt?: number): string {
+  const min = Math.max(1, Math.round(((endedAt ?? Date.now()) - startedAt) / 60000));
+  if (min < 60) return `${min} min`;
+  return `${Math.floor(min / 60)}h ${min % 60}min`;
+}
+
+/** Conteo por etapa de las conversaciones que participaron en ese live. */
+export function stageCountsForLive(
+  conversations: Conversation[],
+  sessionId: string,
+): Record<LeadStage, number> {
+  const counts: Record<LeadStage, number> = { compra: 0, negociando: 0, interesado: 0 };
+  for (const conv of conversations) {
+    const tag = conv.liveTags.find((t) => t.sessionId === sessionId);
+    if (tag?.stage) counts[tag.stage]++;
+  }
+  return counts;
 }
 
 /** Cuántas conversaciones con mensajes de ese live siguen sin desenlace. */

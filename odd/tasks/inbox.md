@@ -93,3 +93,15 @@ El inbox es una pantalla nueva (`/app/inbox`) y no reemplaza `/app/history`: el 
 `InboxLayout` (`src/components/inbox-layout.tsx`) es el shell presentacional: dos columnas en desktop (`md:w-[22rem]` + `flex-1`), overlay a pantalla completa en móvil, y pantalla "Selecciona una conversación" cuando no hay selección.
 
 Verificado en Chromium: desktop 1440x900 sin selección → aside 352px en x=144 y sección 800px en x=496 con el empty state; con chat → misma geometría, la lista sigue visible y el botón de volver queda `display:none`. Móvil 390x844 → sin selección el aside ocupa el ancho y la sección es `display:none`; con chat el aside desaparece y la sección ocupa 390x844 con el botón de volver visible. Sin scroll horizontal en ningún caso.
+
+### L10 (el Historial se retira)
+
+> por cierto la feature de history ya no tiene sentido mantenerla ahora que tenemos la feature de bandeja, que dices?
+
+Decisión: borrar `/app/history` y absorber lo único que aportaba.
+
+- El post-live ya no manda a un reporte: `live-controller` redirige a `/app/inbox` y el CTA del diálogo dice "Rescatar mis ventas".
+- Las métricas por live se calculan al vuelo al elegir el chip: duración (`durationLabel`) y conteo por etapa. La etapa se deriva **solo con los comentarios de ese live** (`LiveTag.stage`), no con todos los mensajes de la persona: si alguien preguntó precio ayer y hoy solo mandó emojis, el live de hoy no cuenta como lead.
+- Se borró `history-page.tsx`, `src/pages/app/history.astro` y `src/app/` (resto de Next.js que ensuciaba el arranque del dev server). Nav sin "Historial"; el onboarding ahora dice "abre la Bandeja de rescate".
+- `buildConversations` recibe el clasificador inyectado (`classifyStage`): así el módulo no depende del clasificador y los tests corren con `node --test` sin resolver extensiones.
+- Verificado: 14/14 tests, `pnpm build` verde, y en navegador el chip "7 nov" muestra `1h 12min · 1 compra` y el "6 nov" `45 min · sin leads con intención`.
