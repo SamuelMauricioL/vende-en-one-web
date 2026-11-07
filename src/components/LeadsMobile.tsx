@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
-import { getSSEUrl } from "@/lib/api";
 import { loadFilters, getHighlightParts, customStageOverride } from "@/lib/keyword-filters";
 import {
   classifyLead,
@@ -41,9 +40,7 @@ interface LeadsMobileProps {
 }
 
 export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attendedMap, onToggleAttended, onConnectionError, onStageCountsReport, onCompraLeads }: LeadsMobileProps) {
-  const { data: users, connected, status, connectionError } = useSSE<TopUser>(
-    getSSEUrl(`/lives/${sessionId}/stats/stream`),
-  );
+  const { data: users, connected, status, connectionError } = useSSE<TopUser>(`/lives/${sessionId}/stats/stream`, sessionId);
 
   useEffect(() => {
     if (status === "ended" && onConnectionError) {

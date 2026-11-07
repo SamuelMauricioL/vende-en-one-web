@@ -15,6 +15,6 @@ export function getSSEUrl(path: string): string {
  * Returns the WebSocket URL for the live monitor endpoint.
  * The frontend connects via WebSocket to get real-time live status updates.
  */
-export function getMonitorWS(username: string): string {
-  return `${RAILWAY_WS}/lives/monitor/${encodeURIComponent(username)}`;
+export function getMonitorWS(username: string, ticket: string): string {
+  return `${RAILWAY_WS}/lives/monitor/${encodeURIComponent(username)}?ticket=${encodeURIComponent(ticket)}`;
 }

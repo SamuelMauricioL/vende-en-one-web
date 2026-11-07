@@ -114,34 +114,55 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     }
 
     setMonitorStatus("connecting");
-    const ws = new WebSocket(getMonitorWS(initialTikTokUsername));
-    wsRef.current = ws;
 
-    ws.onopen = () => setMonitorStatus("waiting");
+    // WebSocket no acepta headers: se pide un ticket de corta vida.
+    let cancelled = false;
+    let ws: WebSocket | null = null;
 
-    ws.onmessage = (event) => {
+    const connect = async () => {
+      let ticket = "";
       try {
-        const data = JSON.parse(event.data);
-        if (data.type === "status") {
-          setMonitorStatus(data.live ? "live" : "waiting");
+        const res = await fetch(
+          `/api/lives/ticket?kind=monitor&target=${encodeURIComponent(initialTikTokUsername)}`,
+          { headers: await authHeaders(getToken) },
+        );
+        if (res.ok) {
+          const body = (await res.json()) as { ticket?: string };
+          ticket = body.ticket ?? "";
         }
       } catch {
-        // ignore malformed messages
+        // sin ticket el servidor cierra la conexión; se refleja como error
       }
+      if (cancelled) return;
+
+      ws = new WebSocket(getMonitorWS(initialTikTokUsername, ticket));
+      wsRef.current = ws;
+
+      ws.onopen = () => setMonitorStatus("waiting");
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "status") {
+            setMonitorStatus(data.live ? "live" : "waiting");
+          }
+        } catch {
+          // ignore malformed messages
+        }
+      };
+
+      ws.onerror = () => setMonitorStatus("error");
+
+      ws.onclose = () => {
+        if (wsRef.current === ws) setMonitorStatus("idle");
+      };
     };
 
-    ws.onerror = () => {
-      setMonitorStatus("error");
-    };
-
-    ws.onclose = () => {
-      if (wsRef.current === ws) {
-        setMonitorStatus("idle");
-      }
-    };
+    void connect();
 
     return () => {
-      ws.close();
+      cancelled = true;
+      ws?.close();
       if (wsRef.current === ws) wsRef.current = null;
     };
   }, [activeSessionId, initialTikTokUsername]);

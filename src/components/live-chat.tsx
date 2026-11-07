@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
-import { getSSEUrl } from "@/lib/api";
 import { formatElapsed } from "@/lib/time";
 
 interface ChatMessage {
@@ -39,9 +38,7 @@ function getUserColor(userId: string | undefined): string {
 }
 
 export function LiveChat({ sessionId, selectedUserIds, onConnectionError }: LiveChatProps) {
-  const { data: messages, connected, status, connectionError } = useSSE<ChatMessage>(
-    getSSEUrl(`/lives/${sessionId}/chat/stream`),
-  );
+  const { data: messages, connected, status, connectionError } = useSSE<ChatMessage>(`/lives/${sessionId}/chat/stream`, sessionId);
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [, setTick] = useState(0);
