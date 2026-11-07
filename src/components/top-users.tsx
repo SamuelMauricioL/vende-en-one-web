@@ -11,6 +11,7 @@ import {
 } from "@/lib/lead-classifier";
 
 import { loadFilters, getHighlightParts, customStageOverride } from "@/lib/keyword-filters";
+import type { CompraLead } from "@/components/purchase-alerts";
 
 const STAGE_EMOJI: Record<string, string> = {
   compra: "🔥",
@@ -40,9 +41,10 @@ interface TopUsersProps {
   maxMobileItems?: number;
   onConnectionError?: (error: string) => void;
   onStageCountsReport?: (counts: Record<LeadStage, number>) => void;
+  onCompraLeads?: (leads: CompraLead[]) => void;
 }
 
-export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap, onToggleAttended, maxMobileItems, onConnectionError, onStageCountsReport }: TopUsersProps) {
+export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap, onToggleAttended, maxMobileItems, onConnectionError, onStageCountsReport, onCompraLeads }: TopUsersProps) {
   const { data: users, connected, status, connectionError } = useSSE<TopUser>(
     getSSEUrl(`/lives/${sessionId}/stats/stream`),
   );
@@ -91,6 +93,20 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
     for (const u of enriched) counts[u.stage]++;
     onStageCountsReport(counts);
   }, [enriched, onStageCountsReport]);
+
+  // Report purchase leads so the parent can raise floating alerts
+  useEffect(() => {
+    if (!onCompraLeads) return;
+    onCompraLeads(
+      enriched
+        .filter((u) => u.stage === "compra")
+        .map((u) => ({
+          tiktokUserId: u.tiktokUserId,
+          name: u.nickname || u.displayId || "Anónimo",
+          message: u.keyAction,
+        })),
+    );
+  }, [enriched, onCompraLeads]);
 
   // Auto-unattend: if an attended user sent new messages, move back to pending
   useEffect(() => {

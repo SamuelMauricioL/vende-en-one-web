@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { TopUsers } from "./top-users";
 import { LiveChat } from "./live-chat";
 import { LeadsMobile } from "./LeadsMobile";
+import { PurchaseAlerts, type CompraLead } from "./purchase-alerts";
 import { LiveEndedDialog } from "./LiveEndedDialog";
 import { trackEvent } from "@/lib/plausible";
 import { getMonitorWS } from "@/lib/api";
@@ -68,12 +69,21 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   const [showEditInput, setShowEditInput] = useState(false);
   const [showLiveEndedDialog, setShowLiveEndedDialog] = useState(false);
   const [stageCounts, setStageCounts] = useState<Record<string, number>>({ compra: 0, negociando: 0, interesado: 0 });
+  const [compraReport, setCompraReport] = useState<{ sessionId: string; leads: CompraLead[] } | null>(null);
   const [monitorStatus, setMonitorStatus] = useState<"idle" | "connecting" | "waiting" | "live" | "error">("idle");
   const wsRef = useRef<WebSocket | null>(null);
 
   const onStageCountsReport = useCallback((counts: Record<string, number>) => {
     setStageCounts(counts);
   }, []);
+
+  const onCompraLeadsReport = useCallback(
+    (leads: CompraLead[]) => {
+      if (!activeSessionId) return;
+      setCompraReport({ sessionId: activeSessionId, leads });
+    },
+    [activeSessionId],
+  );
 
   // ── Auto-reconnect on mount ──
   const autoReconnectAttempted = useRef(false);
@@ -649,6 +659,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
               maxMobileItems={5}
               onConnectionError={handleConnectionError}
               onStageCountsReport={onStageCountsReport}
+              onCompraLeads={onCompraLeadsReport}
             />
           </div>
           {/* Mobile leads card */}
@@ -661,12 +672,19 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
               onToggleAttended={toggleAttended}
               onConnectionError={handleConnectionError}
               onStageCountsReport={onStageCountsReport}
+              onCompraLeads={onCompraLeadsReport}
             />
           </div>
           <div className="lg:col-span-3 lg:order-last flex flex-col min-h-0 overflow-hidden">
             <LiveChat sessionId={activeSessionId} selectedUserIds={selectedUserIds} onConnectionError={handleConnectionError} />
           </div>
         </div>
+
+          <PurchaseAlerts
+            key={activeSessionId}
+            leads={compraReport?.sessionId === activeSessionId ? compraReport.leads : null}
+            onOpenLead={toggleUser}
+          />
       </>)}
 
       {showLiveEndedDialog && (
