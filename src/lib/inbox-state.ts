@@ -26,6 +26,8 @@ export interface InboxEntry {
   /** Sin `state` la conversación sigue abierta aunque se haya visto. */
   state?: Outcome;
   closedAt?: number;
+  /** Último mensaje que el vendedor tenía delante al cerrar: habilita la reapertura. */
+  closedThrough?: number;
   reason?: IgnoreReason;
   waNumber?: string;
   lastSeenAt?: number;
@@ -128,13 +130,20 @@ export function setOutcome(
   id: string,
   at: number,
   outcome: Outcome,
-  extra?: { reason?: IgnoreReason; waNumber?: string },
+  extra?: { reason?: IgnoreReason; waNumber?: string; through?: number },
 ): InboxState {
   const key = keyOf(store, id);
   const prev = state[key] ?? {};
   return {
     ...state,
-    [key]: { ...prev, state: outcome, closedAt: at, reason: extra?.reason, waNumber: extra?.waNumber },
+    [key]: {
+      ...prev,
+      state: outcome,
+      closedAt: at,
+      closedThrough: extra?.through,
+      reason: extra?.reason,
+      waNumber: extra?.waNumber,
+    },
   };
 }
 
@@ -142,7 +151,7 @@ export function clearOutcome(state: InboxState, store: string, id: string): Inbo
   const key = keyOf(store, id);
   const prev = state[key];
   if (!prev) return state;
-  const { state: _s, closedAt: _c, reason: _r, waNumber: _w, ...rest } = prev;
+  const { state: _s, closedAt: _c, closedThrough: _t, reason: _r, waNumber: _w, ...rest } = prev;
   return { ...state, [key]: rest };
 }
 
@@ -197,8 +206,11 @@ export function buildConversations(
     }
     const entry = state[keyOf(store, id)];
     const lastAt = messages[messages.length - 1].at;
+    // Reabre solo si llegó un mensaje posterior al que se cubrió al cerrar.
+    // No se compara con la hora del cierre: el reloj del live puede venir adelantado.
+    const closedThrough = entry?.closedThrough ?? entry?.closedAt ?? 0;
     const closed =
-      entry?.state && entry.closedAt != null && entry.closedAt >= lastAt
+      entry?.state && entry.closedAt != null && closedThrough >= lastAt
         ? { ...entry, state: entry.state, closedAt: entry.closedAt }
         : null;
 

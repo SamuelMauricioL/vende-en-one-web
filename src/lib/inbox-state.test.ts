@@ -119,3 +119,26 @@ test("las abiertas van antes que las cerradas y por último mensaje", () => {
 test("closedOutcome tolera estado vacío", () => {
   assert.equal(closedOutcome(loadState(), STORE, ROSA), null);
 });
+
+test("cierra aunque la hora del mensaje esté adelantada respecto al cierre", () => {
+  // Reloj desfasado: el último mensaje parece del futuro (23:30) y el cierre ocurre "ahora" (21:05).
+  const adelantado = [
+    session("s7", LIVE_7, [[ROSA, "precio porfa", LIVE_7 + 9_000_000]]),
+  ];
+  const conv = buildConversations(adelantado, STORE, {}).find((c) => c.tiktokUserId === ROSA);
+  assert.ok(conv);
+  const state = setOutcome({}, STORE, ROSA, LIVE_7 + 5_000, "ignorado", {
+    through: conv.lastAt,
+  });
+  const cerrada = buildConversations(adelantado, STORE, state).find((c) => c.tiktokUserId === ROSA);
+  assert.equal(cerrada?.closed?.state, "ignorado");
+});
+
+test("el cierre cubre hasta el último mensaje visto, no hasta el reloj", () => {
+  const state = setOutcome({}, STORE, ROSA, LIVE_7 + 5_000, "contactado", {
+    through: LIVE_7 + 3_000,
+  });
+  const despues = [session("s7", LIVE_7, [[ROSA, "nuevo mensaje", LIVE_7 + 60_000]])];
+  const conv = buildConversations(despues, STORE, state).find((c) => c.tiktokUserId === ROSA);
+  assert.equal(conv?.closed, null, "un mensaje posterior al cierre lo reabre");
+});
