@@ -12,8 +12,8 @@ Integrar a la web el flujo de onboarding del prototipo (`liveleads-demo`), sin e
 
 ## Tasks
 
-- T1 · S1-S4 · stepper de 4 pasos en `/link-tiktok` + presets y guía de primer live · commit `feat(onboarding): ...`
-- T2 · S1-S5 · verificación (build + recorrido en navegador) · sin commit
+- T1 · S1-S4 · stepper de 4 pasos en `/link-tiktok` + presets y guía de primer live · commit `9e3cf4c`
+- T2 · S1-S5 · verificación · sin commit (evidencia en L5)
 
 ## Log
 
@@ -32,3 +32,15 @@ El flujo se integra extendiendo el stepper existente de `/link-tiktok` (ya era u
 ### L4 (decisión de producto)
 
 Se omite la línea "7 días gratis" del prototipo: la web aún no tiene facturación ni monedero, así que sería una promesa comercial que el producto no puede cumplir. Pendiente de confirmación del humano.
+
+### L5 (verificación, T2)
+
+- `pnpm build` → OK (sin errores; los warnings de `optimizeDeps` y del runtime Node son preexistentes).
+- Pasos 3 y 4 recorridos en Chromium headless con los componentes reales: "Usar los recomendados" escribe 4 filtros en `localStorage.customKeywordFilters` con `stage` correcto, "Continuar" queda habilitado solo con filtros, "Lo hago después" avanza sin escribir nada, el CTA "Empezar" navega a `/app`.
+- `customStageOverride()` con `ONBOARDING_PRESETS` reales: 14/14 casos (compra, negociando y sin match). El primer intento falló en "envías a Trujillo?" → se agregaron los stems `envi`/`enví` al preset de Envío.
+- `/link-tiktok` sin sesión → 302 a `/sign-in` (middleware intacto).
+- Límite conocido: el paso 2 (guardar TikTok) no se pudo ejercitar de extremo a extremo en local porque la publishable key de Clerk es de producción y solo se inicializa en el dominio `tiktoklive.me`. La transición `200 de la API → setPhase("presets")` quedó verificada por lectura, no en navegador.
+
+### L6 (hallazgo preexistente, fuera de alcance)
+
+`src/app/app/history/page.tsx` es un resto de Next.js: el dev server imprime `Failed to run dependency scan ... next/navigation`. No afecta a `pnpm build` ni al runtime, pero ensucia el arranque local.
