@@ -11,6 +11,8 @@ import { PurchaseAlerts, type CompraLead } from "./purchase-alerts";
 import { LiveEndedDialog } from "./LiveEndedDialog";
 import { trackEvent } from "@/lib/plausible";
 import { getMonitorWS } from "@/lib/api";
+import { authHeaders } from "@/lib/api-auth";
+import { useAuth } from "@clerk/astro/react";
 
 const TIKTOK_URL_REGEX = /^(?:https?:\/\/)?(?:www\.)?tiktok\.com\/@([a-zA-Z0-9_.-]+)/;
 const TIKTOK_HANDLE_REGEX = /^@?([a-zA-Z0-9_.-]+)$/;
@@ -60,6 +62,8 @@ export interface LiveControllerHandle {
 }
 
 export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?: (active: boolean) => void; initialTikTokUsername?: string }>(({ onActiveChange, initialTikTokUsername = "" }, ref) => {
+  const { getToken } = useAuth();
+
   const [input, setInput] = useState(initialTikTokUsername ? `https://www.tiktok.com/@${initialTikTokUsername}` : "");
   const [loading, setLoading] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -148,7 +152,9 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
 
     // Check if the user is actually live on TikTok before starting
     try {
-      const checkRes = await fetch(`/api/lives/check/${encodeURIComponent(username)}`);
+      const checkRes = await fetch(`/api/lives/check/${encodeURIComponent(username)}`, {
+        headers: await authHeaders(getToken),
+      });
       if (checkRes.ok) {
         const { isLive } = await checkRes.json();
         if (!isLive) {
@@ -172,7 +178,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     try {
       const res = await fetch("/api/lives/start", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
         body: JSON.stringify({ username }),
       });
       const data = await res.json().catch(() => ({ raw: "respuesta no-JSON" }));
@@ -295,7 +301,9 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
 
     // Check if user is actually live
     try {
-      const checkRes = await fetch(`/api/lives/check/${encodeURIComponent(username)}`);
+      const checkRes = await fetch(`/api/lives/check/${encodeURIComponent(username)}`, {
+        headers: await authHeaders(getToken),
+      });
       if (checkRes.ok) {
         const { isLive } = await checkRes.json();
         if (!isLive) {
@@ -312,7 +320,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     try {
       const res = await fetch("/api/lives/start", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
         body: JSON.stringify({ username }),
       });
       const data = await res.json().catch(() => ({ raw: "respuesta no-JSON" }));
@@ -348,7 +356,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     try {
       const res = await fetch("/api/lives/stop", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
         body: JSON.stringify({ username: lastUsername }),
       });
       const data = await res.json().catch(() => ({ raw: "respuesta no-JSON" }));
@@ -468,7 +476,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                   try {
                     const res = await fetch("/api/lives/start", {
                       method: "POST",
-                      headers: { "Content-Type": "application/json" },
+                      headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
                       body: JSON.stringify({ username }),
                     });
                     const data = await res.json().catch(() => ({ raw: "respuesta no-JSON" }));

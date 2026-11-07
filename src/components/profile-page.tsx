@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@clerk/astro/react";
+import { authHeaders } from "@/lib/api-auth";
 import { toast } from "sonner";
 import { AppNav } from "@/components/app-nav";
 import { Toaster } from "@/components/ui/sonner";
 
 export default function ProfilePage() {
-  const { userId, isLoaded: authLoaded } = useAuth();
+  const { userId, isLoaded: authLoaded, getToken } = useAuth();
   const [tiktokUsername, setTiktokUsername] = useState("");
   const [originalUsername, setOriginalUsername] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,7 +32,8 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!authLoaded || !userId) return;
     setFetching(true);
-    fetch(`/api/users/profile/${userId}`)
+    authHeaders(getToken)
+      .then((headers) => fetch(`/api/users/profile/${userId}`, { headers }))
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         const stored = data?.profile?.tiktokUsername || "";
@@ -48,7 +50,7 @@ export default function ProfilePage() {
     try {
       const res = await fetch("/api/users/profile/tiktok", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
         body: JSON.stringify({
           clerkUserId: userId,
           tiktokUsername: tiktokUsername.trim(),

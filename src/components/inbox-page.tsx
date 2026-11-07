@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/astro/react";
+import { authHeaders } from "@/lib/api-auth";
 import { AppNav } from "@/components/app-nav";
 import { ChatThread } from "@/components/chat-thread";
 import { InboxLayout } from "@/components/inbox-layout";
@@ -18,7 +19,7 @@ import {
 
 /** Bandeja de rescate: datos + estado; la lista y el hilo son presentacionales. */
 export default function InboxPageClient() {
-  const { userId, isLoaded } = useAuth();
+  const { userId, isLoaded, getToken } = useAuth();
   const [store, setStore] = useState("");
   const [sessions, setSessions] = useState<InboxSessionInput[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,7 +39,9 @@ export default function InboxPageClient() {
   const fetchHistory = useCallback(async (u: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/lives/history/${encodeURIComponent(u)}`);
+      const res = await fetch(`/api/lives/history/${encodeURIComponent(u)}`, {
+        headers: await authHeaders(getToken),
+      });
       const data = await res.json();
       setSessions((data.sessions ?? []) as InboxSessionInput[]);
     } catch {
@@ -51,7 +54,8 @@ export default function InboxPageClient() {
 
   useEffect(() => {
     if (!isLoaded || !userId) return;
-    fetch(`/api/users/profile/${userId}`)
+    authHeaders(getToken)
+      .then((headers) => fetch(`/api/users/profile/${userId}`, { headers }))
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         const handle = data?.profile?.tiktokUsername;

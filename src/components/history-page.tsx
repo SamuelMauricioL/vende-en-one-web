@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "@clerk/astro/react";
+import { authHeaders } from "@/lib/api-auth";
 import { toast } from "sonner";
 import { AppNav } from "@/components/app-nav";
 import { Toaster } from "@/components/ui/sonner";
@@ -149,12 +150,13 @@ export default function HistoryPageClient({
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
-  const { userId, isLoaded: authLoaded } = useAuth();
+  const { userId, isLoaded: authLoaded, getToken } = useAuth();
 
   // Auto-fetch TikTok username from user profile
   useEffect(() => {
     if (!authLoaded || !userId || defaultUsername) return;
-    fetch(`/api/users/profile/${userId}`)
+    authHeaders(getToken)
+      .then((headers) => fetch(`/api/users/profile/${userId}`, { headers }))
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         const stored = data?.profile?.tiktokUsername;
@@ -174,6 +176,7 @@ export default function HistoryPageClient({
     try {
       const res = await fetch(
         `/api/lives/history/${encodeURIComponent(u.trim())}`,
+        { headers: await authHeaders(getToken) },
       );
       const data = await res.json();
       const list: HistorySession[] = data.sessions ?? [];

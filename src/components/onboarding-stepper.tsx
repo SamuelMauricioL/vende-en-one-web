@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@clerk/astro/react";
+import { authHeaders } from "@/lib/api-auth";
 import { useCallback, useState } from "react";
 import { FirstLiveStep, PresetsStep } from "@/components/onboarding-steps";
 
@@ -26,7 +27,7 @@ const STEPS = ["Tu cuenta", "Tu TikTok", "Tus filtros", "Primer live"];
 const PHASE_INDEX: Record<Phase, number> = { tiktok: 1, presets: 2, live: 3 };
 
 export default function OnboardingStepper() {
-  const { userId, isLoaded } = useAuth();
+  const { userId, isLoaded, getToken } = useAuth();
   const [phase, setPhase] = useState<Phase>("tiktok");
   const [input, setInput] = useState("");
   const [saving, setSaving] = useState(false);
@@ -46,7 +47,7 @@ export default function OnboardingStepper() {
       try {
         const res = await fetch("/api/users/profile/tiktok", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
           body: JSON.stringify({
             clerkUserId: userId,
             tiktokUsername: extracted,
