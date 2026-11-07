@@ -2,6 +2,7 @@
 
 import { useAuth } from "@clerk/astro/react";
 import { useCallback, useState } from "react";
+import { FirstLiveStep, PresetsStep } from "@/components/onboarding-steps";
 
 const TIKTOK_URL_REGEX = /^(?:https?:\/\/)?(?:www\.)?tiktok\.com\/@([a-zA-Z0-9_.-]+)/;
 const TIKTOK_HANDLE_REGEX = /^@?([a-zA-Z0-9_.-]+)$/;
@@ -15,19 +16,25 @@ function extractUsername(raw: string): string | null {
   return null;
 }
 
-const STEPS = [
-  { label: "Autenticación", done: true },
-  { label: "Tu TikTok", done: false },
-];
+/**
+ * Onboarding de primer uso: cuenta (Clerk) → TikTok → filtros → primer live.
+ * El paso de correo del prototipo no existe acá porque la sesión es de Google.
+ */
+type Phase = "tiktok" | "presets" | "live";
+
+const STEPS = ["Tu cuenta", "Tu TikTok", "Tus filtros", "Primer live"];
+
+const PHASE_INDEX: Record<Phase, number> = { tiktok: 1, presets: 2, live: 3 };
 
 export default function LinkTikTokStepper() {
   const { userId, isLoaded } = useAuth();
+  const [phase, setPhase] = useState<Phase>("tiktok");
   const [input, setInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
 
   const extracted = input.trim() ? extractUsername(input.trim()) : null;
+  const current = PHASE_INDEX[phase];
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -52,11 +59,7 @@ export default function LinkTikTokStepper() {
           throw new Error(data.message || "Error al guardar");
         }
 
-        setSaved(true);
-        // Redirect to /app after a brief pause
-        setTimeout(() => {
-          window.location.href = "/app";
-        }, 800);
+        setPhase("presets");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error desconocido");
       } finally {
@@ -78,20 +81,32 @@ export default function LinkTikTokStepper() {
     <div className="w-full max-w-md mx-auto px-0">
       {/* Stepper */}
       <div className="flex items-center justify-center gap-0 mb-8 sm:mb-12">
-        {STEPS.map((step, i) => (
-          <div key={step.label} className="flex items-center">
+        {STEPS.map((label, i) => (
+          <div key={label} className="flex items-center">
             {/* Step circle */}
             <div className="flex flex-col items-center gap-2">
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                  step.done
+                  i < current
                     ? "bg-[#fe2c55] text-white shadow-lg shadow-[#fe2c55]/30"
-                    : "bg-white/5 text-white/40 border border-white/10"
+                    : i === current
+                      ? "bg-[#fe2c55]/15 text-[#fe2c55] border border-[#fe2c55]/40"
+                      : "bg-white/5 text-white/40 border border-white/10"
                 }`}
               >
-                {step.done ? (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                {i < current ? (
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4.5 12.75l6 6 9-13.5"
+                    />
                   </svg>
                 ) : (
                   i + 1
@@ -99,17 +114,21 @@ export default function LinkTikTokStepper() {
               </div>
               <span
                 className={`text-[11px] font-medium whitespace-nowrap ${
-                  step.done ? "text-white/60" : "text-white/30"
+                  i < current
+                    ? "text-white/60"
+                    : i === current
+                      ? "text-white/80"
+                      : "text-white/30"
                 }`}
               >
-                {step.label}
+                {label}
               </span>
             </div>
             {/* Connector line */}
             {i < STEPS.length - 1 && (
               <div
-                className={`w-16 sm:w-24 h-0.5 mx-3 mb-7 rounded-full ${
-                  step.done ? "bg-[#fe2c55]/50" : "bg-white/5"
+                className={`w-8 sm:w-14 h-0.5 mx-2 mb-7 rounded-full ${
+                  i < current ? "bg-[#fe2c55]/50" : "bg-white/5"
                 }`}
               />
             )}
@@ -117,16 +136,10 @@ export default function LinkTikTokStepper() {
         ))}
       </div>
 
-      {saved ? (
-        <div className="text-center py-12">
-          <div className="w-14 h-14 rounded-full bg-[#4ade80]/15 mx-auto flex items-center justify-center mb-4">
-            <svg className="w-7 h-7 text-[#4ade80]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-            </svg>
-          </div>
-          <h2 className="text-lg font-bold text-white/80 mb-1">¡Listo!</h2>
-          <p className="text-sm text-white/40">Redirigiendo al Live Controller...</p>
-        </div>
+      {phase === "presets" ? (
+        <PresetsStep onContinue={() => setPhase("live")} />
+      ) : phase === "live" ? (
+        <FirstLiveStep onStart={() => (window.location.href = "/app")} />
       ) : (
         <>
           {/* Title */}
@@ -135,7 +148,8 @@ export default function LinkTikTokStepper() {
               Conecta tu TikTok
             </h2>
             <p className="mt-2 text-sm text-white/40 max-w-xs mx-auto">
-              Ingresa el enlace de tu perfil de TikTok para que podamos capturar tus leads automáticamente.
+              Ingresa el enlace de tu perfil de TikTok para que podamos capturar
+              tus leads automáticamente.
             </p>
           </div>
 
@@ -182,12 +196,10 @@ export default function LinkTikTokStepper() {
                   Guardando...
                 </span>
               ) : (
-                "Continuar al Live Controller"
+                "Continuar"
               )}
             </button>
           </form>
-
-          {/* Removed: skip link — middleware redirects back anyway */}
         </>
       )}
     </div>
