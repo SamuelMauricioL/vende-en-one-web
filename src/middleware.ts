@@ -2,7 +2,7 @@ import { clerkMiddleware } from "@clerk/astro/server";
 
 const API_BASE = "https://vende-en-one-api-production.up.railway.app";
 
-const protectedPaths = ["/app", "/link-tiktok"];
+const protectedPaths = ["/app", "/onboarding"];
 
 // Paths that require a linked TikTok account (subset of protectedPaths)
 const tiktokRequiredPaths = ["/app"];
@@ -45,11 +45,11 @@ export const onRequest = clerkMiddleware(async (auth, context, next) => {
           const data = await profileRes.json();
           const tiktokUsername = data?.profile?.tiktokUsername;
           if (!tiktokUsername) {
-            return context.redirect("/link-tiktok");
+            return context.redirect("/onboarding");
           }
         } else {
           // Profile not found (404) → no TikTok linked yet
-          return context.redirect("/link-tiktok");
+          return context.redirect("/onboarding");
         }
       } catch {
         // On error (timeout/network), allow access to avoid lockout

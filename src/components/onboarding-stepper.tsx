@@ -19,14 +19,13 @@ function extractUsername(raw: string): string | null {
 /**
  * Onboarding de primer uso: cuenta (Clerk) → TikTok → filtros → primer live.
  * El paso de correo del prototipo no existe acá porque la sesión es de Google.
- */
-type Phase = "tiktok" | "presets" | "live";
+ */type Phase = "tiktok" | "presets" | "live";
 
 const STEPS = ["Tu cuenta", "Tu TikTok", "Tus filtros", "Primer live"];
 
 const PHASE_INDEX: Record<Phase, number> = { tiktok: 1, presets: 2, live: 3 };
 
-export default function LinkTikTokStepper() {
+export default function OnboardingStepper() {
   const { userId, isLoaded } = useAuth();
   const [phase, setPhase] = useState<Phase>("tiktok");
   const [input, setInput] = useState("");

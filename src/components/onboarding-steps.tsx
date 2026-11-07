@@ -176,7 +176,7 @@ export function FirstLiveStep({ onStart }: { onStart: () => void }) {
         </h2>
       </div>
 
-      <ol className="space-y-3 mb-7">
+      <ol className="space-y-3 mb-5">
         {FIRST_LIVE_STEPS.map((text, i) => (
           <li
             key={text}
@@ -198,6 +198,21 @@ export function FirstLiveStep({ onStart }: { onStart: () => void }) {
           </li>
         ))}
       </ol>
+
+      {/* Prueba gratis: mismo mensaje que el prototipo */}
+      <div
+        className="flex items-center gap-3 rounded-xl px-4 py-3 mb-6"
+        style={{
+          background: "rgba(254,44,85,0.08)",
+          border: "1px solid rgba(254,44,85,0.25)",
+        }}
+      >
+        <span className="text-lg leading-none">🎁</span>
+        <span className="text-xs leading-relaxed text-white/70">
+          Tienes <strong className="text-white">7 días gratis</strong> para
+          probarlo todo.
+        </span>
+      </div>
 
       <button
         type="button"

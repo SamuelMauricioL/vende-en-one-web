@@ -1,23 +1,4 @@
 ---
-import AuthLayout from "@/layouts/AuthLayout.astro";
-import LinkTikTokStepper from "@/components/link-tiktok-stepper";
+// Ruta antigua del onboarding. Se mantiene para no romper enlaces guardados.
+return Astro.redirect("/onboarding", 302);
 ---
-
-<AuthLayout title="Primeros pasos — Live Leads">
-  <div class="w-full max-w-md">
-    <div class="flex flex-col items-center mb-8 sm:mb-10">
-      <!-- Logo -->
-      <div
-        class="w-12 h-12 rounded-2xl flex items-center justify-center font-extrabold text-sm shadow mb-4"
-        style="background: linear-gradient(135deg, #fe2c55, #25f4ee); color: #0b0f1a;"
-      >
-        LL
-      </div>
-      <h1 class="text-2xl font-extrabold text-white/90 tracking-tight">
-        Live Leads
-      </h1>
-    </div>
-
-    <LinkTikTokStepper client:load />
-  </div>
-</AuthLayout>

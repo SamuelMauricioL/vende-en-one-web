@@ -41,14 +41,14 @@ pnpm dev
 
 ## Onboarding de primer uso
 
-Todo ocurre en `/link-tiktok` (el middleware manda ahí a quien entra a `/app` sin TikTok vinculado):
+Todo ocurre en `/onboarding` (el middleware manda ahí a quien entra a `/app` sin TikTok vinculado; `/link-tiktok` solo redirige a la ruta nueva):
 
 | Paso | Pantalla | Qué hace |
 |---|---|---|
 | 1 | Tu cuenta | Sesión de Google vía Clerk. No hay confirmación por correo. |
 | 2 | Tu TikTok | Guarda el usuario en `POST /api/users/profile/tiktok`. |
 | 3 | Tus filtros | Ofrece `ONBOARDING_PRESETS` (Quiere comprar, Pregunta precio, Pregunta talla, Envío) y los guarda con `saveFilters()` en `localStorage.customKeywordFilters`, el mismo store que lee `/app/filters`. Tiene salida "Lo hago después". |
-| 4 | Tu primer live | Explica el ciclo (live en TikTok → Iniciar live → clasificación → Historial) y termina en `/app`. |
+| 4 | Tu primer live | Explica el ciclo (live en TikTok → Iniciar live → clasificación → Historial), muestra los **7 días gratis** y termina en `/app`. |
 
 Los pasos 3 y 4 salen del prototipo (`liveleads-demo`) sin el paso de correo. Colores, fuentes y componentes son los de la web: no se importó la paleta del prototipo.
 

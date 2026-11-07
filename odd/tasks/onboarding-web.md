@@ -14,6 +14,7 @@ Integrar a la web el flujo de onboarding del prototipo (`liveleads-demo`), sin e
 
 - T1 · S1-S4 · stepper de 4 pasos en `/link-tiktok` + presets y guía de primer live · commit `9e3cf4c`
 - T2 · S1-S5 · verificación · sin commit (evidencia en L5)
+- T3 · S4 · tarjeta de 7 días gratis + ruta `/onboarding` · commit `324b1e6`
 
 ## Log
 
@@ -33,6 +34,8 @@ El flujo se integra extendiendo el stepper existente de `/link-tiktok` (ya era u
 
 Se omite la línea "7 días gratis" del prototipo: la web aún no tiene facturación ni monedero, así que sería una promesa comercial que el producto no puede cumplir. Pendiente de confirmación del humano.
 
+**Corregido en L7**: el humano la pidió explícitamente y se agregó.
+
 ### L5 (verificación, T2)
 
 - `pnpm build` → OK (sin errores; los warnings de `optimizeDeps` y del runtime Node son preexistentes).
@@ -44,3 +47,15 @@ Se omite la línea "7 días gratis" del prototipo: la web aún no tiene facturac
 ### L6 (hallazgo preexistente, fuera de alcance)
 
 `src/app/app/history/page.tsx` es un resto de Next.js: el dev server imprime `Failed to run dependency scan ... next/navigation`. No afecta a `pnpm build` ni al runtime, pero ensucia el arranque local.
+
+### L7 (corrección del humano, verbatim)
+
+> te faltó la pantalla de 7 días de prueba gratis
+
+> también has el rename a /onboarding
+
+Implementado en T3: el bloque de prueba gratis va dentro del último paso (así está en el prototipo: timeline → regalo → CTA) con el copy exacto "Tienes 7 días gratis para probarlo todo.", y la ruta pasa a `/onboarding` con `/link-tiktok` como redirect 302.
+
+Verificación: `pnpm build` OK; en Chromium a 360px y 420px la tarjeta mide el ancho del contenedor (328/388px), usa `rgba(254,44,85,.08)` + borde `rgba(254,44,85,.25)`, el orden es timeline → regalo → "Empezar" y no hay desborde horizontal. Rutas en local: `/onboarding` → 302 `/sign-in`, `/link-tiktok` → 302 `/onboarding`. En producción, `/onboarding` respondía 404 antes de este commit: sirve como marcador objetivo del deploy.
+
+Pendiente: si el humano quiere la prueba gratis como **paso propio** con su propio círculo en el stepper (5 círculos), hay que revisar el ancho a 360px antes de agregarlo.
