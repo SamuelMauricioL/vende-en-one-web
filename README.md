@@ -52,6 +52,15 @@ Todo ocurre en `/onboarding` (el middleware manda ahí a quien entra a `/app` si
 
 Los pasos 3 y 4 salen del prototipo (`liveleads-demo`) sin el paso de correo. Colores, fuentes y componentes son los de la web: no se importó la paleta del prototipo.
 
+## Bandeja de rescate (`/app/inbox`)
+
+El bucle de rescate vive aquí, separado del Historial (que es el reporte de sesiones).
+
+- Lista de conversaciones agrupadas por persona entre lives, con chip por live (`7 nov`) y contador de mensajes. Un chip se apaga cuando ya no le debes nada a ese live.
+- El hilo muestra todos los mensajes de la persona con separador de fecha y tres desenlaces: **Abrir en TikTok** (contactado), **guardar número** (whatsapp) e **Ignorar** con motivo (no cliente / spam / ya compró).
+- El estado se guarda en `localStorage.ll_inbox_state`, indexado por `tienda:tiktokUserId`. Una conversación cerrada **se reabre** si la persona vuelve a escribir.
+- Reglas y modelo: `odd/tasks/inbox.md`. Pruebas: `pnpm run test` (node:test, sin dependencias nuevas).
+
 |## Deploy
 
 |Conecta el repo a Vercel. Las env vars se configuran en el dashboard.
