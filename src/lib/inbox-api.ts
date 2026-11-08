@@ -184,11 +184,11 @@ export interface StoreOption {
  * última tienda abierta y por último la primera. Sin esto, al vincular un `@`
  * nuevo el inbox seguía mostrando la tienda anterior.
  */
-export function pickActiveStore(
-  stores: StoreOption[],
+export function pickActiveStore<T extends StoreOption>(
+  stores: T[],
   profileHandle: string | undefined,
   savedId?: string | null,
-): StoreOption | null {
+): T | null {
   const norm = (v: string) => v.replace(/^@/, "").trim().toLowerCase();
 
   if (profileHandle) {
