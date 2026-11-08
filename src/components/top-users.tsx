@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
-import { leadMessage, type LeadRow } from "@/lib/filters-api";
+import { leadMessage, leadOutcome, type LeadRow } from "@/lib/filters-api";
+import { OUTCOME_COLOR, OUTCOME_LABEL } from "@/lib/inbox-api";
 import {
   NO_STAGE_COUNTS,
   STAGE_CONFIG,
@@ -22,8 +23,6 @@ interface TopUsersProps {
   sessionId: string;
   selectedUserIds: Set<string>;
   onToggleUser: (userId: string) => void;
-  attendedMap: Map<string, { attendedAt: number; commentCount: number }>;
-  onToggleAttended: (userId: string, commentCount?: number) => void;
   maxMobileItems?: number;
   onConnectionError?: (error: string) => void;
   onStageCountsReport?: (counts: Record<LeadStage, number>) => void;
@@ -32,9 +31,10 @@ interface TopUsersProps {
 
 /**
  * S4: el servidor ya filtró, clasificó, segmentó y ordenó.
- * Esta pantalla solo pinta `stage`, `stageLabel` y `spans`.
+ * Esta pantalla solo pinta `stage`, `stageLabel`, `spans` y, desde S10, el
+ * `outcome` que produce el resolutor: el vendedor no marca atendido.
  */
-export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap, onToggleAttended, maxMobileItems, onConnectionError, onStageCountsReport, onCompraLeads }: TopUsersProps) {
+export function TopUsers({ sessionId, selectedUserIds, onToggleUser, maxMobileItems, onConnectionError, onStageCountsReport, onCompraLeads }: TopUsersProps) {
   const { data: users, totals, connected, status, connectionError } = useSSE<LeadRow>(
     `/lives/${sessionId}/stats/stream`,
     sessionId,
@@ -73,17 +73,6 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
     );
   }, [rows, onCompraLeads]);
 
-  // Auto-unattend: if an attended user sent new messages, move back to pending
-  useEffect(() => {
-    if (rows.length === 0) return;
-    for (const row of rows) {
-      const info = attendedMap.get(row.tiktokUserId);
-      if (info && row.comments > info.commentCount) {
-        onToggleAttended(row.tiktokUserId);
-      }
-    }
-  }, [rows, attendedMap, onToggleAttended]);
-
   const [tick, setTick] = useState(0);
   const [activeStage, setActiveStage] = useState<"all" | LeadStage>("all");
 
@@ -106,17 +95,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
   }, []);
 
   // El orden es del servidor: no se reordena acá.
-  const pendingList = rows
-    .filter((row) => !attendedMap.has(row.tiktokUserId))
-    .filter((row) => activeStage === "all" || row.stage === activeStage);
-  const attendedList = rows
-    .filter((row) => attendedMap.has(row.tiktokUserId))
-    .filter((row) => activeStage === "all" || row.stage === activeStage)
-    .sort((a, b) => {
-      const aTime = attendedMap.get(a.tiktokUserId)?.attendedAt ?? 0;
-      const bTime = attendedMap.get(b.tiktokUserId)?.attendedAt ?? 0;
-      return bTime - aTime;
-    });
+  const visibleRows = rows.filter((row) => activeStage === "all" || row.stage === activeStage);
 
   const totalUsers = totals?.commented ?? 0;
 
@@ -124,10 +103,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
     const message = leadMessage(row);
     if (!message) return null;
     return (
-      <p
-        className="text-xs text-white/50 leading-relaxed truncate mt-0.5"
-        style={{ textDecoration: attendedMap.has(row.tiktokUserId) ? "line-through" : "none" }}
-      >
+      <p className="text-xs text-white/50 leading-relaxed truncate mt-0.5">
         {row.spans.length > 0
           ? row.spans.map((span, i) =>
               span.strong ? (
@@ -141,10 +117,11 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
     );
   };
 
-  const renderLead = (user: LeadRow, index: number, isAttended: boolean) => {
+  const renderLead = (user: LeadRow, index: number) => {
     const hideOnMobile = maxMobileItems && index >= maxMobileItems;
     const cfg = STAGE_CONFIG[user.stage];
     const isSelected = selectedUserIds.has(user.tiktokUserId);
+    const outcome = leadOutcome(user);
 
     return (
       <button
@@ -172,10 +149,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
             <div className="flex items-center gap-1.5 flex-wrap">
               <span
                 className="text-sm font-semibold truncate max-w-[140px] sm:max-w-[200px]"
-                style={{
-                  color: isAttended ? "rgba(255,255,255,0.3)" : cfg.color,
-                  textDecoration: isAttended ? "line-through" : "none",
-                }}
+                style={{ color: cfg.color }}
               >
                 {user.nickname || user.displayId || "Anónimo"}
               </span>
@@ -189,40 +163,22 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
                   {user.stageLabel}
                 </span>
               )}
+              {/* S10: el estado lo marca el resolutor, no el vendedor. */}
+              {outcome && (
+                <span
+                  className="text-[9px] font-bold px-1.5 py-0.5 rounded leading-none shrink-0"
+                  style={{
+                    color: OUTCOME_COLOR[outcome],
+                    backgroundColor: "rgba(255,255,255,0.06)",
+                  }}
+                >
+                  {OUTCOME_LABEL[outcome]}
+                </span>
+              )}
             </div>
 
             {renderSpans(user)}
           </div>
-
-          {/* Atender button */}
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onToggleAttended(user.tiktokUserId, user.comments); }}
-            className="shrink-0 flex items-center gap-1 rounded-lg transition-all duration-200 px-2 py-1 mt-0.5"
-            style={{
-              backgroundColor: isAttended ? `${cfg.color}20` : "rgba(255,255,255,0.04)",
-              border: `1px solid ${isAttended ? cfg.color : "rgba(255,255,255,0.08)"}`,
-              opacity: isAttended ? 0.7 : 1,
-            }}
-            title={isAttended ? "Marcado como atendido" : "Marcar como atendido"}
-          >
-            <svg
-              className="w-3 h-3 transition-all"
-              style={{ color: isAttended ? cfg.color : "rgba(255,255,255,0.3)" }}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={isAttended ? 2.5 : 1.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-            </svg>
-            <span
-              className="text-[10px] font-medium hidden sm:inline"
-              style={{ color: isAttended ? cfg.color : "rgba(255,255,255,0.4)" }}
-            >
-              {isAttended ? "Atendido" : "Atender"}
-            </span>
-          </button>
         </div>
       </button>
     );
@@ -304,24 +260,10 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
           </p>
         ) : (
           <>
-            {pendingList.length === 0 && attendedList.length === 0 ? (
+            {visibleRows.length === 0 ? (
               <p className="text-sm text-white/30 text-center py-12">Esperando mensajes...</p>
             ) : (
-              <>
-                {pendingList.map((user, index) => renderLead(user, index, false))}
-
-                {attendedList.length > 0 && (
-                  <div className="flex items-center gap-3 py-2 mt-2 mb-1">
-                    <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
-                    <span className="text-[10px] font-medium text-white/20 shrink-0">
-                      Atendidos ({attendedList.length})
-                    </span>
-                    <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
-                  </div>
-                )}
-
-                {attendedList.map((user, index) => renderLead(user, index, true))}
-              </>
+              visibleRows.map((user, index) => renderLead(user, index))
             )}
           </>
         )}

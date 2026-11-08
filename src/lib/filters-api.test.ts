@@ -7,11 +7,13 @@ import {
   fetchFilters,
   groupFiltersByStage,
   leadMessage,
+  leadOutcome,
   normalizeFilters,
   updateFilter,
   type FilterView,
   type LeadRow,
 } from "./filters-api.ts";
+import { OUTCOME_LABEL } from "./inbox-api.ts";
 
 /* ── Stub de fetch ── */
 
@@ -131,6 +133,21 @@ test("leadMessage usa los spans del servidor y cae al primer comentario", () => 
     "me interesa",
   );
   assert.equal(leadMessage(lead({ spans: [], commentTexts: [] })), null);
+});
+
+/* ── S10: el estado lo produce el resolutor ── */
+
+test("leadOutcome mapea los tres desenlaces y su etiqueta", () => {
+  for (const state of ["contactado", "whatsapp", "ignorado"] as const) {
+    assert.equal(leadOutcome(lead({ outcome: state })), state);
+    assert.ok(OUTCOME_LABEL[state].length > 0);
+  }
+});
+
+test("sin outcome, o con uno desconocido, la fila no lleva marca", () => {
+  assert.equal(leadOutcome(lead()), null);
+  assert.equal(leadOutcome(lead({ outcome: null })), null);
+  assert.equal(leadOutcome(lead({ outcome: "otro" as never })), null);
 });
 
 /* ── Cliente de filtros ── */
