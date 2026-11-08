@@ -6,6 +6,7 @@ import { authHeaders } from "@/lib/api-auth";
 import { toast } from "sonner";
 import { AppNav } from "@/components/app-nav";
 import { Toaster } from "@/components/ui/sonner";
+import StoresManager from "@/components/stores-manager";
 
 export default function ProfilePage() {
   const { userId, isLoaded: authLoaded, getToken } = useAuth();
@@ -210,6 +211,15 @@ export default function ProfilePage() {
             </button>
           </div>
         )}
+
+        {/* Mis tiendas: desde acá se agrega, se elige la activa y se elimina */}
+        <section id="tiendas" className="mt-8">
+          <h2 className="text-sm font-bold text-white/80 mb-1">Mis tiendas</h2>
+          <p className="text-[11px] text-white/30 mb-3">
+            La tienda activa se elige en el menú y aplica a Live, Bandeja y Filtros.
+          </p>
+          <StoresManager />
+        </section>
       </main>
 
       <Toaster richColors position="bottom-center" />
