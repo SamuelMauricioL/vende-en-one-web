@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  loadFilters,
-  saveFilters,
-  type KeywordCategory,
-} from "@/lib/keyword-filters";
+import { useAuth } from "@clerk/astro/react";
+import { authHeaders } from "@/lib/api-auth";
+import { resolveActiveStore } from "@/lib/active-store";
+import { createFilter, fetchFilters } from "@/lib/filters-api";
 import { ONBOARDING_PRESETS } from "@/lib/onboarding-presets";
+
+/** S6: un solo color distingue que algo es un filtro. */
+const FILTER_COLOR = "#fe2c55";
 
 /** Ejemplos simples por categoría: lo que un cliente escribe sobre un producto. */
 const PRESET_EXAMPLE: Record<string, string> = {
@@ -23,18 +25,65 @@ const primaryButton = {
 
 /** Paso 3: los filtros recomendados, con salida "Lo hago después". */
 export function PresetsStep({ onContinue }: { onContinue: () => void }) {
-  const [filters, setFilters] = useState<KeywordCategory[]>([]);
+  const { getToken } = useAuth();
+  const [storeId, setStoreId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [accepted, setAccepted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
+  // S1: los presets se guardan en la tienda activa del usuario.
   useEffect(() => {
-    setFilters(loadFilters());
-  }, []);
+    let cancelled = false;
+    void (async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await fetch("/api/stores", { headers: await authHeaders(getToken) });
+        if (!res.ok) throw new Error("stores");
+        const data = (await res.json()) as { stores?: Array<{ _id: string; tiktokUsername: string }> };
+        const store = resolveActiveStore(data.stores ?? []);
+        if (cancelled) return;
+        if (!store) {
+          setError("No encontramos tu tienda activa.");
+          return;
+        }
+        setStoreId(store._id);
+        const list = await fetchFilters(store._id, getToken);
+        if (cancelled) return;
+        // Los `system` siempre existen: solo cuentan los filtros propios.
+        setAccepted(list.some((filter) => filter.source === "store"));
+      } catch {
+        if (!cancelled) setError("No pudimos cargar tus filtros.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [getToken, reloadKey]);
 
-  const accepted = filters.length > 0;
-
-  const useRecommended = () => {
-    const next = [...loadFilters(), ...ONBOARDING_PRESETS];
-    saveFilters(next);
-    setFilters(next);
+  // El servidor deduplica por nombre: repetir el clic no duplica nada (S3).
+  const useRecommended = async () => {
+    if (!storeId || saving) return;
+    setSaving(true);
+    setError("");
+    try {
+      for (const preset of ONBOARDING_PRESETS) {
+        await createFilter(
+          storeId,
+          { name: preset.name, keywords: preset.keywords, stage: preset.stage },
+          getToken,
+        );
+      }
+      setAccepted(true);
+    } catch {
+      setError("No pudimos guardar los filtros. Intenta de nuevo.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -61,7 +110,7 @@ export function PresetsStep({ onContinue }: { onContinue: () => void }) {
           >
             <span
               className="w-2.5 h-2.5 rounded-full shrink-0"
-              style={{ background: preset.color }}
+              style={{ background: FILTER_COLOR }}
             />
             <span className="grow min-w-0">
               <span className="block text-sm font-semibold text-white/85">
@@ -86,14 +135,29 @@ export function PresetsStep({ onContinue }: { onContinue: () => void }) {
         ))}
       </ul>
 
+      {error && (
+        <div role="alert" aria-live="polite" className="mb-3 text-center">
+          <p className="text-[11px] text-[#fe2c55]">{error}</p>
+          <button
+            type="button"
+            onClick={() => setReloadKey((key) => key + 1)}
+            className="mt-1 text-[11px] text-white/40 hover:text-white/70 transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
       {!accepted ? (
         <button
           type="button"
-          onClick={useRecommended}
-          className="w-full h-12 rounded-xl font-semibold text-sm text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          onClick={() => void useRecommended()}
+          disabled={loading || saving || !storeId}
+          aria-busy={saving}
+          className="w-full h-12 rounded-xl font-semibold text-sm text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:hover:scale-100"
           style={primaryButton}
         >
-          Usar estos filtros
+          {saving ? "Guardando..." : "Usar estos filtros"}
         </button>
       ) : (
         <p className="text-[11px] text-[#4ade80] text-center">
