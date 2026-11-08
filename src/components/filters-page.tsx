@@ -24,11 +24,10 @@ const FILTER_COLOR = "#fe2c55";
 
 type LoadState = "loading" | "ready" | "error";
 
-const STAGE_LABELS: Record<LeadStage, string> = {
-  compra: "Compra",
-  negociando: "Negociando",
-  interesado: "Interesado",
-};
+/** Mismas etiquetas que el onboarding: una sola fuente para las etapas. */
+const STAGE_LABELS = Object.fromEntries(
+  Object.entries(STAGE_CONFIG).map(([stage, config]) => [stage, config.label]),
+) as Record<LeadStage, string>;
 
 export default function FiltersClient() {
   const { getToken } = useAuth();

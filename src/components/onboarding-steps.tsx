@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/astro/react";
 import { authHeaders } from "@/lib/api-auth";
 import { resolveActiveStore } from "@/lib/active-store";
-import { createFilter, fetchFilters } from "@/lib/filters-api";
+import { createFilter, discardFilters, fetchFilters, isStageFilter, type FilterView } from "@/lib/filters-api";
+import { STAGE_CONFIG } from "@/lib/stages";
 import { ONBOARDING_PRESETS } from "@/lib/onboarding-presets";
 
 /** S6: un solo color distingue que algo es un filtro. */
@@ -23,17 +24,18 @@ const primaryButton = {
   boxShadow: "0 8px 32px rgba(254,44,85,0.3)",
 } as const;
 
-/** Paso 3: los filtros recomendados, con salida "Lo hago después". */
+/** Paso 3: mismo modelo que la pantalla de Filtros: el sistema ya está activo y los tuyos se suman. */
 export function PresetsStep({ onContinue }: { onContinue: () => void }) {
   const { getToken } = useAuth();
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<FilterView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [accepted, setAccepted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [selected, setSelected] = useState<string[]>(() => ONBOARDING_PRESETS.map((preset) => preset.name));
 
-  // S1: los presets se guardan en la tienda activa del usuario.
+  // S1: los filtros son de la tienda activa; el sistema siempre viene en la lista.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -52,8 +54,7 @@ export function PresetsStep({ onContinue }: { onContinue: () => void }) {
         setStoreId(store._id);
         const list = await fetchFilters(store._id, getToken);
         if (cancelled) return;
-        // Los `system` siempre existen: solo cuentan los filtros propios.
-        setAccepted(list.some((filter) => filter.source === "store"));
+        setFilters(list);
       } catch {
         if (!cancelled) setError("No pudimos cargar tus filtros.");
       } finally {
@@ -65,78 +66,171 @@ export function PresetsStep({ onContinue }: { onContinue: () => void }) {
     };
   }, [getToken, reloadKey]);
 
-  // El servidor deduplica por nombre: repetir el clic no duplica nada (S3).
-  const useRecommended = async () => {
-    if (!storeId || saving) return;
-    setSaving(true);
-    setError("");
-    try {
-      for (const preset of ONBOARDING_PRESETS) {
-        await createFilter(
-          storeId,
-          { name: preset.name, keywords: preset.keywords, stage: preset.stage },
-          getToken,
-        );
+  const systemClassified = filters.filter((filter) => filter.source === "system").filter(isStageFilter);
+  const discarded = discardFilters(filters);
+  const ownNames = new Set(
+    filters.filter((filter) => filter.source === "store").map((filter) => filter.name.trim().toLowerCase()),
+  );
+
+  const toggle = (name: string) => {
+    setSelected((prev) => (prev.includes(name) ? prev.filter((item) => item !== name) : [...prev, name]));
+  };
+
+  // El servidor deduplica por nombre: reenviar un preset activo no duplica nada (S3).
+  const handleContinue = async () => {
+    if (saving) return;
+    const pending = ONBOARDING_PRESETS.filter(
+      (preset) => selected.includes(preset.name) && !ownNames.has(preset.name.trim().toLowerCase()),
+    );
+    if (storeId && pending.length > 0) {
+      setSaving(true);
+      setError("");
+      try {
+        for (const preset of pending) {
+          await createFilter(
+            storeId,
+            { name: preset.name, keywords: preset.keywords, stage: preset.stage },
+            getToken,
+          );
+        }
+      } catch {
+        setError("No pudimos guardar tus filtros. Intenta de nuevo.");
+        setSaving(false);
+        return;
       }
-      setAccepted(true);
-    } catch {
-      setError("No pudimos guardar los filtros. Intenta de nuevo.");
-    } finally {
       setSaving(false);
     }
+    onContinue();
   };
 
   return (
     <div className="w-full">
       <div className="text-center mb-6">
-        <h2 className="text-xl font-extrabold text-white/90 tracking-tight">
-          Elige tus filtros
-        </h2>
+        <h2 className="text-xl font-extrabold text-white/90 tracking-tight">Tus filtros</h2>
         <p className="mt-2 text-sm text-white/40 max-w-sm mx-auto">
-          Marca los que te sirvan en tu live. Puedes cambiarlos cuando quieras.
+          Las palabras que atrapan a quien pregunta por tu producto: si un comentario coincide, se vuelve un lead.
+          Los del sistema ya están activos y los tuyos se suman.
         </p>
       </div>
 
-      {/* Un ejemplo por categoría, con productos que se venden en vivo */}
-      <ul className="space-y-2 mb-5">
-        {ONBOARDING_PRESETS.map((preset) => (
-          <li
-            key={preset.id}
-            className="rounded-xl px-4 py-3 flex items-center gap-3"
-            style={{
-              background: accepted ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.03)",
-              border: `1px solid ${accepted ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.06)"}`,
-            }}
-          >
-            <span
-              className="w-2.5 h-2.5 rounded-full shrink-0"
-              style={{ background: FILTER_COLOR }}
-            />
-            <span className="grow min-w-0">
-              <span className="block text-sm font-semibold text-white/85">
-                {preset.name}
+      {loading ? (
+        <div role="status" aria-live="polite" className="flex flex-col items-center gap-3 py-10">
+          <div className="w-6 h-6 rounded-full border-2 border-white/10 border-t-[#fe2c55] animate-spin" />
+          <span className="text-xs text-white/30">Cargando tus filtros...</span>
+        </div>
+      ) : (
+        <>
+          {/* Del sistema: siempre activos, no se editan. Mismo lenguaje que la pantalla de Filtros. */}
+          {(systemClassified.length > 0 || discarded.length > 0) && (
+            <section className="mb-5" aria-labelledby="onb-system">
+              <header className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-semibold tracking-wider uppercase text-white/35" id="onb-system">
+                  Del sistema
+                </span>
+                <span className="text-[10px] font-mono tabular-nums text-white/20">
+                  {systemClassified.length + discarded.length}
+                </span>
+                <span className="text-[10px] text-white/25">siempre activos</span>
+              </header>
+              <ul className="space-y-1">
+                {systemClassified.map((filter) => (
+                  <li
+                    key={filter.id}
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
+                    style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+                  >
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: FILTER_COLOR }} />
+                    <span className="flex-1 text-sm font-semibold text-white/85 min-w-0 truncate">{filter.name}</span>
+                    <span className="text-[10px] font-semibold shrink-0" style={{ color: STAGE_CONFIG[filter.stage].color }}>
+                      {STAGE_CONFIG[filter.stage].label}
+                    </span>
+                    <span
+                      className="px-2 py-0.5 rounded-lg text-[10px] font-semibold shrink-0"
+                      style={{ backgroundColor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.4)" }}
+                      title="Filtro del sistema: no se puede editar"
+                    >
+                      Sistema
+                    </span>
+                  </li>
+                ))}
+                {discarded.map((filter) => (
+                  <li
+                    key={filter.id}
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
+                    style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+                  >
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: FILTER_COLOR }} />
+                    <span className="flex-1 text-sm font-semibold text-white/85 min-w-0 truncate">{filter.name}</span>
+                    <span
+                      className="px-2 py-0.5 rounded-lg text-[10px] font-semibold shrink-0"
+                      style={{ backgroundColor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.4)" }}
+                      title="Filtro del sistema: no se puede editar"
+                    >
+                      Sistema
+                    </span>
+                    <span
+                      className="px-2 py-0.5 rounded-lg text-[10px] font-semibold shrink-0"
+                      style={{ backgroundColor: "rgba(245,158,11,0.12)", color: "#f59e0b" }}
+                      title="Estos mensajes se descartan: no se clasifican ni llegan a tus leads"
+                    >
+                      Descarta
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* Tus filtros: los recomendados que se suman a los del sistema. */}
+          <section aria-labelledby="onb-mine">
+            <header className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-semibold tracking-wider uppercase text-white/35" id="onb-mine">
+                Tus filtros
               </span>
-              <span className="block text-[11px] text-white/35 truncate">
-                {PRESET_EXAMPLE[preset.id]}
-              </span>
-            </span>
-            {accepted && (
-              <svg
-                className="w-4 h-4 shrink-0 text-[#4ade80]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
-            )}
-          </li>
-        ))}
-      </ul>
+              <span className="text-[10px] text-white/25">toca para agregar o quitar</span>
+            </header>
+            <ul className="space-y-2">
+              {ONBOARDING_PRESETS.map((preset) => {
+                const already = ownNames.has(preset.name.trim().toLowerCase());
+                const on = already || selected.includes(preset.name);
+                return (
+                  <li key={preset.id}>
+                    <button
+                      type="button"
+                      onClick={() => (already ? undefined : toggle(preset.name))}
+                      aria-pressed={on}
+                      disabled={already}
+                      className="w-full rounded-xl px-4 py-3 flex items-center gap-3 text-left transition-all duration-200 disabled:cursor-default"
+                      style={{
+                        background: on ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.03)",
+                        border: `1px solid ${on ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.06)"}`,
+                      }}
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: FILTER_COLOR, opacity: on ? 1 : 0.3 }} />
+                      <span className="grow min-w-0">
+                        <span className="block text-sm font-semibold text-white/85">{preset.name}</span>
+                        <span className="block text-[11px] text-white/35 truncate">{PRESET_EXAMPLE[preset.id]}</span>
+                      </span>
+                      <span className="text-[10px] font-semibold shrink-0" style={{ color: STAGE_CONFIG[preset.stage].color }}>
+                        {STAGE_CONFIG[preset.stage].label}
+                      </span>
+                      <span
+                        className="text-[10px] font-semibold shrink-0"
+                        style={{ color: already ? "#4ade80" : on ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.2)" }}
+                      >
+                        {already ? "Activo" : on ? "Agregar" : "Omitir"}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        </>
+      )}
 
       {error && (
-        <div role="alert" aria-live="polite" className="mb-3 text-center">
+        <div role="alert" aria-live="polite" className="mt-3 text-center">
           <p className="text-[11px] text-[#fe2c55]">{error}</p>
           <button
             type="button"
@@ -148,31 +242,15 @@ export function PresetsStep({ onContinue }: { onContinue: () => void }) {
         </div>
       )}
 
-      {!accepted ? (
-        <button
-          type="button"
-          onClick={() => void useRecommended()}
-          disabled={loading || saving || !storeId}
-          aria-busy={saving}
-          className="w-full h-12 rounded-xl font-semibold text-sm text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:hover:scale-100"
-          style={primaryButton}
-        >
-          {saving ? "Guardando..." : "Usar estos filtros"}
-        </button>
-      ) : (
-        <p className="text-[11px] text-[#4ade80] text-center">
-          Listo: estos filtros ya están activos en tu cuenta.
-        </p>
-      )}
-
       <button
         type="button"
-        onClick={onContinue}
-        disabled={!accepted}
-        className="w-full h-12 rounded-xl font-semibold text-sm text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:hover:scale-100 mt-4"
+        onClick={() => void handleContinue()}
+        disabled={loading || saving}
+        aria-busy={saving}
+        className="w-full h-12 rounded-xl font-semibold text-sm text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:hover:scale-100 mt-6"
         style={primaryButton}
       >
-        Continuar
+        {saving ? "Guardando..." : "Continuar"}
       </button>
 
       <button
