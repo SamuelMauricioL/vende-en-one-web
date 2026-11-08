@@ -183,3 +183,17 @@ test("sin perfil ni guardada, cae en la primera", () => {
   assert.equal(pickActiveStore(stores, undefined, null)?._id, "s-vieja");
   assert.equal(pickActiveStore([], "x", "y"), null);
 });
+
+test("cada conversación sabe de qué tienda es", () => {
+  const list = mapConversations(rows, [], { storeId: "s-1", storeLabel: "@tienda.uno" });
+  assert.equal(list[0].storeId, "s-1");
+  assert.equal(list[0].storeLabel, "@tienda.uno");
+  assert.ok(list[0].key.startsWith("s-1:"));
+});
+
+test("la misma persona en dos tiendas son dos conversaciones", () => {
+  const uno = mapConversations(rows, [], { storeId: "s-1", storeLabel: "@uno" });
+  const dos = mapConversations(rows, [], { storeId: "s-2", storeLabel: "@dos" });
+  const claves = new Set([...uno, ...dos].map((c) => c.key));
+  assert.equal(claves.size, uno.length + dos.length, "no se deben pisar entre tiendas");
+});

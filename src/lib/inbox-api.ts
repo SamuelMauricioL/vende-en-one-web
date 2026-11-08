@@ -50,8 +50,13 @@ export interface LiveTag {
 }
 
 export interface Conversation {
+  /** Clave única: la persona dentro de una tienda (el mismo @ puede estar en dos). */
   key: string;
   tiktokUserId: string;
+  /** Tienda a la que pertenece la conversación (clave para los desenlaces). */
+  storeId: string;
+  /** "@tienda" para etiquetar la fila cuando se ven varias a la vez. */
+  storeLabel: string;
   name: string;
   totalMessages: number;
   lastText: string;
@@ -102,8 +107,11 @@ export function isUnread(lastAt: number, lead: InboxLead | null | undefined): bo
 export function mapConversations(
   rows: InboxRow[],
   leads: InboxLead[],
+  store?: { storeId: string; storeLabel: string },
 ): Conversation[] {
   const byUser = new Map(leads.map((l) => [l.tiktokUserId, l]));
+  const storeId = store?.storeId ?? "";
+  const storeLabel = store?.storeLabel ?? "";
 
   const list: Conversation[] = rows.map((row) => {
     const lead = byUser.get(row.tiktokUserId) ?? null;
@@ -117,8 +125,10 @@ export function mapConversations(
       .sort((a, b) => b.endedAt - a.endedAt);
 
     return {
-      key: row.tiktokUserId,
+      key: `${storeId}:${row.tiktokUserId}`,
       tiktokUserId: row.tiktokUserId,
+      storeId,
+      storeLabel,
       name: row.displayId || row.nickname || "Anónimo",
       totalMessages: row.totalMessages,
       lastText: row.lastText,

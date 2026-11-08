@@ -8,18 +8,18 @@ import { InboxLayout } from "@/components/inbox-layout";
 import { InboxList } from "@/components/inbox-list";
 import { Toaster } from "@/components/ui/sonner";
 import { authHeaders } from "@/lib/api-auth";
-import { readActiveStoreId, useActiveStoreId, writeActiveStoreId } from "@/lib/active-store";
+import { readActiveStoreId, useActiveStoreId } from "@/lib/active-store";
 import {
   mapConversations,
   pendingTotal,
   pickActiveStore,
+  type Conversation,
   type InboxLead,
   type InboxRow,
   type ThreadMessage,
 } from "@/lib/inbox-api";
 
 const LEGACY_KEY = "ll_inbox_state";
-const ACTIVE_STORE_KEY = "ll_active_store";
 const THREAD_PAGE = 100;
 
 interface StoreSummary {
@@ -28,17 +28,27 @@ interface StoreSummary {
   tiktokUsername: string;
 }
 
+/** Datos de una tienda ya mapeados: el mismo @ puede existir en dos tiendas. */
+interface ScopedData {
+  storeId: string;
+  storeLabel: string;
+  rows: InboxRow[];
+  leads: InboxLead[];
+}
+
+type Scope = "store" | "all";
+
 /** Bandeja servida por el API: agregado por persona, hilo paginado y desenlaces. */
 export default function InboxPageClient() {
   const { userId, isLoaded, getToken } = useAuth();
-  const [stores, setStores] = useState<StoreSummary[]>([]);
   const activeStoreId = useActiveStoreId();
+  const [stores, setStores] = useState<StoreSummary[]>([]);
   const [store, setStore] = useState<StoreSummary | null>(null);
-  const [rows, setRows] = useState<InboxRow[]>([]);
-  const [leads, setLeads] = useState<InboxLead[]>([]);
+  const [scope, setScope] = useState<Scope>("store");
+  const [data, setData] = useState<ScopedData[]>([]);
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openKey, setOpenKey] = useState<string | null>(null);
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
   const [threadLoading, setThreadLoading] = useState(false);
   const [hasMore, setHasMore] = useState(false);
@@ -51,19 +61,28 @@ export default function InboxPageClient() {
     [getToken],
   );
 
-  const loadInbox = useCallback(
-    async (storeId: string) => {
-      const res = await api(`/api/stores/${storeId}/inbox`);
-      if (!res.ok) {
-        setRows([]);
-        setLeads([]);
-        return;
-      }
-      const data = (await res.json()) as { conversations: InboxRow[]; leads: InboxLead[] };
-      setRows(data.conversations ?? []);
-      setLeads(data.leads ?? []);
+  const loadStore = useCallback(
+    async (target: StoreSummary): Promise<ScopedData | null> => {
+      const res = await api(`/api/stores/${target._id}/inbox`);
+      if (!res.ok) return null;
+      const payload = (await res.json()) as { conversations: InboxRow[]; leads: InboxLead[] };
+      return {
+        storeId: target._id,
+        storeLabel: `@${target.tiktokUsername}`,
+        rows: payload.conversations ?? [],
+        leads: payload.leads ?? [],
+      };
     },
     [api],
+  );
+
+  const loadInbox = useCallback(
+    async (nextScope: Scope, target: StoreSummary | null, list: StoreSummary[]) => {
+      const targets = nextScope === "all" ? list : target ? [target] : [];
+      const results = await Promise.all(targets.map((t) => loadStore(t)));
+      setData(results.filter((r): r is ScopedData => r !== null));
+    },
+    [loadStore],
   );
 
   /**
@@ -109,20 +128,6 @@ export default function InboxPageClient() {
     [api],
   );
 
-  const switchStore = useCallback(
-    async (id: string) => {
-      const next = stores.find((s) => s._id === id);
-      if (!next) return;
-      writeActiveStoreId(id);
-      setStore(next);
-      setOpenId(null);
-      setMessages([]);
-      setHasMore(false);
-      await loadInbox(id);
-    },
-    [stores, loadInbox],
-  );
-
   useEffect(() => {
     if (!isLoaded || !userId) return;
     let cancelled = false;
@@ -137,8 +142,8 @@ export default function InboxPageClient() {
           if (!cancelled) setLoading(false);
           return;
         }
-        const data = (await storesRes.json()) as { stores: StoreSummary[] };
-        const list = data.stores ?? [];
+        const payload = (await storesRes.json()) as { stores: StoreSummary[] };
+        const list = payload.stores ?? [];
         const profile = profileRes.ok
           ? ((await profileRes.json()) as { profile?: { tiktokUsername?: string } })
           : null;
@@ -150,7 +155,7 @@ export default function InboxPageClient() {
         setStore(active);
         if (active) {
           await migrateLegacy(active._id);
-          await loadInbox(active._id);
+          await loadInbox("store", active, list);
         }
       } finally {
         if (!cancelled) {
@@ -163,61 +168,89 @@ export default function InboxPageClient() {
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, userId, api, loadInbox, migrateLegacy]);
+    // activeStoreId cambia cuando se elige otra tienda en el menú
+  }, [isLoaded, userId, api, loadInbox, migrateLegacy, activeStoreId]);
 
-  const conversations = useMemo(() => mapConversations(rows, leads), [rows, leads]);
-  const openConversation = conversations.find((c) => c.tiktokUserId === openId) ?? null;
+  const conversations = useMemo(
+    () =>
+      data.flatMap((chunk) =>
+        mapConversations(chunk.rows, chunk.leads, {
+          storeId: chunk.storeId,
+          storeLabel: chunk.storeLabel,
+        }),
+      ),
+    [data],
+  );
+
+  const openConversation = conversations.find((c) => c.key === openKey) ?? null;
+
+  const switchScope = useCallback(
+    async (next: Scope) => {
+      setScope(next);
+      setOpenKey(null);
+      setMessages([]);
+      setHasMore(false);
+      setLoading(true);
+      try {
+        await loadInbox(next, store, stores);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loadInbox, store, stores],
+  );
 
   const loadThread = useCallback(
-    async (tiktokUserId: string, before?: number) => {
-      if (!store) return;
+    async (conversation: Conversation, before?: number) => {
       setThreadLoading(true);
       try {
         const query = new URLSearchParams({ limit: String(THREAD_PAGE) });
         if (before) query.set("before", String(before));
         const res = await api(
-          `/api/stores/${store._id}/thread/${encodeURIComponent(tiktokUserId)}?${query}`,
+          `/api/stores/${conversation.storeId}/thread/${encodeURIComponent(conversation.tiktokUserId)}?${query}`,
         );
         if (!res.ok) {
           setMessages([]);
           setHasMore(false);
           return;
         }
-        const data = (await res.json()) as { messages: ThreadMessage[]; hasMore: boolean };
-        // El API devuelve del más nuevo al más viejo; se pinta en orden cronológico.
-        const page = [...(data.messages ?? [])].reverse();
+        const payload = (await res.json()) as { messages: ThreadMessage[]; hasMore: boolean };
+        // El API devuelve del más nuevo al más viejo; se pinta cronológico.
+        const page = [...(payload.messages ?? [])].reverse();
         setMessages((prev) => (before ? [...page, ...prev] : page));
-        setHasMore(Boolean(data.hasMore));
+        setHasMore(Boolean(payload.hasMore));
       } finally {
         setThreadLoading(false);
       }
     },
-    [api, store],
+    [api],
   );
 
   const openThread = useCallback(
-    async (tiktokUserId: string) => {
-      setOpenId(tiktokUserId);
+    async (conversation: Conversation) => {
+      setOpenKey(conversation.key);
       setMessages([]);
       setHasMore(false);
-      await loadThread(tiktokUserId);
-      if (!store) return;
+      await loadThread(conversation);
       // Abrir marca visto; no cierra el bucle.
-      await api(`/api/stores/${store._id}/leads/${encodeURIComponent(tiktokUserId)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "seen" }),
-      });
-      await loadInbox(store._id);
+      await api(
+        `/api/stores/${conversation.storeId}/leads/${encodeURIComponent(conversation.tiktokUserId)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "seen" }),
+        },
+      );
+      await loadInbox(scope, store, stores);
     },
-    [api, store, loadThread, loadInbox],
+    [api, loadThread, loadInbox, scope, store, stores],
   );
 
   const applyOutcome = useCallback(
     async (payload: OutcomePayload) => {
-      if (!store || !openConversation) return;
+      if (!openConversation) return;
       await api(
-        `/api/stores/${store._id}/leads/${encodeURIComponent(openConversation.tiktokUserId)}`,
+        `/api/stores/${openConversation.storeId}/leads/${encodeURIComponent(openConversation.tiktokUserId)}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -227,9 +260,9 @@ export default function InboxPageClient() {
           }),
         },
       );
-      await loadInbox(store._id);
+      await loadInbox(scope, store, stores);
     },
-    [api, store, openConversation, loadInbox],
+    [api, openConversation, loadInbox, scope, store, stores],
   );
 
   const pending = pendingTotal(conversations);
@@ -261,25 +294,37 @@ export default function InboxPageClient() {
             </div>
           ) : (
             <>
+              {/* Alcance de tienda: distinto del filtro por live que va abajo */}
               {stores.length > 1 && (
-                <label className="block mb-3">
-                  <span className="block text-[10px] uppercase tracking-wide text-white/25 mb-1">
-                    Tienda
-                  </span>
-                  <select
-                    value={store?._id ?? ""}
-                    onChange={(e) => void switchStore(e.target.value)}
-                    className="w-full h-9 px-2 rounded-lg text-xs bg-white/5 border border-white/10 text-white/80 focus:outline-none focus:ring-2 focus:ring-[#fe2c55]/40"
-                  >
-                    {stores.map((s) => (
-                      <option key={s._id} value={s._id} style={{ color: "#0b0f1a" }}>
-                        @{s.tiktokUsername}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="flex items-center gap-1 mb-3">
+                  {(
+                    [
+                      { key: "store" as Scope, label: `@${store.tiktokUsername}` },
+                      { key: "all" as Scope, label: "Todas las tiendas" },
+                    ]
+                  ).map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => void switchScope(option.key)}
+                      className="h-7 px-2.5 rounded-lg text-[11px] font-semibold transition-colors"
+                      style={{
+                        background:
+                          scope === option.key ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.03)",
+                        color:
+                          scope === option.key ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.3)",
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
               )}
-              <InboxList conversations={conversations} onOpen={openThread} />
+              <InboxList
+                conversations={conversations}
+                showStore={scope === "all"}
+                onOpen={openThread}
+              />
             </>
           )
         }
@@ -290,10 +335,10 @@ export default function InboxPageClient() {
               messages={messages}
               loading={threadLoading}
               hasMore={hasMore}
-              onBack={() => setOpenId(null)}
+              onBack={() => setOpenKey(null)}
               onOutcome={applyOutcome}
               onLoadMore={() =>
-                messages[0] && loadThread(openConversation.tiktokUserId, messages[0].createdAt)
+                messages[0] && loadThread(openConversation, messages[0].createdAt)
               }
             />
           ) : null

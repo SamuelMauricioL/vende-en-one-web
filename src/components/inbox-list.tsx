@@ -5,10 +5,12 @@ import { liveFilters, type Conversation } from "@/lib/inbox-api";
 
 interface InboxListProps {
   conversations: Conversation[];
-  onOpen: (tiktokUserId: string) => void;
+  /** Cuando se ven varias tiendas, cada fila dice de cuál es. */
+  showStore?: boolean;
+  onOpen: (conversation: Conversation) => void;
 }
 
-export function InboxList({ conversations, onOpen }: InboxListProps) {
+export function InboxList({ conversations, showStore = false, onOpen }: InboxListProps) {
   const [filter, setFilter] = useState<{ kind: "all" | "closed" | "live"; sessionId?: string }>({
     kind: "all",
   });
@@ -43,7 +45,7 @@ export function InboxList({ conversations, onOpen }: InboxListProps) {
             color: filter.kind === "all" ? "#fe2c55" : "rgba(255,255,255,0.4)",
           }}
         >
-          Todos · {pending}
+          Todos los lives · {pending}
         </button>
         {lives.map((live) => {
           const active = filter.kind === "live" && filter.sessionId === live.sessionId;
@@ -107,7 +109,7 @@ export function InboxList({ conversations, onOpen }: InboxListProps) {
             <li key={conv.key}>
               <button
                 type="button"
-                onClick={() => onOpen(conv.tiktokUserId)}
+                onClick={() => onOpen(conv)}
                 className="w-full text-left flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/[0.03] transition-colors"
               >
                 <span
@@ -126,6 +128,7 @@ export function InboxList({ conversations, onOpen }: InboxListProps) {
                       {conv.name}
                     </span>
                     <span className="text-[10px] text-white/25 shrink-0">
+                      {showStore && conv.storeLabel ? `${conv.storeLabel} · ` : ""}
                       {conv.liveTags[0]?.label}
                     </span>
                   </span>
