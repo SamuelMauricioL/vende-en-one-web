@@ -80,12 +80,16 @@ Rutas de trabajo: `R-API` = `/Users/samuelaimarmauriciolaime/Documents/personal/
 - [x] **T5 · S7 · R-API · C2** — commit `5c0a4b8` — Persistencia: `tiktokLiveManager.saveSummary`/`saveMessages` guardan solo coincidencias; `totalMessages` sin cambiar de significado silenciosamente (documentar y usar el conteo que corresponda); summary `topUsers` solo coincidencias.
 - [x] **T6 · S1,S3 · R-API · C3** — commit `f269189` — Convex: tabla `keywordFilters` en `convex/schema.ts` (`storeId`, `name`, `keywords`, `stage`, `createdAt`, `updatedAt`, índice `by_store`), `convex/keywordFilters.ts` (list/upsert/delete, idempotente por nombre), wrappers en `src/services/convexClient.ts`, rutas `/stores/:storeId/filters` en `src/routes/stores.routes.ts` con Zod + `authorizeStore`, `source`/`editable` resueltos en el servidor.
 - [x] **T7 · S10 · R-API · C3** — commit `f269189` — Tests: prioridad de etapa, solapes de spans, descarte, autorización 403/404 por tienda, upsert idempotente. `npm run typecheck` + `npm test` verdes.
-- [ ] **T8 · S1,S8 · R-WEB · C1** — `src/lib/filters-api.ts`: tipos del contrato + `fetchFilters`/`createFilter`/`updateFilter`/`deleteFilter` con `authHeaders`. `src/lib/keyword-filters.ts` queda sin persistencia.
-- [ ] **T9 · S3,S6 · R-WEB · C1** — `src/components/filters-page.tsx`: carga y guardado async contra el servidor, un solo color, filas `system` de solo lectura, estados de carga/error/retry, sin duplicados.
-- [ ] **T10 · S3 · R-WEB · C1** — `src/components/onboarding-steps.tsx`: presets se crean en el servidor de forma idempotente (sin `localStorage`, sin duplicar).
-- [ ] **T11 · S5 · R-WEB · C2** — `src/components/AppPageClient.tsx`: precarga de filtros de la tienda activa al abrir la app, recarga al cambiar de tienda, y bloqueo de "Iniciar live" mientras no haya filtros cargados.
-- [ ] **T12 · S4,S8 · R-WEB · C2** — `top-users.tsx` y `LeadsMobile.tsx`: render de `stage`/`stageLabel`/`spans`/`totals`; eliminar `classifierCache`, orden local y resaltado local; borrar `src/lib/lead-classifier.ts`.
-- [ ] **T13 · S10 · R-WEB · C3** — Tests (`node --test "src/lib/**/*.test.ts"`) del cliente de filtros y del mapeo del contrato; docs: `README.md:50`, `odd/tasks/onboarding-web.md:8,42-43`, `odd/tasks/tienda-activa.md:8,29,33`. `npm run build` verde.
+- [x] **T8 · S1,S8 · R-WEB · C1** — commit `e45d547` — `src/lib/filters-api.ts`: tipos del contrato + `fetchFilters`/`createFilter`/`updateFilter`/`deleteFilter` con `authHeaders`. `src/lib/keyword-filters.ts` queda sin persistencia.
+- [x] **T9 · S3,S6 · R-WEB · C1** — commit `e45d547` — `src/components/filters-page.tsx`: carga y guardado async contra el servidor, un solo color, filas `system` de solo lectura, estados de carga/error/retry, sin duplicados.
+- [x] **T10 · S3 · R-WEB · C1** — commit `e45d547` — `src/components/onboarding-steps.tsx`: presets se crean en el servidor de forma idempotente (sin `localStorage`, sin duplicar).
+- [x] **T11 · S5 · R-WEB · C2** — commit `b3b139f` — `src/components/AppPageClient.tsx`: precarga de filtros de la tienda activa al abrir la app, recarga al cambiar de tienda, y bloqueo de "Iniciar live" mientras no haya filtros cargados.
+- [x] **T12 · S4,S8 · R-WEB · C2** — commit `b3b139f` — `top-users.tsx` y `LeadsMobile.tsx`: render de `stage`/`stageLabel`/`spans`/`totals`; eliminar `classifierCache`, orden local y resaltado local; borrar `src/lib/lead-classifier.ts`.
+- [x] **T13 · S10 · R-WEB · C3** — commit `b731250` — Tests (`node --test "src/lib/**/*.test.ts"`) del cliente de filtros y del mapeo del contrato; docs: `README.md:50`, `odd/tasks/onboarding-web.md:8,42-43`, `odd/tasks/tienda-activa.md:8,29,33`. `npm run build` verde.
+
+- [ ] **T14 · S3,S7 · R-API · C4** — Fallo al leer los filtros de la tienda al abrir la sesión: no se puede descartar en silencio lo que solo casaba con ellos. Reintentar una vez y, si sigue fallando, rechazar el arranque del live con error explícito (503 con mensaje claro) en vez de caer a solo-sistema.
+- [ ] **T15 · S3 · R-API · C4** — POST/PATCH de un filtro de tienda con el mismo nombre que uno del sistema: hoy responde 201 y el filtro queda invisible porque el sistema gana el merge. Devolver 409 con mensaje que diga qué nombre está ocupado.
+- [ ] **T16 · S7 · R-API · C4** — Precisar el comentario de `totalUsers`/`totalMessages` en `tiktokLiveManager.saveSummary`: `totalUsers` es el crudo de personas que comentaron y `totalMessages` cuenta solo coincidencias; que el comentario no prometa otra cosa.
 
 ## Log
 
