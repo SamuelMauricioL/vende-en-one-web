@@ -8,6 +8,14 @@ import {
 } from "@/lib/keyword-filters";
 import { ONBOARDING_PRESETS } from "@/lib/onboarding-presets";
 
+/** Ejemplos simples por categoría: lo que un cliente escribe sobre un producto. */
+const PRESET_EXAMPLE: Record<string, string> = {
+  "preset-compra": "«quiero 2 blusas de lino»",
+  "preset-precio": "«cuánto cuesta la casaca negra»",
+  "preset-talla": "«tienes talla M en la blusa?»",
+  "preset-envio": "«envías a Trujillo?»",
+};
+
 const STAGE_LABEL: Record<KeywordCategory["stage"], string> = {
   compra: "Compra",
   negociando: "Negociando",
@@ -45,34 +53,86 @@ export function PresetsStep({ onContinue }: { onContinue: () => void }) {
     <div className="w-full">
       <div className="text-center mb-6">
         <h2 className="text-xl font-extrabold text-white/90 tracking-tight">
-          Crea tus filtros
+          Elige tus filtros
         </h2>
-        <p className="mt-2 text-sm text-white/40 max-w-xs mx-auto">
-          Los filtros son los grupos donde clasificamos a quienes comentan tu
-          live. Empieza con los recomendados y cámbialos cuando quieras.
+        <p className="mt-2 text-sm text-white/40 max-w-sm mx-auto">
+          Son palabras que tus clientes escriben en el live. Cuando alguien las
+          dice, lo ordenamos solo y sabes a quién escribirle primero.
         </p>
       </div>
 
-      {/* Ejemplo: así se ve un comentario clasificado */}
+      {/* Un ejemplo por categoría, con productos que se venden en vivo */}
+      <ul className="space-y-2 mb-5">
+        {ONBOARDING_PRESETS.map((preset) => (
+          <li
+            key={preset.id}
+            className="rounded-xl px-4 py-3 flex items-center gap-3"
+            style={{
+              background: accepted ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.03)",
+              border: `1px solid ${accepted ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.06)"}`,
+            }}
+          >
+            <span
+              className="w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ background: preset.color }}
+            />
+            <span className="grow min-w-0">
+              <span className="block text-sm font-semibold text-white/85">
+                {preset.name}
+              </span>
+              <span className="block text-[11px] text-white/35 truncate">
+                {PRESET_EXAMPLE[preset.id]}
+              </span>
+            </span>
+            <span
+              className="text-[10px] font-bold px-2 py-1 rounded-md shrink-0"
+              style={{
+                background: `${STAGE_COLOR[preset.stage]}1f`,
+                color: STAGE_COLOR[preset.stage],
+              }}
+            >
+              {STAGE_LABEL[preset.stage]}
+            </span>
+            {accepted && (
+              <svg
+                className="w-4 h-4 shrink-0 text-[#4ade80]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      {/* Puedes agregar las palabras de tu producto y elegir su categoría */}
       <div
-        className="rounded-xl px-4 py-3 mb-5 flex items-center gap-3"
+        className="rounded-xl px-4 py-3 mb-5"
         style={{
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(255,255,255,0.06)",
         }}
       >
-        <span
-          className="text-[11px] font-semibold px-2 py-1 rounded-md shrink-0"
-          style={{ background: "rgba(37,244,238,0.14)", color: "#25f4ee" }}
-        >
-          Pregunta precio
-        </span>
-        <p className="text-xs text-white/50 truncate">
-          <span className="text-white/80 font-semibold">rosa.ejemplo</span> · q.{" "}
-          <span className="font-bold" style={{ color: "#25f4ee" }}>
-            precio
-          </span>{" "}
-          de la casaca negra?
+        <p className="text-[11px] text-white/45 mb-2">
+          También puedes agregar palabras de tu producto y elegir su categoría.
+        </p>
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {["PS5", "vestido", "corset"].map((word) => (
+            <span
+              key={word}
+              className="text-[11px] font-semibold px-2 py-1 rounded-md"
+              style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)" }}
+            >
+              {word}
+            </span>
+          ))}
+        </div>
+        <p className="text-[11px] text-white/30">
+          Si vendes PS5, «PS5» puede ser <b className="text-[#4ade80]">Interesado</b>. Si
+          vendes ropa, «vestido» o «corset» también.
         </p>
       </div>
 
@@ -83,43 +143,12 @@ export function PresetsStep({ onContinue }: { onContinue: () => void }) {
           className="w-full h-12 rounded-xl font-semibold text-sm text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
           style={primaryButton}
         >
-          ✨ Usar los recomendados
+          Usar estos filtros
         </button>
       ) : (
-        <div className="space-y-2 mb-5">
-          {filters.map((f) => (
-            <div
-              key={f.id}
-              className="rounded-xl px-4 py-3 flex items-center gap-3"
-              style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.08)",
-              }}
-            >
-              <span
-                className="w-2.5 h-2.5 rounded-full shrink-0"
-                style={{ background: f.color }}
-              />
-              <span className="grow min-w-0">
-                <span className="block text-sm font-semibold text-white/85">
-                  {f.name}
-                </span>
-                <span className="block text-[11px] text-white/30 truncate">
-                  {f.keywords.join(", ")}
-                </span>
-              </span>
-              <span
-                className="text-[10px] font-bold px-2 py-1 rounded-md shrink-0"
-                style={{
-                  background: `${STAGE_COLOR[f.stage]}1f`,
-                  color: STAGE_COLOR[f.stage],
-                }}
-              >
-                {STAGE_LABEL[f.stage]}
-              </span>
-            </div>
-          ))}
-        </div>
+        <p className="text-[11px] text-[#4ade80] text-center">
+          Listo: estos filtros ya están activos en tu cuenta.
+        </p>
       )}
 
       <button
