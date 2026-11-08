@@ -2,31 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
-import { loadFilters, getHighlightParts, customStageOverride } from "@/lib/keyword-filters";
+import { leadMessage, type LeadRow } from "@/lib/filters-api";
 import {
-  classifyLead,
-  getStageIndex,
+  NO_STAGE_COUNTS,
   STAGE_CONFIG,
   STAGE_ORDER,
   type LeadStage,
-} from "@/lib/lead-classifier";
+} from "@/lib/stages";
 
 import type { CompraLead } from "@/components/purchase-alerts";
 
 import { formatElapsed } from "@/lib/time";
-
-interface TopUser {
-  tiktokUserId: string;
-  displayId?: string;
-  nickname?: string;
-  verified?: boolean;
-  followerCount?: string;
-  entries: number;
-  comments: number;
-  commentTexts: string[];
-  firstSeen: number;
-  score: number;
-}
 
 interface LeadsMobileProps {
   sessionId: string;
@@ -39,8 +25,15 @@ interface LeadsMobileProps {
   onCompraLeads?: (leads: CompraLead[]) => void;
 }
 
+/**
+ * S4: el servidor ya filtró, clasificó, segmentó y ordenó.
+ * Esta pantalla solo pinta `stage`, `stageLabel` y `spans`.
+ */
 export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attendedMap, onToggleAttended, onConnectionError, onStageCountsReport, onCompraLeads }: LeadsMobileProps) {
-  const { data: users, connected, status, connectionError } = useSSE<TopUser>(`/lives/${sessionId}/stats/stream`, sessionId);
+  const { data: users, totals, connected, status, connectionError } = useSSE<LeadRow>(
+    `/lives/${sessionId}/stats/stream`,
+    sessionId,
+  );
 
   useEffect(() => {
     if (status === "ended" && onConnectionError) {
@@ -50,85 +43,48 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
     }
   }, [status, connectionError, onConnectionError]);
 
-  const classifierCache = useRef<Map<string, { stage: LeadStage; keyAction: string | null }>>(new Map());
-  const customFilters = useMemo(() => loadFilters(), []);
+  const rows = users ?? [];
 
-  const enriched = useMemo(() => {
-    if (!users) return [];
-    return users
-      .map((u) => {
-        const cacheKey = `${u.tiktokUserId}|${u.commentTexts.join("|")}`;
-        const cached = classifierCache.current.get(cacheKey);
-        if (cached) return { ...u, ...cached };
-
-        const result = classifyLead(u.commentTexts);
-        if (!result) return null;
-
-        // Custom keyword filters override the stage if matched
-        const override = customStageOverride(u.commentTexts, customFilters);
-        if (override) {
-          result.stage = override;
-        }
-
-        classifierCache.current.set(cacheKey, result);
-        return { ...u, ...result };
-      })
-      .filter(Boolean)
-      .sort((a, b) => {
-        return b.firstSeen - a.firstSeen;
-      }) as (TopUser & { stage: LeadStage; keyAction: string | null })[];
-  }, [users]);
+  // `totals` manda en los contadores: el crudo son todos los que comentaron.
+  const counts = totals?.byStage ?? NO_STAGE_COUNTS;
 
   // Report stage counts to parent
   useEffect(() => {
-    if (!onStageCountsReport || !enriched.length) return;
-    const counts = { compra: 0, negociando: 0, interesado: 0 };
-    for (const u of enriched) counts[u.stage]++;
+    if (!onStageCountsReport || rows.length === 0) return;
     onStageCountsReport(counts);
-  }, [enriched, onStageCountsReport]);
+  }, [counts, rows.length, onStageCountsReport]);
 
   // Report purchase leads so the parent can raise floating alerts
   useEffect(() => {
     if (!onCompraLeads) return;
     onCompraLeads(
-      enriched
-        .filter((u) => u.stage === "compra")
-        .map((u) => ({
-          tiktokUserId: u.tiktokUserId,
-          name: u.nickname || u.displayId || "Anónimo",
-          message: u.keyAction,
+      rows
+        .filter((row) => row.stage === "compra")
+        .map((row) => ({
+          tiktokUserId: row.tiktokUserId,
+          name: row.nickname || row.displayId || "Anónimo",
+          message: leadMessage(row),
         })),
     );
-  }, [enriched, onCompraLeads]);
+  }, [rows, onCompraLeads]);
 
   // Auto-unattend: if an attended user sent new messages, move back to pending
   useEffect(() => {
-    if (!enriched || enriched.length === 0) return;
-    for (const user of enriched) {
-      const info = attendedMap.get(user.tiktokUserId);
-      if (info && user.commentTexts.length > info.commentCount) {
-        onToggleAttended(user.tiktokUserId);
+    if (rows.length === 0) return;
+    for (const row of rows) {
+      const info = attendedMap.get(row.tiktokUserId);
+      if (info && row.comments > info.commentCount) {
+        onToggleAttended(row.tiktokUserId);
       }
     }
-  }, [enriched, attendedMap, onToggleAttended]);
+  }, [rows, attendedMap, onToggleAttended]);
 
-  const grouped = useMemo(() => {
-    const groups: Record<LeadStage, (typeof enriched)[number][]> = {
-      interesado: [], negociando: [], compra: [],
-    };
-    for (const u of enriched) {
-      if (groups[u.stage]) groups[u.stage].push(u);
-    }
-    return groups;
-  }, [enriched]);
-
-  const totalUsers = enriched.length;
+  const totalUsers = totals?.commented ?? 0;
 
   const [activeTab, setActiveTab] = useState<LeadStage>("compra");
 
-  const filtered = useMemo(() => {
-    return enriched.filter((u) => u.stage === activeTab);
-  }, [enriched, activeTab]);
+  // El orden es del servidor: no se reordena acá.
+  const filtered = useMemo(() => rows.filter((row) => row.stage === activeTab), [rows, activeTab]);
 
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -136,25 +92,40 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
     return () => clearInterval(iv);
   }, []);
 
-  const stageLabel: Record<LeadStage, string> = {
-    compra: "Compra",
-    negociando: "Negociando",
-    interesado: "Interesado",
-  };
-
-  const pendingList = filtered.filter((u) => !attendedMap.has(u.tiktokUserId));
+  const pendingList = filtered.filter((row) => !attendedMap.has(row.tiktokUserId));
   const attendedList = filtered
-    .filter((u) => attendedMap.has(u.tiktokUserId))
+    .filter((row) => attendedMap.has(row.tiktokUserId))
     .sort((a, b) => {
       const aTime = attendedMap.get(a.tiktokUserId)?.attendedAt ?? 0;
       const bTime = attendedMap.get(b.tiktokUserId)?.attendedAt ?? 0;
       return bTime - aTime;
     });
 
-  const renderLead = (user: (typeof enriched)[number], isAttended: boolean) => {
+  const renderSpans = (row: LeadRow, isAttended: boolean) => {
+    const message = leadMessage(row);
+    if (!message) return null;
+    return (
+      <p
+        className="text-xs text-white/50 leading-relaxed line-clamp-1 italic"
+        style={{ textDecoration: isAttended ? "line-through" : "none" }}
+      >
+        {row.spans.length > 0
+          ? row.spans.map((span, i) =>
+              span.strong ? (
+                <strong key={i} className="font-bold text-white/80">{span.text}</strong>
+              ) : (
+                <span key={i}>{span.text}</span>
+              ),
+            )
+          : message}
+      </p>
+    );
+  };
+
+  const renderLead = (user: LeadRow, isAttended: boolean) => {
     const cfg = STAGE_CONFIG[user.stage];
     const isSelected = selectedUserIds.has(user.tiktokUserId);
-    const stageIndex = getStageIndex(user.stage);
+    const stageIndex = STAGE_ORDER.indexOf(user.stage);
 
     return (
       <button
@@ -218,6 +189,13 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
                 >
                   {cfg.funnelPct}
                 </span>
+                <span
+                  className="text-[10px] shrink-0 truncate max-w-[90px]"
+                  style={{ color: "rgba(255,255,255,0.3)" }}
+                  title={`Filtro: ${user.stageLabel}`}
+                >
+                  {user.stageLabel}
+                </span>
                 <span className="text-[10px] text-white/25 shrink-0">
                   {user.comments} msgs
                 </span>
@@ -226,19 +204,12 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
                 </span>
               </div>
 
-              {user.keyAction && (
-                <p className="text-xs text-white/50 leading-relaxed line-clamp-1 italic"
-                   style={{ textDecoration: isAttended ? "line-through" : "none" }}>
-                  {getHighlightParts(user.keyAction, customFilters).map((part, i) =>
-                    part.bold ? <strong key={i} className="font-bold text-white/80">{part.text}</strong> : part.text,
-                  )}
-                </p>
-              )}
+              {renderSpans(user, isAttended)}
             </div>
 
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); onToggleAttended(user.tiktokUserId, user.commentTexts.length); }}
+              onClick={(e) => { e.stopPropagation(); onToggleAttended(user.tiktokUserId, user.comments); }}
               className="shrink-0 self-center flex items-center gap-1 rounded-full transition-all duration-200 px-3 py-1.5"
               style={{
                 backgroundColor: isAttended ? `${cfg.color}22` : "rgba(255,255,255,0.04)",
@@ -287,7 +258,7 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
         {STAGE_ORDER.map((stage) => {
           const isActive = activeTab === stage;
           const cfg = STAGE_CONFIG[stage];
-          const count = grouped[stage].length;
+          const count = counts[stage];
           return (
             <button
               key={stage}
@@ -312,7 +283,7 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0 pr-1">
-        {!enriched || enriched.length === 0 ? (
+        {rows.length === 0 ? (
           <p className="text-sm text-white/30 text-center py-12">
             {status === "error"
               ? `Error de conexión: ${connectionError || "desconocido"}`
@@ -324,7 +295,7 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
           </p>
         ) : filtered.length === 0 ? (
           <p className="text-sm text-white/20 text-center py-8">
-            No hay leads en &ldquo;{stageLabel[activeTab]}&rdquo;
+            No hay leads en &ldquo;{STAGE_CONFIG[activeTab].label}&rdquo;
           </p>
         ) : (
           <>
