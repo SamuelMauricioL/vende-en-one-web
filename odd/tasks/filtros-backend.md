@@ -98,8 +98,8 @@ Rutas de trabajo: `R-API` = `/Users/samuelaimarmauriciolaime/Documents/personal/
 - [x] **T15 · S3 · R-API · C4** — commit `4c838b3` — POST/PATCH de un filtro de tienda con el mismo nombre que uno del sistema: hoy responde 201 y el filtro queda invisible porque el sistema gana el merge. Devolver 409 con mensaje que diga qué nombre está ocupado.
 - [x] **T16 · S7 · R-API · C4** — commit `4c838b3` — Precisar el comentario de `totalUsers`/`totalMessages` en `tiktokLiveManager.saveSummary`: `totalUsers` es el crudo de personas que comentaron y `totalMessages` cuenta solo coincidencias; que el comentario no prometa otra cosa.
 
-- [ ] **T17 · S11 · R-API · C5** — `src/config/systemFilters.ts`: filtro de descarte "Insultos y acoso" portado de `OFFENSIVE_PATTERNS`; `FilterDefinition` y `FilterView` con `action` y `stage` nullable; `src/services/filterEngine.ts` evalúa descarte primero y devuelve la acción; `liveStatsManager` descarta el comentario; tests (insulto con keyword → nada, insulto sin keyword → nada, mensaje normal intacto).
-- [ ] **T18 · S11 · R-WEB · C4** — `src/lib/filters-api.ts` con `action` y `stage` nullable; `normalizeFilters`/`groupFiltersByStage` ignoran los filtros de descarte al agrupar; `src/components/filters-page.tsx` muestra la fila del sistema "Insultos y acoso" con marca de descarte y sin acciones; tests.
+- [x] **T17 · S11 · R-API · C5** — commit `b50d06f` — `src/config/systemFilters.ts`: filtro de descarte "Insultos y acoso" portado de `OFFENSIVE_PATTERNS`; `FilterDefinition` y `FilterView` con `action` y `stage` nullable; `src/services/filterEngine.ts` evalúa descarte primero y devuelve la acción; `liveStatsManager` descarta el comentario; tests (insulto con keyword → nada, insulto sin keyword → nada, mensaje normal intacto).
+- [x] **T18 · S11 · R-WEB · C4** — commit `49851e2` — `src/lib/filters-api.ts` con `action` y `stage` nullable; `normalizeFilters`/`groupFiltersByStage` ignoran los filtros de descarte al agrupar; `src/components/filters-page.tsx` muestra la fila del sistema "Insultos y acoso" con marca de descarte y sin acciones; tests.
 
 ## Log
 
@@ -122,3 +122,4 @@ L8. «a qué te refieres con el color del filtro? deberíamos tener 1 solo color
 L9. «1. se descartan 2. desde el código 3. el IU ya no se encarga, la decisión se mueve al BE, se tiene que pensar cual sería el contrato de json el front para solo tener la tarea de mostrar».
 
 L10. «el descarte de insultos y acoso lo tenemos que mover como parte de los filtros del sistema».
+L11. Verificacion de T17 con comentarios reales: `quiero el pack de 3 blusas`, `pack de gorras precio`, `tienen ropa para perro?` y `date la vuelta para ver la espalda` se descartan como ofensivos. Los patrones se portaron tal cual del clasificador viejo, asi que el falso positivo viene heredado; falta decidir la regla antes de mergear.
