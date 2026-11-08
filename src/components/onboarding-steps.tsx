@@ -16,18 +16,6 @@ const PRESET_EXAMPLE: Record<string, string> = {
   "preset-envio": "«envías a Trujillo?»",
 };
 
-const STAGE_LABEL: Record<KeywordCategory["stage"], string> = {
-  compra: "Compra",
-  negociando: "Negociando",
-  interesado: "Interesado",
-};
-
-const STAGE_COLOR: Record<KeywordCategory["stage"], string> = {
-  compra: "#fe2c55",
-  negociando: "#facc15",
-  interesado: "#4ade80",
-};
-
 const primaryButton = {
   background: "linear-gradient(135deg, #fe2c55, #e8254a)",
   boxShadow: "0 8px 32px rgba(254,44,85,0.3)",
@@ -56,8 +44,7 @@ export function PresetsStep({ onContinue }: { onContinue: () => void }) {
           Elige tus filtros
         </h2>
         <p className="mt-2 text-sm text-white/40 max-w-sm mx-auto">
-          Son palabras que tus clientes escriben en el live. Cuando alguien las
-          dice, lo ordenamos solo y sabes a quién escribirle primero.
+          Marca los que te sirvan en tu live. Puedes cambiarlos cuando quieras.
         </p>
       </div>
 
@@ -84,15 +71,6 @@ export function PresetsStep({ onContinue }: { onContinue: () => void }) {
                 {PRESET_EXAMPLE[preset.id]}
               </span>
             </span>
-            <span
-              className="text-[10px] font-bold px-2 py-1 rounded-md shrink-0"
-              style={{
-                background: `${STAGE_COLOR[preset.stage]}1f`,
-                color: STAGE_COLOR[preset.stage],
-              }}
-            >
-              {STAGE_LABEL[preset.stage]}
-            </span>
             {accepted && (
               <svg
                 className="w-4 h-4 shrink-0 text-[#4ade80]"
@@ -107,34 +85,6 @@ export function PresetsStep({ onContinue }: { onContinue: () => void }) {
           </li>
         ))}
       </ul>
-
-      {/* Puedes agregar las palabras de tu producto y elegir su categoría */}
-      <div
-        className="rounded-xl px-4 py-3 mb-5"
-        style={{
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.06)",
-        }}
-      >
-        <p className="text-[11px] text-white/45 mb-2">
-          También puedes agregar palabras de tu producto y elegir su categoría.
-        </p>
-        <div className="flex flex-wrap gap-1.5 mb-2">
-          {["PS5", "vestido", "corset"].map((word) => (
-            <span
-              key={word}
-              className="text-[11px] font-semibold px-2 py-1 rounded-md"
-              style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)" }}
-            >
-              {word}
-            </span>
-          ))}
-        </div>
-        <p className="text-[11px] text-white/30">
-          Si vendes PS5, «PS5» puede ser <b className="text-[#4ade80]">Interesado</b>. Si
-          vendes ropa, «vestido» o «corset» también.
-        </p>
-      </div>
 
       {!accepted ? (
         <button
