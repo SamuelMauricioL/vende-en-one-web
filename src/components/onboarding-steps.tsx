@@ -45,8 +45,8 @@ export function PresetsStep({ onContinue }: { onContinue: () => void }) {
       <div className="text-center mb-6">
         <h2 className="text-xl font-extrabold text-white/90 tracking-tight">Agrega tus productos</h2>
         <p className="mt-2 text-sm text-white/40 max-w-sm mx-auto">
-          Cada vez que alguien nombre uno de tus productos en el chat, ese comentario se clasifica
-          como comprador. Los ajustas cuando quieras desde Filtros.
+          Cada vez que alguien nombre uno de tus productos en el chat, te mostramos ese mensaje.
+          Los ajustas cuando quieras desde <strong className="font-semibold text-white/70">Filtros</strong>.
         </p>
       </div>
 
