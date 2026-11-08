@@ -250,7 +250,7 @@ export function ChatThread({
               className="h-10 px-3 rounded-xl text-xs font-semibold text-white/40 hover:text-white"
               style={{ border: "1px solid rgba(255,255,255,0.1)" }}
             >
-              Ignorar
+              Atendido
             </button>
           </>
         )}
