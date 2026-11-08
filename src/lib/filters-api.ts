@@ -4,6 +4,7 @@
  * servidor: acá solo se mapea lo que llega y se define cómo se pide/guarda.
  */
 import { authHeaders, type GetToken } from "./api-auth.ts";
+import type { LeadState } from "./inbox-api.ts";
 import { STAGE_ORDER, type LeadStage } from "./stages.ts";
 
 /* ── Contrato de stats (S8) ── */
@@ -30,6 +31,8 @@ export interface LeadRow {
   /** Frase clave ya segmentada por el servidor. */
   spans: Span[];
   score: number;
+  /** S10: desenlace que produjo el resolutor desde la bandeja (null si no hay). */
+  outcome?: LeadState | null;
 }
 
 export interface Totals {
@@ -115,6 +118,18 @@ export function groupFiltersByStage(
 export function leadMessage(lead: LeadRow): string | null {
   if (lead.spans.length > 0) return lead.spans.map((span) => span.text).join("");
   return lead.commentTexts[0] ?? null;
+}
+
+/**
+ * S10: el vendedor no marca atendido, ve el estado que produjo el resolutor.
+ * Un valor que no conocemos se ignora: mejor sin marca que con una inventada.
+ */
+export function leadOutcome(lead: LeadRow): LeadState | null {
+  const outcome = lead.outcome;
+  if (outcome === "contactado" || outcome === "whatsapp" || outcome === "ignorado") {
+    return outcome;
+  }
+  return null;
 }
 
 /* ── Cliente HTTP ── */

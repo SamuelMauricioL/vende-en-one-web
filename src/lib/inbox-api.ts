@@ -13,6 +13,13 @@ export const OUTCOME_LABEL: Record<LeadState, string> = {
   ignorado: "Ignorado",
 };
 
+/** Color de la marca de estado en las filas. */
+export const OUTCOME_COLOR: Record<LeadState, string> = {
+  contactado: "#25f4ee",
+  whatsapp: "#4ade80",
+  ignorado: "rgba(255,255,255,0.4)",
+};
+
 export const IGNORE_REASONS: { key: IgnoreReason; label: string }[] = [
   { key: "no_cliente", label: "No es cliente" },
   { key: "spam", label: "Spam o broma" },
@@ -64,6 +71,8 @@ export interface Conversation {
   liveTags: LiveTag[];
   closed: InboxLead | null;
   unread: boolean;
+  /** S10: estado que produjo el resolutor (null si todavía no hay desenlace). */
+  outcome?: LeadState | null;
 }
 
 export interface ThreadMessage {
@@ -136,6 +145,7 @@ export function mapConversations(
       liveTags,
       closed: isClosed(lead, row.lastAt) ? lead : null,
       unread: isUnread(row.lastAt, lead),
+      outcome: lead?.state ?? null,
     };
   });
 

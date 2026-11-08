@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
-import { leadMessage, type LeadRow } from "@/lib/filters-api";
+import { leadMessage, leadOutcome, type LeadRow } from "@/lib/filters-api";
+import { OUTCOME_COLOR, OUTCOME_LABEL } from "@/lib/inbox-api";
 import {
   NO_STAGE_COUNTS,
   STAGE_CONFIG,
@@ -18,8 +19,6 @@ interface LeadsMobileProps {
   sessionId: string;
   selectedUserIds: Set<string>;
   onToggleUser: (userId: string) => void;
-  attendedMap: Map<string, { attendedAt: number; commentCount: number }>;
-  onToggleAttended: (userId: string, commentCount?: number) => void;
   onConnectionError?: (error: string) => void;
   onStageCountsReport?: (counts: Record<LeadStage, number>) => void;
   onCompraLeads?: (leads: CompraLead[]) => void;
@@ -27,9 +26,10 @@ interface LeadsMobileProps {
 
 /**
  * S4: el servidor ya filtró, clasificó, segmentó y ordenó.
- * Esta pantalla solo pinta `stage`, `stageLabel` y `spans`.
+ * Esta pantalla solo pinta `stage`, `stageLabel`, `spans` y, desde S10, el
+ * `outcome` que produce el resolutor: el vendedor no marca atendido.
  */
-export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attendedMap, onToggleAttended, onConnectionError, onStageCountsReport, onCompraLeads }: LeadsMobileProps) {
+export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, onConnectionError, onStageCountsReport, onCompraLeads }: LeadsMobileProps) {
   const { data: users, totals, connected, status, connectionError } = useSSE<LeadRow>(
     `/lives/${sessionId}/stats/stream`,
     sessionId,
@@ -68,17 +68,6 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
     );
   }, [rows, onCompraLeads]);
 
-  // Auto-unattend: if an attended user sent new messages, move back to pending
-  useEffect(() => {
-    if (rows.length === 0) return;
-    for (const row of rows) {
-      const info = attendedMap.get(row.tiktokUserId);
-      if (info && row.comments > info.commentCount) {
-        onToggleAttended(row.tiktokUserId);
-      }
-    }
-  }, [rows, attendedMap, onToggleAttended]);
-
   const totalUsers = totals?.commented ?? 0;
 
   const [activeTab, setActiveTab] = useState<LeadStage>("compra");
@@ -92,23 +81,11 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
     return () => clearInterval(iv);
   }, []);
 
-  const pendingList = filtered.filter((row) => !attendedMap.has(row.tiktokUserId));
-  const attendedList = filtered
-    .filter((row) => attendedMap.has(row.tiktokUserId))
-    .sort((a, b) => {
-      const aTime = attendedMap.get(a.tiktokUserId)?.attendedAt ?? 0;
-      const bTime = attendedMap.get(b.tiktokUserId)?.attendedAt ?? 0;
-      return bTime - aTime;
-    });
-
-  const renderSpans = (row: LeadRow, isAttended: boolean) => {
+  const renderSpans = (row: LeadRow) => {
     const message = leadMessage(row);
     if (!message) return null;
     return (
-      <p
-        className="text-xs text-white/50 leading-relaxed line-clamp-1 italic"
-        style={{ textDecoration: isAttended ? "line-through" : "none" }}
-      >
+      <p className="text-xs text-white/50 leading-relaxed line-clamp-1 italic">
         {row.spans.length > 0
           ? row.spans.map((span, i) =>
               span.strong ? (
@@ -122,10 +99,11 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
     );
   };
 
-  const renderLead = (user: LeadRow, isAttended: boolean) => {
+  const renderLead = (user: LeadRow) => {
     const cfg = STAGE_CONFIG[user.stage];
     const isSelected = selectedUserIds.has(user.tiktokUserId);
     const stageIndex = STAGE_ORDER.indexOf(user.stage);
+    const outcome = leadOutcome(user);
 
     return (
       <button
@@ -136,14 +114,8 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
           isSelected ? "ring-1 ring-white/20" : "hover:ring-1 hover:ring-white/10"
         }`}
         style={{
-          backgroundColor: isSelected
-            ? "rgba(255,255,255,0.08)"
-            : isAttended
-              ? "rgba(255,255,255,0.01)"
-              : "rgba(255,255,255,0.03)",
+          backgroundColor: isSelected ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)",
           borderLeft: `3px solid ${cfg.color}`,
-          opacity: isAttended ? 0.5 : 1,
-          textDecoration: isAttended ? "line-through" : "none",
         }}
       >
         <div className="flex h-0.5 w-full bg-white/[0.03]">
@@ -176,7 +148,7 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
               <div className="flex items-center gap-2 mb-0.5">
                 <span
                   className="font-semibold text-sm truncate"
-                  style={{ color: isAttended ? "rgba(255,255,255,0.3)" : cfg.color }}
+                  style={{ color: cfg.color }}
                 >
                   {user.nickname || user.displayId || "Anónimo"}
                 </span>
@@ -184,7 +156,7 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
                   className="text-[9px] font-bold px-1.5 py-0.5 rounded leading-none shrink-0"
                   style={{
                     backgroundColor: `${cfg.color}18`,
-                    color: isAttended ? "rgba(255,255,255,0.25)" : cfg.color,
+                    color: cfg.color,
                   }}
                 >
                   {cfg.funnelPct}
@@ -202,38 +174,22 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
                 <span className="text-[10px] text-white/20 shrink-0 font-mono tabular-nums">
                   {formatElapsed(user.firstSeen)}
                 </span>
+                {/* S10: el estado lo marca el resolutor, no el vendedor. */}
+                {outcome && (
+                  <span
+                    className="text-[9px] font-bold px-1.5 py-0.5 rounded leading-none shrink-0"
+                    style={{
+                      color: OUTCOME_COLOR[outcome],
+                      backgroundColor: "rgba(255,255,255,0.06)",
+                    }}
+                  >
+                    {OUTCOME_LABEL[outcome]}
+                  </span>
+                )}
               </div>
 
-              {renderSpans(user, isAttended)}
+              {renderSpans(user)}
             </div>
-
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onToggleAttended(user.tiktokUserId, user.comments); }}
-              className="shrink-0 self-center flex items-center gap-1 rounded-full transition-all duration-200 px-3 py-1.5"
-              style={{
-                backgroundColor: isAttended ? `${cfg.color}22` : "rgba(255,255,255,0.04)",
-                border: `1px solid ${isAttended ? cfg.color : "rgba(255,255,255,0.12)"}`,
-              }}
-              title={isAttended ? "Marcado como atendido" : "Marcar como atendido"}
-            >
-              <svg
-                className="w-3.5 h-3.5 transition-all duration-200"
-                style={{ color: isAttended ? cfg.color : "rgba(255,255,255,0.25)" }}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={isAttended ? 2.5 : 1.5}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
-              <span
-                className="text-xs font-medium"
-                style={{ color: isAttended ? cfg.color : "rgba(255,255,255,0.35)" }}
-              >
-                {isAttended ? "Atendido" : "Atender"}
-              </span>
-            </button>
           </div>
         </div>
       </button>
@@ -298,21 +254,7 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, attended
             No hay leads en &ldquo;{STAGE_CONFIG[activeTab].label}&rdquo;
           </p>
         ) : (
-          <>
-            {pendingList.map((user) => renderLead(user, false))}
-
-            {attendedList.length > 0 && (
-              <div className="flex items-center gap-3 py-2 mt-2 mb-1">
-                <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
-                <span className="text-[10px] font-medium text-white/20 shrink-0">
-                  Atendidos ({attendedList.length})
-                </span>
-                <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
-              </div>
-            )}
-
-            {attendedList.map((user) => renderLead(user, true))}
-          </>
+          filtered.map((user) => renderLead(user))
         )}
       </div>
     </div>

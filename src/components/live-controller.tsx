@@ -96,7 +96,6 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   const [loading, setLoading] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
-  const [attendedMap, setAttendedMap] = useState<Map<string, { attendedAt: number; commentCount: number }>>(new Map());
   const [lastUsername, setLastUsername] = useState(initialTikTokUsername);
   const [showEditInput, setShowEditInput] = useState(false);
   const [showLiveEndedDialog, setShowLiveEndedDialog] = useState(false);
@@ -363,7 +362,6 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     localStorage.removeItem(LIVE_RECONNECT_KEY);
     setActiveSessionId(null);
     setSelectedUserIds(new Set());
-    setAttendedMap(new Map());
     // Keep localStorage so data survives page reloads
     setLastUsername("");
     setShowEditInput(false);
@@ -378,45 +376,6 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   useEffect(() => {
     onActiveChange?.(!!activeSessionId);
   }, [activeSessionId, onActiveChange]);
-
-  const toggleAttended = useCallback((userId: string, commentCount?: number) => {
-    setAttendedMap((prev) => {
-      const next = new Map(prev);
-      if (next.has(userId)) {
-        next.delete(userId);
-      } else {
-        next.set(userId, { attendedAt: Date.now(), commentCount: commentCount ?? 0 });
-      }
-      return next;
-    });
-  }, []);
-
-  // Persist attendedMap to localStorage
-  useEffect(() => {
-    if (!activeSessionId) return;
-    const key = `attended_${activeSessionId}`;
-    const entries = Array.from(attendedMap.entries());
-    if (entries.length === 0) {
-      localStorage.removeItem(key);
-    } else {
-      localStorage.setItem(key, JSON.stringify(entries));
-    }
-  }, [attendedMap, activeSessionId]);
-
-  // Restore attendedMap from localStorage when session starts
-  useEffect(() => {
-    if (!activeSessionId) return;
-    const key = `attended_${activeSessionId}`;
-    try {
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        const entries: [string, { attendedAt: number; commentCount: number }][] = JSON.parse(saved);
-        setAttendedMap(new Map(entries));
-      }
-    } catch {
-      // Ignore corrupt data
-    }
-  }, [activeSessionId]);
 
   const toggleUser = useCallback((userId: string) => {
     setSelectedUserIds((prev) => {
@@ -474,7 +433,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
       setActiveSessionId(null);
       setShowLiveEndedDialog(true);
       setLoading(false);
-      // Keep selectedUserIds, attendedMap, lastUsername — data stays visible
+      // Keep selectedUserIds and lastUsername — data stays visible
     }
   };
 
@@ -724,8 +683,6 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
               sessionId={activeSessionId}
               selectedUserIds={selectedUserIds}
               onToggleUser={toggleUser}
-              attendedMap={attendedMap}
-              onToggleAttended={toggleAttended}
               maxMobileItems={5}
               onConnectionError={handleConnectionError}
               onStageCountsReport={onStageCountsReport}
@@ -738,8 +695,6 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
               sessionId={activeSessionId}
               selectedUserIds={selectedUserIds}
               onToggleUser={toggleUser}
-              attendedMap={attendedMap}
-              onToggleAttended={toggleAttended}
               onConnectionError={handleConnectionError}
               onStageCountsReport={onStageCountsReport}
               onCompraLeads={onCompraLeadsReport}
