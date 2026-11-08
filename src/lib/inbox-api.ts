@@ -172,3 +172,32 @@ export function groupThread(
 export function pendingTotal(conversations: Conversation[]): number {
   return conversations.filter((c) => !c.closed).length;
 }
+
+export interface StoreOption {
+  _id: string;
+  tiktokUsername: string;
+}
+
+/**
+ * Elige la tienda activa de la bandeja.
+ * Prioridad: el `@` del perfil (lo que el usuario está usando ahora), luego la
+ * última tienda abierta y por último la primera. Sin esto, al vincular un `@`
+ * nuevo el inbox seguía mostrando la tienda anterior.
+ */
+export function pickActiveStore(
+  stores: StoreOption[],
+  profileHandle: string | undefined,
+  savedId?: string | null,
+): StoreOption | null {
+  const norm = (v: string) => v.replace(/^@/, "").trim().toLowerCase();
+
+  if (profileHandle) {
+    const byProfile = stores.find((s) => norm(s.tiktokUsername) === norm(profileHandle));
+    if (byProfile) return byProfile;
+  }
+  if (savedId) {
+    const bySaved = stores.find((s) => s._id === savedId);
+    if (bySaved) return bySaved;
+  }
+  return stores[0] ?? null;
+}

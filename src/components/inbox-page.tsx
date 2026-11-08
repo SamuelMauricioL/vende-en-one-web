@@ -11,12 +11,14 @@ import { authHeaders } from "@/lib/api-auth";
 import {
   mapConversations,
   pendingTotal,
+  pickActiveStore,
   type InboxLead,
   type InboxRow,
   type ThreadMessage,
 } from "@/lib/inbox-api";
 
 const LEGACY_KEY = "ll_inbox_state";
+const ACTIVE_STORE_KEY = "ll_active_store";
 const THREAD_PAGE = 100;
 
 interface StoreSummary {
@@ -28,6 +30,7 @@ interface StoreSummary {
 /** Bandeja servida por el API: agregado por persona, hilo paginado y desenlaces. */
 export default function InboxPageClient() {
   const { userId, isLoaded, getToken } = useAuth();
+  const [stores, setStores] = useState<StoreSummary[]>([]);
   const [store, setStore] = useState<StoreSummary | null>(null);
   const [rows, setRows] = useState<InboxRow[]>([]);
   const [leads, setLeads] = useState<InboxLead[]>([]);
@@ -104,24 +107,56 @@ export default function InboxPageClient() {
     [api],
   );
 
+  const switchStore = useCallback(
+    async (id: string) => {
+      const next = stores.find((s) => s._id === id);
+      if (!next) return;
+      try {
+        localStorage.setItem(ACTIVE_STORE_KEY, id);
+      } catch {
+        // sin localStorage el cambio dura la sesión
+      }
+      setStore(next);
+      setOpenId(null);
+      setMessages([]);
+      setHasMore(false);
+      await loadInbox(id);
+    },
+    [stores, loadInbox],
+  );
+
   useEffect(() => {
     if (!isLoaded || !userId) return;
     let cancelled = false;
 
     void (async () => {
       try {
-        const res = await api("/api/stores");
-        if (!res.ok) {
+        const [storesRes, profileRes] = await Promise.all([
+          api("/api/stores"),
+          api(`/api/users/profile/${userId}`),
+        ]);
+        if (!storesRes.ok) {
           if (!cancelled) setLoading(false);
           return;
         }
-        const data = (await res.json()) as { stores: StoreSummary[] };
-        const first = data.stores?.[0] ?? null;
+        const data = (await storesRes.json()) as { stores: StoreSummary[] };
+        const list = data.stores ?? [];
+        const profile = profileRes.ok
+          ? ((await profileRes.json()) as { profile?: { tiktokUsername?: string } })
+          : null;
+        let saved: string | null = null;
+        try {
+          saved = localStorage.getItem(ACTIVE_STORE_KEY);
+        } catch {
+          saved = null;
+        }
+        const active = pickActiveStore(list, profile?.profile?.tiktokUsername, saved);
         if (cancelled) return;
-        setStore(first);
-        if (first) {
-          await migrateLegacy(first._id);
-          await loadInbox(first._id);
+        setStores(list);
+        setStore(active);
+        if (active) {
+          await migrateLegacy(active._id);
+          await loadInbox(active._id);
         }
       } finally {
         if (!cancelled) {
@@ -231,7 +266,27 @@ export default function InboxPageClient() {
               )}
             </div>
           ) : (
-            <InboxList conversations={conversations} onOpen={openThread} />
+            <>
+              {stores.length > 1 && (
+                <label className="block mb-3">
+                  <span className="block text-[10px] uppercase tracking-wide text-white/25 mb-1">
+                    Tienda
+                  </span>
+                  <select
+                    value={store?._id ?? ""}
+                    onChange={(e) => void switchStore(e.target.value)}
+                    className="w-full h-9 px-2 rounded-lg text-xs bg-white/5 border border-white/10 text-white/80 focus:outline-none focus:ring-2 focus:ring-[#fe2c55]/40"
+                  >
+                    {stores.map((s) => (
+                      <option key={s._id} value={s._id} style={{ color: "#0b0f1a" }}>
+                        @{s.tiktokUsername}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <InboxList conversations={conversations} onOpen={openThread} />
+            </>
           )
         }
         detail={
