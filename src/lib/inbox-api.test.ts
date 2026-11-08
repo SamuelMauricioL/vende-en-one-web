@@ -7,6 +7,7 @@ import {
   liveFilters,
   liveLabel,
   mapConversations,
+  pickActiveStore,
   pendingTotal,
   type InboxLead,
   type InboxRow,
@@ -160,4 +161,25 @@ test("el hilo se agrupa por día con separador", () => {
 
 test("etiqueta de fecha legible", () => {
   assert.equal(liveLabel(LIVE_7), "7 nov");
+});
+
+const stores = [
+  { _id: "s-vieja", tiktokUsername: "tienda.vieja" },
+  { _id: "s-nueva", tiktokUsername: "cevichero.purito.mar" },
+];
+
+test("la tienda activa es la del @ del perfil, no la primera", () => {
+  // El bug: se tomaba stores[0] y seguía mostrando la cuenta anterior.
+  assert.equal(pickActiveStore(stores, "cevichero.purito.mar")?._id, "s-nueva");
+  assert.equal(pickActiveStore(stores, "@cevichero.purito.mar")?._id, "s-nueva");
+});
+
+test("sin coincidencia con el perfil, usa la última tienda abierta", () => {
+  assert.equal(pickActiveStore(stores, "otra.cuenta", "s-nueva")?._id, "s-nueva");
+  assert.equal(pickActiveStore(stores, undefined, "s-vieja")?._id, "s-vieja");
+});
+
+test("sin perfil ni guardada, cae en la primera", () => {
+  assert.equal(pickActiveStore(stores, undefined, null)?._id, "s-vieja");
+  assert.equal(pickActiveStore([], "x", "y"), null);
 });
