@@ -5,7 +5,7 @@ Integrar a la web el flujo de onboarding del prototipo (`liveleads-demo`), sin e
 ## Specs
 
 - **S1.** El onboarding de la web replica los dos pasos del prototipo (`/bienvenida/etiquetas` y `/bienvenida/live`) dentro del flujo ya existente `sign-in → link-tiktok → app`. El paso "Confirma tu correo" **no** se implementa: "nosotros no validamos por correo, lo hacemos por google en la web de /vende-en-one-web así que ese paso no lo necesitamos".
-- **S2.** El paso de etiquetas del prototipo se implementa con el mecanismo que la web ya tiene: `KeywordCategory` de `src/lib/keyword-filters.ts` persistido con `saveFilters()` (localStorage `customKeywordFilters`). Los 4 presets del prototipo ("Quiere comprar", "Pregunta precio", "Pregunta talla", "Envío") se mapean a los `LeadStage` de la web. Acciones: "Usar las recomendadas" y salida "Lo hago después".
+- **S2.** El paso de etiquetas del prototipo usa los 4 presets del prototipo ("Quiere comprar", "Pregunta precio", "Pregunta talla", "Envío") mapeados a los `LeadStage` de la web, y los crea en el servidor con `POST /api/stores/:storeId/filters` desde `ONBOARDING_PRESETS` (payload, no fuente de verdad). Ya **no** hay `localStorage`: la persistencia es por tienda en el API (`odd/tasks/filtros-backend.md`, S1/S9). Acciones: "Usar estos filtros" y salida "Lo hago después".
 - **S3.** Colores: reutilizar los tokens ya definidos en la web — `#0b0f1a` fondo, `#fe2c55` marca, `#25f4ee` marca-2, y los `STAGE_COLORS` (`#fe2c55` compra, `#facc15` negociando, `#4ade80` interesado). No se introduce la paleta del prototipo (`#2bb39a`, `#7b83f0`, `#f5a623`, `#29a8e0`): "igual revisa si podemos usar los mismo colores o los colores definidos ya en la web".
 - **S4.** El paso "primer live" explica el ciclo real del producto y termina en navegación a `/app`.
 - **S5.** El flujo conserva la protección actual del middleware: sin sesión → `/sign-in`; con sesión y sin TikTok vinculado → `/link-tiktok`.
@@ -39,8 +39,8 @@ Se omite la línea "7 días gratis" del prototipo: la web aún no tiene facturac
 ### L5 (verificación, T2)
 
 - `pnpm build` → OK (sin errores; los warnings de `optimizeDeps` y del runtime Node son preexistentes).
-- Pasos 3 y 4 recorridos en Chromium headless con los componentes reales: "Usar los recomendados" escribe 4 filtros en `localStorage.customKeywordFilters` con `stage` correcto, "Continuar" queda habilitado solo con filtros, "Lo hago después" avanza sin escribir nada, el CTA "Empezar" navega a `/app`.
-- `customStageOverride()` con `ONBOARDING_PRESETS` reales: 14/14 casos (compra, negociando y sin match). El primer intento falló en "envías a Trujillo?" → se agregaron los stems `envi`/`enví` al preset de Envío.
+- Pasos 3 y 4 recorridos en Chromium headless con los componentes reales: "Usar los recomendados" creaba 4 filtros en `localStorage.customKeywordFilters` con `stage` correcto, "Continuar" queda habilitado solo con filtros, "Lo hago después" avanza sin escribir nada, el CTA "Empezar" navega a `/app`. **Superado**: desde `filtros-backend.md` (T10) los presets se crean en el servidor (`POST /stores/:storeId/filters`) y no se escribe nada en el navegador.
+- `customStageOverride()` con `ONBOARDING_PRESETS` reales: 14/14 casos (compra, negociando y sin match). El primer intento falló en "envías a Trujillo?" → se agregaron los stems `envi`/`enví` al preset de Envío. **Superado**: el matching y la etapa se evalúan en el API (S4); el navegador solo muestra.
 - `/link-tiktok` sin sesión → 302 a `/sign-in` (middleware intacto).
 - Límite conocido: el paso 2 (guardar TikTok) no se pudo ejercitar de extremo a extremo en local porque la publishable key de Clerk es de producción y solo se inicializa en el dominio `tiktoklive.me`. La transición `200 de la API → setPhase("presets")` quedó verificada por lectura, no en navegador.
 

@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSSE } from "@/hooks/useSSE";
-import { getSSEUrl } from "@/lib/api";
+import { leadMessage, type LeadRow } from "@/lib/filters-api";
 import {
-  classifyLead,
+  NO_STAGE_COUNTS,
   STAGE_CONFIG,
   STAGE_ORDER,
   type LeadStage,
-} from "@/lib/lead-classifier";
+} from "@/lib/stages";
 
-import { loadFilters, getHighlightParts, customStageOverride } from "@/lib/keyword-filters";
 import type { CompraLead } from "@/components/purchase-alerts";
 
 const STAGE_EMOJI: Record<string, string> = {
@@ -18,19 +17,6 @@ const STAGE_EMOJI: Record<string, string> = {
   negociando: "💬",
   interesado: "👀",
 };
-
-interface TopUser {
-  tiktokUserId: string;
-  displayId?: string;
-  nickname?: string;
-  verified?: boolean;
-  followerCount?: string;
-  entries: number;
-  comments: number;
-  commentTexts: string[];
-  firstSeen: number;
-  score: number;
-}
 
 interface TopUsersProps {
   sessionId: string;
@@ -44,9 +30,14 @@ interface TopUsersProps {
   onCompraLeads?: (leads: CompraLead[]) => void;
 }
 
+/**
+ * S4: el servidor ya filtró, clasificó, segmentó y ordenó.
+ * Esta pantalla solo pinta `stage`, `stageLabel` y `spans`.
+ */
 export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap, onToggleAttended, maxMobileItems, onConnectionError, onStageCountsReport, onCompraLeads }: TopUsersProps) {
-  const { data: users, connected, status, connectionError } = useSSE<TopUser>(
-    getSSEUrl(`/lives/${sessionId}/stats/stream`),
+  const { data: users, totals, connected, status, connectionError } = useSSE<LeadRow>(
+    `/lives/${sessionId}/stats/stream`,
+    sessionId,
   );
 
   useEffect(() => {
@@ -57,84 +48,41 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
     }
   }, [status, connectionError, onConnectionError]);
 
-  const classifierCache = useRef<Map<string, { stage: LeadStage; keyAction: string | null }>>(new Map());
-  const customFilters = useMemo(() => loadFilters(), []);
+  const rows = users ?? [];
 
-  const enriched = useMemo(() => {
-    if (!users) return [];
-    return users
-      .map((u) => {
-        const cacheKey = `${u.tiktokUserId}|${u.commentTexts.join("|")}`;
-        const cached = classifierCache.current.get(cacheKey);
-        if (cached) return { ...u, ...cached };
-
-        const result = classifyLead(u.commentTexts);
-        if (!result) return null;
-
-        // Custom keyword filters override the stage if matched
-        const override = customStageOverride(u.commentTexts, customFilters);
-        if (override) {
-          result.stage = override;
-        }
-
-        classifierCache.current.set(cacheKey, result);
-        return { ...u, ...result };
-      })
-      .filter(Boolean)
-      .sort((a, b) => {
-        return b.firstSeen - a.firstSeen;
-      }) as (TopUser & { stage: LeadStage; keyAction: string | null })[];
-  }, [users]);
+  // `totals` manda en los contadores: el crudo son todos los que comentaron.
+  const counts = totals?.byStage ?? NO_STAGE_COUNTS;
 
   // Report stage counts to parent
   useEffect(() => {
-    if (!onStageCountsReport || !enriched.length) return;
-    const counts = { compra: 0, negociando: 0, interesado: 0 };
-    for (const u of enriched) counts[u.stage]++;
+    if (!onStageCountsReport || rows.length === 0) return;
     onStageCountsReport(counts);
-  }, [enriched, onStageCountsReport]);
+  }, [counts, rows.length, onStageCountsReport]);
 
   // Report purchase leads so the parent can raise floating alerts
   useEffect(() => {
     if (!onCompraLeads) return;
     onCompraLeads(
-      enriched
-        .filter((u) => u.stage === "compra")
-        .map((u) => ({
-          tiktokUserId: u.tiktokUserId,
-          name: u.nickname || u.displayId || "Anónimo",
-          message: u.keyAction,
+      rows
+        .filter((row) => row.stage === "compra")
+        .map((row) => ({
+          tiktokUserId: row.tiktokUserId,
+          name: row.nickname || row.displayId || "Anónimo",
+          message: leadMessage(row),
         })),
     );
-  }, [enriched, onCompraLeads]);
+  }, [rows, onCompraLeads]);
 
   // Auto-unattend: if an attended user sent new messages, move back to pending
   useEffect(() => {
-    if (!enriched || enriched.length === 0) return;
-    for (const user of enriched) {
-      const info = attendedMap.get(user.tiktokUserId);
-      if (info && user.commentTexts.length > info.commentCount) {
-        onToggleAttended(user.tiktokUserId);
+    if (rows.length === 0) return;
+    for (const row of rows) {
+      const info = attendedMap.get(row.tiktokUserId);
+      if (info && row.comments > info.commentCount) {
+        onToggleAttended(row.tiktokUserId);
       }
     }
-  }, [enriched, attendedMap, onToggleAttended]);
-
-  const grouped = useMemo(() => {
-    const groups: Record<LeadStage, (typeof enriched)[number][]> = {
-      interesado: [], negociando: [], compra: [],
-    };
-    for (const u of enriched) {
-      if (groups[u.stage]) groups[u.stage].push(u);
-    }
-    return groups;
-  }, [enriched]);
-
-  const totalUsers = enriched.length;
-
-  const maxStageCount = Math.max(
-    ...STAGE_ORDER.map((s) => grouped[s].length),
-    1,
-  );
+  }, [rows, attendedMap, onToggleAttended]);
 
   const [tick, setTick] = useState(0);
   const [activeStage, setActiveStage] = useState<"all" | LeadStage>("all");
@@ -142,35 +90,58 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
   // Auto-select best stage once on first load, never override manual tab
   const hasAutoSelected = useRef(false);
   useEffect(() => {
-    if (hasAutoSelected.current || !enriched.length) return;
-    const priority: LeadStage[] = ["compra", "negociando", "interesado"];
-    for (const stage of priority) {
-      if (grouped[stage].length > 0) {
+    if (hasAutoSelected.current || rows.length === 0) return;
+    for (const stage of STAGE_ORDER) {
+      if (counts[stage] > 0) {
         setActiveStage(stage);
         break;
       }
     }
     hasAutoSelected.current = true;
-  }, [enriched, grouped]);
+  }, [rows.length, counts]);
 
   useEffect(() => {
     const iv = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(iv);
   }, []);
 
-  const pendingList = enriched
-    .filter((u) => !attendedMap.has(u.tiktokUserId))
-    .filter((u) => activeStage === "all" || u.stage === activeStage);
-  const attendedList = enriched
-    .filter((u) => attendedMap.has(u.tiktokUserId))
-    .filter((u) => activeStage === "all" || u.stage === activeStage)
+  // El orden es del servidor: no se reordena acá.
+  const pendingList = rows
+    .filter((row) => !attendedMap.has(row.tiktokUserId))
+    .filter((row) => activeStage === "all" || row.stage === activeStage);
+  const attendedList = rows
+    .filter((row) => attendedMap.has(row.tiktokUserId))
+    .filter((row) => activeStage === "all" || row.stage === activeStage)
     .sort((a, b) => {
       const aTime = attendedMap.get(a.tiktokUserId)?.attendedAt ?? 0;
       const bTime = attendedMap.get(b.tiktokUserId)?.attendedAt ?? 0;
       return bTime - aTime;
     });
 
-  const renderLead = (user: (typeof enriched)[number], index: number, isAttended: boolean) => {
+  const totalUsers = totals?.commented ?? 0;
+
+  const renderSpans = (row: LeadRow) => {
+    const message = leadMessage(row);
+    if (!message) return null;
+    return (
+      <p
+        className="text-xs text-white/50 leading-relaxed truncate mt-0.5"
+        style={{ textDecoration: attendedMap.has(row.tiktokUserId) ? "line-through" : "none" }}
+      >
+        {row.spans.length > 0
+          ? row.spans.map((span, i) =>
+              span.strong ? (
+                <strong key={i} className="font-bold text-white/80">{span.text}</strong>
+              ) : (
+                <span key={i}>{span.text}</span>
+              ),
+            )
+          : message}
+      </p>
+    );
+  };
+
+  const renderLead = (user: LeadRow, index: number, isAttended: boolean) => {
     const hideOnMobile = maxMobileItems && index >= maxMobileItems;
     const cfg = STAGE_CONFIG[user.stage];
     const isSelected = selectedUserIds.has(user.tiktokUserId);
@@ -209,24 +180,24 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
                 {user.nickname || user.displayId || "Anónimo"}
               </span>
               <span className="text-[11px] shrink-0">{STAGE_EMOJI[user.stage]}</span>
+              {user.stageLabel && (
+                <span
+                  className="text-[10px] shrink-0 truncate max-w-[110px]"
+                  style={{ color: "rgba(255,255,255,0.3)" }}
+                  title={`Filtro: ${user.stageLabel}`}
+                >
+                  {user.stageLabel}
+                </span>
+              )}
             </div>
 
-            {user.keyAction && (
-              <p
-                className="text-xs text-white/50 leading-relaxed truncate mt-0.5"
-                style={{ textDecoration: isAttended ? "line-through" : "none" }}
-              >
-                {getHighlightParts(user.keyAction, customFilters).map((part, i) =>
-                  part.bold ? <strong key={i} className="font-bold text-white/80">{part.text}</strong> : part.text,
-                )}
-              </p>
-            )}
+            {renderSpans(user)}
           </div>
 
           {/* Atender button */}
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onToggleAttended(user.tiktokUserId, user.commentTexts.length); }}
+            onClick={(e) => { e.stopPropagation(); onToggleAttended(user.tiktokUserId, user.comments); }}
             className="shrink-0 flex items-center gap-1 rounded-lg transition-all duration-200 px-2 py-1 mt-0.5"
             style={{
               backgroundColor: isAttended ? `${cfg.color}20` : "rgba(255,255,255,0.04)",
@@ -265,13 +236,9 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
           <a
             href="/app/filters"
             className="text-[10px] font-medium transition-colors hover:opacity-80"
-            style={{
-              color: customFilters.length > 0 ? "rgba(254,44,85,0.6)" : "rgba(255,255,255,0.2)",
-            }}
+            style={{ color: "rgba(254,44,85,0.6)" }}
           >
-            {customFilters.length > 0
-              ? `Filtros (${customFilters.length})`
-              : "+ Filtros"}
+            Filtros
           </a>
         </div>
         <div className="flex items-center gap-2">
@@ -298,7 +265,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
           Todos <span className="font-mono tabular-nums text-[11px]">{totalUsers}</span>
         </button>
         {STAGE_ORDER.map((stage) => {
-          const count = grouped[stage].length;
+          const count = counts[stage];
           const cfg = STAGE_CONFIG[stage];
           const isActive = activeStage === stage;
           return (
@@ -325,7 +292,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, attendedMap
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0 pr-1">
-        {!enriched || enriched.length === 0 ? (
+        {rows.length === 0 ? (
           <p className="text-sm text-white/30 text-center py-12">
             {status === "error"
               ? `Error de conexión: ${connectionError || "desconocido"}`

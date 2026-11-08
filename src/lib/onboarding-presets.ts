@@ -1,40 +1,38 @@
-import type { KeywordCategory } from "./keyword-filters";
+import type { KeywordFilterPayload } from "./keyword-filters.ts";
+
+export interface OnboardingPreset extends KeywordFilterPayload {
+  /** Clave local para la lista y el ejemplo; el servidor asigna el id real. */
+  id: string;
+}
 
 /**
- * Presets de filtros que se ofrecen en el onboarding.
- * Salen del prototipo (Quiere comprar, Pregunta precio, Pregunta talla, Envío)
- * mapeados a las etapas que ya usa la web.
- *
- * Los colores son los de la PALETTE de `filters-page.tsx`, en el mismo orden,
- * para que un preset se vea igual que un filtro creado a mano.
+ * Presets de filtros que se ofrecen en el onboarding (S3).
+ * Son payload: se crean en el servidor con `POST /stores/:storeId/filters`,
+ * que los deduplica por nombre, así que reenviarlos no duplica nada.
  */
-export const ONBOARDING_PRESETS: KeywordCategory[] = [
+export const ONBOARDING_PRESETS: OnboardingPreset[] = [
   {
     id: "preset-compra",
     name: "Quiere comprar",
     keywords: ["separo", "quiero", "lo llevo", "me la", "link", "yape"],
-    color: "#fe2c55",
     stage: "compra",
   },
   {
     id: "preset-precio",
     name: "Pregunta precio",
     keywords: ["precio", "cuanto", "cuánto", "cuesta"],
-    color: "#25f4ee",
     stage: "negociando",
   },
   {
     id: "preset-talla",
     name: "Pregunta talla",
     keywords: ["talla", "color", "medida"],
-    color: "#facc15",
     stage: "negociando",
   },
   {
     id: "preset-envio",
     name: "Envío",
     keywords: ["envio", "envío", "envi", "enví", "provincia", "delivery", "llega"],
-    color: "#4ade80",
     stage: "negociando",
   },
 ];

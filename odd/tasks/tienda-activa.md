@@ -26,11 +26,11 @@ Un usuario puede tener hasta 3 tiendas. Hay **una tienda activa** que aplica a t
 - **T2 · WEB** (S3, S4) · `src/lib/active-store.ts`: lectura/escritura en localStorage, `useActiveStore()` con suscripción por evento.
 - **T3 · WEB** (D2, D3, S5) · selector de tienda en el menú hamburguesa + quitar el CTA "Cambiar" del Live y resolver la tienda del arranque desde la activa.
 - **T4 · WEB** (D4, D5, S6) · sección "Mis tiendas" en Perfil: lista con la activa, agregar (con validaciones) y remover con el bloqueo por lives.
-- **T5 · WEB** (S1) · la bandeja y los filtros leen la tienda activa; la bandeja conserva el filtro "Todas".
+- **T5 · WEB** (S1) · la bandeja y los filtros leen la tienda activa; la bandeja conserva el filtro "Todas". Los filtros ya se leen del API por tienda (`GET /stores/:storeId/filters`, ver `filtros-backend.md` T8/T9): ya no hay bolsa local que separar.
 
 ## Fuera de alcance (anotado)
 
-- Filtros por tienda: hoy `customKeywordFilters` es una sola bolsa en `localStorage`. Separarla por tienda es un cambio de datos aparte; en esta versión los filtros siguen siendo del usuario, no de la tienda.
+- ~~Filtros por tienda: hoy `customKeywordFilters` es una sola bolsa en `localStorage`. Separarla por tienda es un cambio de datos aparte; en esta versión los filtros siguen siendo del usuario, no de la tienda.~~ **Resuelto** en `odd/tasks/filtros-backend.md`: los filtros (sistema + tienda) viven en el API llaveados por `storeId` y el navegador solo los muestra. `localStorage` queda únicamente para la tienda activa (`ll_active_store`, D1), que no cambió.
 
 ## Log
 

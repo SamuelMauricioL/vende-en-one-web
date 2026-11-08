@@ -1,32 +1,28 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useAuth } from "@clerk/astro/react";
 import { AppNav } from "@/components/app-nav";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
+import { useActiveStoreId } from "@/lib/active-store";
 import {
-  type KeywordCategory,
-  loadFilters,
-  saveFilters,
-  generateId,
-} from "@/lib/keyword-filters";
-import type { LeadStage } from "@/lib/lead-classifier";
+  createFilter,
+  deleteFilter,
+  discardFilters,
+  fetchFilters,
+  groupFiltersByStage,
+  normalizeFilters,
+  updateFilter,
+  type FilterView,
+  type StageFilter,
+} from "@/lib/filters-api";
+import { STAGE_CONFIG, STAGE_ORDER, type LeadStage } from "@/lib/stages";
 
-const PALETTE = [
-  "#fe2c55", "#25f4ee", "#facc15", "#4ade80",
-  "#7c3aed", "#f97316", "#06d6a0", "#f72585",
-  "#3b82f6", "#e63946", "#8b5cf6", "#14b8a6",
-];
+/** S6: un solo color distingue que algo es un filtro. */
+const FILTER_COLOR = "#fe2c55";
 
-function getColor(index: number): string {
-  return PALETTE[index % PALETTE.length];
-}
-
-const STAGE_COLORS: Record<LeadStage, string> = {
-  compra: "#fe2c55",
-  negociando: "#facc15",
-  interesado: "#4ade80",
-};
+type LoadState = "loading" | "ready" | "error";
 
 const STAGE_LABELS: Record<LeadStage, string> = {
   compra: "Compra",
@@ -34,66 +30,106 @@ const STAGE_LABELS: Record<LeadStage, string> = {
   interesado: "Interesado",
 };
 
-const STAGE_ORDER: LeadStage[] = ["compra", "negociando", "interesado"];
-
-/** Guess the best stage for a keyword based on simple heuristics */
-function guessStage(keyword: string): LeadStage {
-  const kw = keyword.toLowerCase();
-  if (/compro|pago|transferir|ya te/i.test(kw)) return "compra";
-  if (/precio|cuánto|cuesta|envío|garantía|stock|talla|color/i.test(kw)) return "negociando";
-  return "interesado";
-}
-
 export default function FiltersClient() {
-  const [categories, setCategories] = useState<KeywordCategory[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const { getToken } = useAuth();
+  const storeId = useActiveStoreId();
+
+  const [filters, setFilters] = useState<FilterView[]>([]);
+  const [state, setState] = useState<LoadState>("loading");
+  const [error, setError] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [newKeyword, setNewKeyword] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const loadSeq = useRef(0);
+
+  /** S1: los filtros son de la tienda activa; se recargan al cambiarla. */
+  const load = useCallback(async () => {
+    if (!storeId) return;
+    const seq = ++loadSeq.current;
+    setState("loading");
+    setError("");
+    try {
+      const list = await fetchFilters(storeId, getToken);
+      if (seq !== loadSeq.current) return;
+      setFilters(list);
+      setState("ready");
+    } catch (err) {
+      if (seq !== loadSeq.current) return;
+      setError(err instanceof Error ? err.message : "");
+      setState("error");
+    }
+  }, [storeId, getToken]);
 
   useEffect(() => {
-    setCategories(loadFilters());
-    setLoaded(true);
-  }, []);
+    void load();
+  }, [load]);
 
-  useEffect(() => {
-    if (loaded) saveFilters(categories);
-  }, [categories, loaded]);
-
-  const addFilter = useCallback(() => {
-    const kw = newKeyword.trim();
-    if (!kw) return;
-    // Check if already exists
-    if (categories.some((c) => c.keywords.some((k) => k.toLowerCase() === kw.toLowerCase()))) {
-      toast.error(`"${kw}" ya está agregado`);
+  const addFilter = useCallback(async () => {
+    const keyword = newKeyword.trim();
+    if (!keyword || creating || state !== "ready" || !storeId) return;
+    if (filters.some((filter) => filter.keywords.some((k) => k.toLowerCase() === keyword.toLowerCase()))) {
+      toast.error(`"${keyword}" ya está agregado`);
       return;
     }
-    const stage = guessStage(kw);
-    setCategories((prev) => [
-      ...prev,
-      { id: generateId(), name: kw, keywords: [kw], color: getColor(prev.length), stage },
-    ]);
-    setNewKeyword("");
-    inputRef.current?.focus();
-  }, [newKeyword, categories]);
 
-  const changeStage = useCallback((id: string) => {
-    setCategories((prev) =>
-      prev.map((c) => {
-        if (c.id !== id) return c;
-        const idx = STAGE_ORDER.indexOf(c.stage);
-        const nextStage = STAGE_ORDER[(idx + 1) % STAGE_ORDER.length];
-        return { ...c, stage: nextStage };
-      }),
-    );
-  }, []);
+    setCreating(true);
+    try {
+      const created = await createFilter(storeId, { name: keyword, keywords: [keyword] }, getToken);
+      setFilters((prev) => normalizeFilters([...prev, created]));
+      setNewKeyword("");
+      inputRef.current?.focus();
+    } catch {
+      toast.error("No pudimos guardar el filtro");
+    } finally {
+      setCreating(false);
+    }
+  }, [newKeyword, creating, state, storeId, filters, getToken]);
 
-  const removeFilter = useCallback((id: string) => {
-    setCategories((prev) => prev.filter((c) => c.id !== id));
-  }, []);
+  const changeStage = useCallback(
+    async (filter: StageFilter) => {
+      if (!storeId || busyId) return;
+      const index = STAGE_ORDER.indexOf(filter.stage);
+      const stage = STAGE_ORDER[(index + 1) % STAGE_ORDER.length];
+      setBusyId(filter.id);
+      try {
+        const updated = await updateFilter(storeId, filter.id, { stage }, getToken);
+        setFilters((prev) =>
+          normalizeFilters(prev.map((item) => (item.id === filter.id ? updated : item))),
+        );
+      } catch {
+        toast.error("No pudimos cambiar la etapa");
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [storeId, busyId, getToken],
+  );
+
+  const removeFilter = useCallback(
+    async (filter: FilterView) => {
+      if (!storeId || busyId) return;
+      setBusyId(filter.id);
+      try {
+        await deleteFilter(storeId, filter.id, getToken);
+        setFilters((prev) => prev.filter((item) => item.id !== filter.id));
+      } catch {
+        toast.error("No pudimos eliminar el filtro");
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [storeId, busyId, getToken],
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") addFilter();
+    if (e.key === "Enter") void addFilter();
   };
+
+  const canSubmit = state === "ready" && !!newKeyword.trim() && !creating;
+  const groups = groupFiltersByStage(filters);
+  /** S11: el filtro de descarte no tiene etapa ni acciones; se muestra aparte. */
+  const discarded = discardFilters(filters);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0b0f1a" }}>
@@ -101,7 +137,7 @@ export default function FiltersClient() {
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-6">
         {/* Carousel */}
-        <FilterCarousel categories={categories} />
+        <FilterCarousel />
 
         {/* Hero copy */}
         <div className="text-center mb-8 mt-6">
@@ -128,6 +164,7 @@ export default function FiltersClient() {
             onChange={(e) => setNewKeyword(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Escribe una palabra clave (ej: PS5)"
+            aria-label="Palabra clave del filtro"
             className="flex-1 h-11 px-4 rounded-xl text-sm outline-none transition-all duration-200"
             style={{
               background: "rgba(255,255,255,0.04)",
@@ -139,38 +176,58 @@ export default function FiltersClient() {
           />
           <button
             type="button"
-            onClick={addFilter}
-            disabled={!newKeyword.trim()}
+            onClick={() => void addFilter()}
+            disabled={!canSubmit}
             className="h-11 px-5 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0"
             style={{
-              backgroundColor: newKeyword.trim() ? "#fe2c55" : "rgba(255,255,255,0.06)",
-              color: newKeyword.trim() ? "#fff" : "rgba(255,255,255,0.25)",
-              boxShadow: newKeyword.trim() ? "0 4px 16px rgba(254,44,85,0.2)" : "none",
-              cursor: newKeyword.trim() ? "pointer" : "not-allowed",
+              backgroundColor: canSubmit ? FILTER_COLOR : "rgba(255,255,255,0.06)",
+              color: canSubmit ? "#fff" : "rgba(255,255,255,0.25)",
+              boxShadow: canSubmit ? "0 4px 16px rgba(254,44,85,0.2)" : "none",
+              cursor: canSubmit ? "pointer" : "not-allowed",
             }}
             onMouseEnter={(e) => {
-              if (newKeyword.trim()) {
+              if (canSubmit) {
                 e.currentTarget.style.backgroundColor = "#e8254a";
                 e.currentTarget.style.boxShadow = "0 4px 20px rgba(254,44,85,0.3)";
               }
             }}
             onMouseLeave={(e) => {
-              if (newKeyword.trim()) {
-                e.currentTarget.style.backgroundColor = "#fe2c55";
+              if (canSubmit) {
+                e.currentTarget.style.backgroundColor = FILTER_COLOR;
                 e.currentTarget.style.boxShadow = "0 4px 16px rgba(254,44,85,0.2)";
               }
             }}
           >
-            Agregar
+            {creating ? "Guardando..." : "Agregar"}
           </button>
         </div>
 
         {/* Filter list */}
-        {!loaded ? (
-          <div className="flex items-center justify-center py-16">
+        {state === "loading" ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex flex-col items-center justify-center gap-3 py-16"
+          >
             <div className="w-6 h-6 rounded-full border-2 border-white/10 border-t-[#fe2c55] animate-spin" />
+            <span className="text-xs text-white/30">Cargando tus filtros...</span>
           </div>
-        ) : categories.length === 0 ? (
+        ) : state === "error" ? (
+          <div role="alert" className="text-center py-16">
+            <p className="text-sm text-white/60">No pudimos cargar tus filtros.</p>
+            <p className="text-xs text-white/30 mt-1">
+              {error || "Revisa tu conexión e intenta de nuevo."}
+            </p>
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="mt-4 h-9 px-4 rounded-xl text-xs font-semibold text-white transition-all duration-200"
+              style={{ backgroundColor: FILTER_COLOR }}
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : filters.length === 0 ? (
           <div className="text-center py-16">
             <div
               className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center"
@@ -184,16 +241,14 @@ export default function FiltersClient() {
             <p className="text-xs text-white/20 mt-1">Escribe una palabra arriba y presiona Agregar</p>
           </div>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-5" aria-busy={busyId !== null}>
             <div className="flex items-center gap-2">
               <span className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
-                Tus filtros ({categories.length})
+                Tus filtros ({filters.length})
               </span>
             </div>
-            {STAGE_ORDER.map((stage) => {
-              const group = categories.filter((c) => c.stage === stage);
-              if (group.length === 0) return null;
-              const grpColor = STAGE_COLORS[stage];
+            {groups.map(({ stage, filters: group }) => {
+              const grpColor = STAGE_CONFIG[stage].color;
               return (
                 <div key={stage}>
                   {/* Group header */}
@@ -218,53 +273,128 @@ export default function FiltersClient() {
 
                   {/* Group items */}
                   <div className="space-y-1">
-                    {group.map((cat) => {
-                      const cfg = STAGE_COLORS[cat.stage];
-                      return (
-                        <div
-                          key={cat.id}
-                          className="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all"
-                          style={{
-                            background: "rgba(255,255,255,0.02)",
-                            border: "1px solid rgba(255,255,255,0.06)",
-                          }}
-                        >
+                    {group.map((filter) => (
+                      <div
+                        key={filter.id}
+                        className="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all"
+                        style={{
+                          background: "rgba(255,255,255,0.02)",
+                          border: "1px solid rgba(255,255,255,0.06)",
+                          opacity: busyId === filter.id ? 0.5 : 1,
+                        }}
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: FILTER_COLOR }}
+                        />
+                        <span className="flex-1 text-sm font-semibold min-w-0 truncate" style={{ color: "rgba(255,255,255,0.85)" }}>
+                          {filter.name}
+                        </span>
+                        {filter.editable ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => void changeStage(filter)}
+                              disabled={busyId !== null}
+                              className="px-2 py-0.5 rounded-lg text-[10px] font-semibold transition-all duration-200 shrink-0 disabled:cursor-not-allowed"
+                              style={{
+                                backgroundColor: `${grpColor}15`,
+                                color: grpColor,
+                              }}
+                              title="Toca para cambiar"
+                            >
+                              {STAGE_LABELS[filter.stage]} ▾
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void removeFilter(filter)}
+                              disabled={busyId !== null}
+                              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition-all shrink-0 disabled:cursor-not-allowed"
+                              title="Eliminar filtro"
+                              aria-label={`Eliminar filtro ${filter.name}`}
+                            >
+                              <svg className="w-3 h-3 text-white/25 hover:text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </>
+                        ) : (
                           <span
-                            className="w-2 h-2 rounded-full shrink-0"
-                            style={{ backgroundColor: cfg }}
-                          />
-                          <span className="flex-1 text-sm font-semibold min-w-0 truncate" style={{ color: "rgba(255,255,255,0.85)" }}>
-                            {cat.name}
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-semibold shrink-0"
+                            style={{ backgroundColor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.4)" }}
+                            title="Filtro del sistema: no se puede editar"
+                          >
+                            Sistema
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => changeStage(cat.id)}
-                            className="px-2 py-0.5 rounded-lg text-[10px] font-semibold transition-all duration-200 shrink-0"
-                            style={{
-                              backgroundColor: `${cfg}15`,
-                              color: cfg,
-                            }}
-                            title="Toca para cambiar"
-                          >
-                            {STAGE_LABELS[cat.stage]} ▾
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removeFilter(cat.id)}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition-all shrink-0"
-                            title="Eliminar filtro"
-                          >
-                            <svg className="w-3 h-3 text-white/25 hover:text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      );
-                    })}
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               );
             })}
+
+            {/* Filtros del sistema que descartan: sin etapa y sin acciones. */}
+            {discarded.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: "rgba(255,255,255,0.25)" }}
+                  />
+                  <span
+                    className="text-xs font-semibold tracking-wider uppercase"
+                    style={{ color: "rgba(255,255,255,0.35)" }}
+                  >
+                    Descartados
+                  </span>
+                  <span
+                    className="text-[10px] font-mono tabular-nums"
+                    style={{ color: "rgba(255,255,255,0.2)" }}
+                  >
+                    {discarded.length}
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  {discarded.map((filter) => (
+                    <div
+                      key={filter.id}
+                      className="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all"
+                      style={{
+                        background: "rgba(255,255,255,0.02)",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                      }}
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: FILTER_COLOR }}
+                      />
+                      <span
+                        className="flex-1 text-sm font-semibold min-w-0 truncate"
+                        style={{ color: "rgba(255,255,255,0.85)" }}
+                      >
+                        {filter.name}
+                      </span>
+                      <span
+                        className="px-2 py-0.5 rounded-lg text-[10px] font-semibold shrink-0"
+                        style={{ backgroundColor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.4)" }}
+                        title="Filtro del sistema: no se puede editar"
+                      >
+                        Sistema
+                      </span>
+                      <span
+                        className="px-2 py-0.5 rounded-lg text-[10px] font-semibold shrink-0"
+                        style={{ backgroundColor: "rgba(245,158,11,0.12)", color: "#f59e0b" }}
+                        title="Estos mensajes se descartan: no se clasifican ni llegan a tus leads"
+                      >
+                        Descarta
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
@@ -297,7 +427,10 @@ const DEMO_MESSAGES = [
   { text: "Ya te transferí por la PS5!", stage: "compra" as LeadStage },
 ];
 
-function FilterCarousel({ categories }: { categories: KeywordCategory[] }) {
+/** Demo fijo: no depende de los filtros guardados (el resaltado real es del servidor). */
+const DEMO_KEYWORDS = ["PS5", "PlayStation", "PlayStation 5"];
+
+function FilterCarousel() {
   const [index, setIndex] = useState(0);
   const [leaving, setLeaving] = useState(false);
   const leavingRef = useRef(false);
@@ -326,12 +459,8 @@ function FilterCarousel({ categories }: { categories: KeywordCategory[] }) {
   const current = DEMO_MESSAGES[index];
   const next = DEMO_MESSAGES[(index + 1) % DEMO_MESSAGES.length];
 
-  const allKeywords = categories.flatMap((c) => c.keywords.filter((k) => k.trim()));
-  const demoKeywords = ["PS5", "PlayStation", "PlayStation 5"];
-  const effectiveKeywords = allKeywords.length > 0 ? allKeywords : demoKeywords;
-
   const renderHighlighted = (text: string, stageColor: string) => {
-    const matched = effectiveKeywords.find((kw) => text.toLowerCase().includes(kw.toLowerCase()));
+    const matched = DEMO_KEYWORDS.find((kw) => text.toLowerCase().includes(kw.toLowerCase()));
     if (!matched) return text;
     const escaped = matched.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const parts = text.split(new RegExp(`(${escaped})`, "gi"));
@@ -342,8 +471,8 @@ function FilterCarousel({ categories }: { categories: KeywordCategory[] }) {
     );
   };
 
-  const stageColor = STAGE_COLORS[current.stage];
-  const nextColor = STAGE_COLORS[next.stage];
+  const stageColor = STAGE_CONFIG[current.stage].color;
+  const nextColor = STAGE_CONFIG[next.stage].color;
 
   return (
     <div className="relative w-full max-w-sm mx-auto">
@@ -394,7 +523,7 @@ function DemoMessage({ data, color, renderHighlighted }: { data: typeof DEMO_MES
             className="text-[10px] font-bold px-1.5 py-0.5 rounded leading-none"
             style={{ background: `${color}20`, color }}
           >
-            {data.stage === "compra" ? "Compra" : data.stage === "negociando" ? "Negociando" : "Interesado"}
+            {STAGE_CONFIG[data.stage].label}
           </span>
           <span className="text-xs font-bold truncate" style={{ color: `${color}cc` }}>
             usuario_ejemplo

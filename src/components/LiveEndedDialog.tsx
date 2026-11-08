@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { STAGE_CONFIG, STAGE_ORDER, type LeadStage } from "@/lib/lead-classifier";
+import { STAGE_CONFIG, STAGE_ORDER, type LeadStage } from "@/lib/stages";
 
 interface LiveEndedDialogProps {
   stageCounts: Record<LeadStage, number>;
