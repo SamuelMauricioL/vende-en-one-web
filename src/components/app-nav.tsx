@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/astro/react";
+import { fetchBillingState } from "@/lib/billing";
 
 interface AppNavProps {
-  current: "live" | "inbox" | "filters" | "profile";
+  current: "live" | "inbox" | "filters" | "profile" | "billing" | "admin";
   /** Optional stop button for live page (mobile) */
   stopButton?: React.ReactNode;
   /** Conversaciones sin desenlace: badge de la bandeja de rescate */
@@ -13,13 +14,28 @@ interface AppNavProps {
 
 export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
   const [open, setOpen] = useState(false);
-  const { isSignedIn, signOut } = useAuth();
+  const { isSignedIn, isLoaded, getToken, signOut } = useAuth();
+  const [expired, setExpired] = useState(false);
+
+  // Aviso de vencimiento: solo consulta, nunca bloquea otras pantallas.
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+    let cancelled = false;
+    void fetchBillingState(getToken).then((state) => {
+      if (!cancelled && state) setExpired(state.access === "expired");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, isSignedIn, getToken]);
 
   const labels: Record<string, string> = {
     live: "Live Controller",
     inbox: "Bandeja de rescate",
     filters: "Filtros personalizados",
     profile: "Perfil",
+    billing: "Cobro y acceso",
+    admin: "Pagos pendientes",
   };
   const title = labels[current] ?? "Live Leads";
 
@@ -79,6 +95,16 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            {expired && (
+              <a
+                href="/app/billing"
+                className="flex items-center gap-1.5 h-8 px-2.5 rounded-xl text-[11px] font-bold transition-all duration-200 hover:bg-white/5"
+                style={{ background: "rgba(254,44,85,0.12)", color: "#fe2c55" }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#fe2c55] animate-pulse" />
+                Acceso vencido
+              </a>
+            )}
             {stopButton}
           </div>
         </div>
@@ -188,6 +214,40 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
               />
             </svg>
             Filtros
+          </a>
+
+          <a
+            href="/app/billing"
+            onClick={() => setOpen(false)}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+              isActive("billing")
+                ? "bg-white/10 text-white"
+                : "text-white/50 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            {/* Billing icon */}
+            <svg
+              className={`w-4 h-4 ${isActive("billing") ? "text-[#25f4ee]" : "text-current"}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"
+              />
+            </svg>
+            Cobro
+            {expired ? (
+              <span
+                className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                style={{ background: "rgba(254,44,85,0.18)", color: "#fe2c55" }}
+              >
+                Vencido
+              </span>
+            ) : null}
           </a>
 
           <a
