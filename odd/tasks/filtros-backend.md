@@ -65,6 +65,13 @@ type FilterView = {
 // DELETE /stores/:storeId/filters/:id      → { ok: true }
 ```
 
+S11. **Insultos y acoso son un filtro del sistema que descarta.** «el descarte de insultos y acoso lo tenemos que mover como parte de los filtros del sistema». Reglas:
+- Existe un filtro de sistema (`source: "system"`, `editable: false`) que **no clasifica: descarta**. Cuando coincide, el comentario se trata igual que un no-match: no viaja por el stream, no se persiste y no genera lead.
+- El contrato gana `action: "classify" | "discard"` en `FilterView` y en `FilterDefinition`. Para `action: "discard"` la etapa es `null`.
+- El motor evalúa primero los filtros con acción descartar; si uno coincide, no se calculan etapa ni spans.
+- Los patrones se portan desde el clasificador borrado en la web (`git show b3b139f^:src/lib/lead-classifier.ts`, `OFFENSIVE_PATTERNS`).
+- La pantalla de Filtros muestra la fila del sistema con una marca de que descarta y sin acciones; el agrupamiento por etapa ignora los filtros de descarte.
+
 S9. **No se migran los filtros viejos del navegador.** «ahora la web nadie la usa, esto es un mvp así que no es necesario tomar en cuenta esos filtros guardados en el navegador». Corte duro: se elimina la persistencia local, sin backfill ni doble lectura.
 
 S10. **Buenas prácticas.** «usa buenas prácticas para la implementación del código»: tipos explícitos, validación con Zod en las rutas, autorización por tienda existente (`authorizeStore`), sin duplicar lógica entre repos, tests por regla observable, sin `any` nuevos.
@@ -91,6 +98,9 @@ Rutas de trabajo: `R-API` = `/Users/samuelaimarmauriciolaime/Documents/personal/
 - [x] **T15 · S3 · R-API · C4** — commit `4c838b3` — POST/PATCH de un filtro de tienda con el mismo nombre que uno del sistema: hoy responde 201 y el filtro queda invisible porque el sistema gana el merge. Devolver 409 con mensaje que diga qué nombre está ocupado.
 - [x] **T16 · S7 · R-API · C4** — commit `4c838b3` — Precisar el comentario de `totalUsers`/`totalMessages` en `tiktokLiveManager.saveSummary`: `totalUsers` es el crudo de personas que comentaron y `totalMessages` cuenta solo coincidencias; que el comentario no prometa otra cosa.
 
+- [ ] **T17 · S11 · R-API · C5** — `src/config/systemFilters.ts`: filtro de descarte "Insultos y acoso" portado de `OFFENSIVE_PATTERNS`; `FilterDefinition` y `FilterView` con `action` y `stage` nullable; `src/services/filterEngine.ts` evalúa descarte primero y devuelve la acción; `liveStatsManager` descarta el comentario; tests (insulto con keyword → nada, insulto sin keyword → nada, mensaje normal intacto).
+- [ ] **T18 · S11 · R-WEB · C4** — `src/lib/filters-api.ts` con `action` y `stage` nullable; `normalizeFilters`/`groupFiltersByStage` ignoran los filtros de descarte al agrupar; `src/components/filters-page.tsx` muestra la fila del sistema "Insultos y acoso" con marca de descarte y sin acciones; tests.
+
 ## Log
 
 L1. «arranca con todo, si puedes paralelizar trabajo hazlo, me avisas cuando termines todo, si hay algo que decidir me avisas» + «usa buenas prácticas para la implementación del código».
@@ -110,3 +120,5 @@ L7. «los filtros del usuario se deben de precargar antes de empezar el live, cu
 L8. «a qué te refieres con el color del filtro? deberíamos tener 1 solo color que distinga que es un filtro».
 
 L9. «1. se descartan 2. desde el código 3. el IU ya no se encarga, la decisión se mueve al BE, se tiene que pensar cual sería el contrato de json el front para solo tener la tarea de mostrar».
+
+L10. «el descarte de insultos y acoso lo tenemos que mover como parte de los filtros del sistema».
