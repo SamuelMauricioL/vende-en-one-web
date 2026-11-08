@@ -24,6 +24,8 @@ export interface PendingPayment {
 
 export interface BillingState {
   access: AccessStatus;
+  /** Solo un admin ve /app/admin; el API lo expone en GET /billing. */
+  role: "admin" | "seller";
   trialEndsAt: number | null;
   paidUntil: number | null;
   priceCents: number;
@@ -110,6 +112,7 @@ export function normalizeBilling(raw: unknown, now = Date.now()): BillingState {
   const pending = data.pendingPayment as Record<string, unknown> | null | undefined;
 
   return {
+    role: data.role === "admin" ? "admin" : "seller",
     access:
       data.access === "active" || data.access === "trial" || data.access === "expired"
         ? data.access
