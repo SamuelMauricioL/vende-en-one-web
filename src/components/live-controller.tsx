@@ -171,31 +171,6 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     setLastUsername(username);
     setLoading(true);
 
-    // Check if the user is actually live on TikTok before starting
-    try {
-      const checkRes = await fetch(`/api/lives/check/${encodeURIComponent(username)}`, {
-        headers: await authHeaders(getToken),
-      });
-      if (checkRes.ok) {
-        const { isLive } = await checkRes.json();
-        if (!isLive) {
-          if (isAutoReconnect) {
-            // Silent cleanup — user came back and live already ended
-            localStorage.removeItem(RECONNECT_KEY);
-            setLoading(false);
-            return;
-          }
-          // User initiated — warn but let them proceed
-          toast.info(
-            `${username} no está en vivo ahora. Si empieza su live después, los leads se capturarán automáticamente.`,
-            { duration: 5000 },
-          );
-        }
-      }
-    } catch {
-      // If check fails, proceed anyway (network error, etc.)
-    }
-
     try {
       const res = await fetch("/api/lives/start", {
         method: "POST",
@@ -319,24 +294,6 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     setLastUsername(username);
     setShowEditInput(false);
     setLoading(true);
-
-    // Check if user is actually live
-    try {
-      const checkRes = await fetch(`/api/lives/check/${encodeURIComponent(username)}`, {
-        headers: await authHeaders(getToken),
-      });
-      if (checkRes.ok) {
-        const { isLive } = await checkRes.json();
-        if (!isLive) {
-          toast.info(
-            `${username} no está en vivo ahora. Si empieza su live después, los leads se capturarán automáticamente.`,
-            { duration: 5000 },
-          );
-        }
-      }
-    } catch {
-      // proceed anyway
-    }
 
     try {
       const res = await fetch("/api/lives/start", {
