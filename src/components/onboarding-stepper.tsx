@@ -145,11 +145,15 @@ export default function OnboardingStepper() {
           {/* Title */}
           <div className="text-center mb-8">
             <h2 className="text-xl font-extrabold text-white/90 tracking-tight">
-              Conecta tu TikTok
+              Conecta el TikTok de tu tienda
             </h2>
-            <p className="mt-2 text-sm text-white/40 max-w-xs mx-auto">
-              Ingresa el enlace de tu perfil de TikTok para que podamos capturar
-              tus leads automáticamente.
+            <p className="mt-2 text-sm text-white/40 max-w-sm mx-auto">
+              Es la cuenta desde la que haces tus lives: de ahí leemos los
+              comentarios y los ordenamos por ti.
+            </p>
+            <p className="mt-2 text-[11px] text-white/30 max-w-sm mx-auto">
+              ¿Manejas más de una cuenta de TikTok Live para tu tienda? Puedes
+              agregar hasta 3 y cambiar entre ellas desde el menú.
             </p>
           </div>
 
@@ -160,7 +164,7 @@ export default function OnboardingStepper() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="https://www.tiktok.com/@tucuenta"
+                placeholder="https://www.tiktok.com/@tutienda"
                 className="w-full h-12 px-4 rounded-xl text-sm bg-white/5 border border-white/10 text-white/90 placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-[#fe2c55]/50 transition-all"
                 disabled={saving}
                 autoFocus

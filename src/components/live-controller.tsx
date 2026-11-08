@@ -83,6 +83,8 @@ function PaywallNotice() {
 export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?: (active: boolean) => void; initialTikTokUsername?: string }>(({ onActiveChange, initialTikTokUsername = "" }, ref) => {
   const { getToken } = useAuth();
   const [storeId, setStoreId] = useState("");
+  // El @ con el que se conecta el live es el de la tienda activa, no el del perfil.
+  const [storeUsername, setStoreUsername] = useState(initialTikTokUsername);
   const activeStoreId = useActiveStoreId();
 
   const [input, setInput] = useState(initialTikTokUsername ? `https://www.tiktok.com/@${initialTikTokUsername}` : "");
@@ -150,7 +152,10 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
         const list = data.stores ?? [];
         // La tienda activa del menú manda; el @ del perfil es el respaldo.
         const match = resolveActiveStore(list, initialTikTokUsername);
-        if (!cancelled && match) setStoreId(match._id);
+        if (!cancelled && match) {
+          setStoreId(match._id);
+          setStoreUsername(match.tiktokUsername);
+        }
       } catch {
         // sin tienda, el arranque del live responderá con un error claro
       }
@@ -158,11 +163,18 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     return () => {
       cancelled = true;
     };
-  }, [getToken, initialTikTokUsername]);
+  }, [getToken, initialTikTokUsername, activeStoreId]);
+
+  // Al cambiar de tienda, el formulario y la conexión siguen a esa tienda.
+  useEffect(() => {
+    if (activeSessionId) return;
+    setInput(storeUsername ? `https://www.tiktok.com/@${storeUsername}` : "");
+    setLastUsername(storeUsername);
+  }, [storeUsername, activeSessionId]);
 
   // ── Live monitor WebSocket ──
   useEffect(() => {
-    if (activeSessionId || !initialTikTokUsername) {
+    if (activeSessionId || !storeUsername) {
       // Close WS when session starts or no username
       if (wsRef.current) {
         wsRef.current.close();
@@ -181,7 +193,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
       let ticket = "";
       try {
         const res = await fetch(
-          `/api/lives/ticket?kind=monitor&target=${encodeURIComponent(initialTikTokUsername)}`,
+          `/api/lives/ticket?kind=monitor&target=${encodeURIComponent(storeUsername)}`,
           { headers: await authHeaders(getToken) },
         );
         if (res.ok) {
@@ -193,7 +205,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
       }
       if (cancelled) return;
 
-      ws = new WebSocket(getMonitorWS(initialTikTokUsername, ticket));
+      ws = new WebSocket(getMonitorWS(storeUsername, ticket));
       wsRef.current = ws;
 
       ws.onopen = () => setMonitorStatus("waiting");
@@ -223,7 +235,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
       ws?.close();
       if (wsRef.current === ws) wsRef.current = null;
     };
-  }, [activeSessionId, initialTikTokUsername]);
+  }, [activeSessionId, storeUsername]);
 
   const startLive = async (username: string, isAutoReconnect = false) => {
     setLastUsername(username);
@@ -431,7 +443,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   return (
     <div className="space-y-4 h-full flex flex-col min-h-0">
       {/* Form */}
-      {!activeSessionId && initialTikTokUsername && !showEditInput ? (
+      {!activeSessionId && storeUsername && !showEditInput ? (
         /* ── Saved account: hero card ── */
         <div className="max-w-lg mx-auto w-full shrink-0 pt-8 md:pt-12">
           <div
@@ -476,7 +488,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-white/80 truncate">
-                      @{initialTikTokUsername}
+                      @{storeUsername}
                     </p>
                     <p className="text-[11px] text-white/30">
                       {monitorStatus === "connecting" ? "Conectando..." :
@@ -498,7 +510,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                     wsRef.current.close();
                     wsRef.current = null;
                   }
-                  const username = initialTikTokUsername;
+                  const username = storeUsername;
                   setLastUsername(username);
                   setLoading(true);
                   try {
@@ -629,7 +641,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                       <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                       Conectando...
                     </span>
-                  ) : extracted && initialTikTokUsername && extracted !== initialTikTokUsername ? (
+                  ) : extracted && storeUsername && extracted !== storeUsername ? (
                     <span className="flex items-center justify-center gap-2">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
