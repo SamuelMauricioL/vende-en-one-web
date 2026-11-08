@@ -12,6 +12,15 @@ export function getSSEUrl(path: string): string {
 }
 
 /**
+ * Path of the live status endpoint. It tells whether the server already has a
+ * running session for that @, so the browser can reattach instead of starting
+ * a second one.
+ */
+export function liveStatusPath(username: string): string {
+  return `/api/lives/${encodeURIComponent(username)}/status`;
+}
+
+/**
  * Returns the WebSocket URL for the live monitor endpoint.
  * The frontend connects via WebSocket to get real-time live status updates.
  */

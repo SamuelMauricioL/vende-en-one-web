@@ -10,15 +10,20 @@ import { LeadsMobile } from "./LeadsMobile";
 import { PurchaseAlerts, type CompraLead } from "./purchase-alerts";
 import { LiveEndedDialog } from "./LiveEndedDialog";
 import { trackEvent } from "@/lib/plausible";
-import { getMonitorWS } from "@/lib/api";
+import { getMonitorWS, liveStatusPath } from "@/lib/api";
 import { authHeaders } from "@/lib/api-auth";
+import {
+  LIVE_RECONNECT_KEY,
+  decideLiveReconnect,
+  formatSavedLive,
+  parseSavedLive,
+} from "@/lib/live-reconnect";
 import { resolveActiveStore, useActiveStoreId } from "@/lib/active-store";
 import { fetchBillingState } from "@/lib/billing";
 import { useAuth } from "@clerk/astro/react";
 
 const TIKTOK_URL_REGEX = /^(?:https?:\/\/)?(?:www\.)?tiktok\.com\/@([a-zA-Z0-9_.-]+)/;
 const TIKTOK_HANDLE_REGEX = /^@?([a-zA-Z0-9_.-]+)$/;
-const RECONNECT_KEY = "lastLiveUsername";
 
 function extractUsername(raw: string): string | null {
   const trimmed = raw.trim();
@@ -124,20 +129,124 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     [activeSessionId],
   );
 
-  // ── Auto-reconnect on mount ──
-  const autoReconnectAttempted = useRef(false);
+  // ── Arranque y reenganche ──
+  // Único camino de `POST /lives/start`: hero, formulario y reenganche lo reusan.
+  const startLive = useCallback(
+    async (username: string, options: { auto?: boolean } = {}): Promise<boolean> => {
+      setLastUsername(username);
+      setLoading(true);
+
+      try {
+        const res = await fetch("/api/lives/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
+          body: JSON.stringify({ username, storeId }),
+        });
+        const data = await res.json().catch(() => ({ raw: "respuesta no-JSON" }));
+
+        if (!res.ok) {
+          trackEvent("Live Start Failed", { username, status: res.status });
+          // 402: acceso vencido, se ofrece el cobro en lugar del mensaje del API
+          if (res.status === 402) {
+            setExpired(true);
+            toast.error("Tu acceso venció. Registra tu pago para volver a iniciar lives.");
+          } else {
+            toast.error(`Error al iniciar: ${data.message || res.status}`);
+          }
+          localStorage.removeItem(LIVE_RECONNECT_KEY);
+          return false;
+        }
+
+        const sessionId: string | null = data.live?.sessionId ?? null;
+        if (sessionId) setActiveSessionId(sessionId);
+        // S7: se guarda el sessionId junto al @ para que el reenganche no adivine.
+        localStorage.setItem(
+          LIVE_RECONNECT_KEY,
+          formatSavedLive({ username, sessionId }),
+        );
+        trackEvent(options.auto ? "Live Reconnected" : "Live Started", { username });
+        if (!options.auto) toast.success(`Live iniciado: @${username}`);
+        return true;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Error desconocido";
+        toast.error(`Fallo de red: ${msg}`);
+        localStorage.removeItem(LIVE_RECONNECT_KEY);
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [getToken, storeId],
+  );
+
+  /**
+   * S7: al recargar, el live sigue corriendo en el servidor. Se pregunta por su
+   * estado y se reusa la sesión viva; solo se arranca una nueva cuando no hay
+   * ninguna y el monitor de la tienda confirma que el live existe.
+   */
+  const resumeLive = useCallback(
+    async (username: string, monitorSaysLive: boolean): Promise<void> => {
+      setLoading(true);
+      try {
+        const res = await fetch(liveStatusPath(username), { headers: await authHeaders(getToken) });
+        const body = await res.json().catch(() => null);
+        const decision = decideLiveReconnect({
+          httpStatus: res.status,
+          body,
+          monitorSaysLive,
+        });
+
+        if (decision.kind === "reconnect") {
+          setLastUsername(username);
+          setActiveSessionId(decision.sessionId);
+          localStorage.setItem(
+            LIVE_RECONNECT_KEY,
+            formatSavedLive({ username, sessionId: decision.sessionId }),
+          );
+          trackEvent("Live Reconnected", { username });
+          return;
+        }
+
+        if (decision.kind === "start") {
+          await startLive(username, { auto: true });
+          return;
+        }
+
+        if (decision.kind === "forbidden") {
+          // El @ de la tienda activa no es el del perfil: se avisa y el arranque
+          // manual queda disponible, la pantalla no se rompe.
+          toast.error(decision.message);
+        }
+
+        // Sin sesión viva: se suelta el sessionId viejo y se espera al usuario.
+        const saved = parseSavedLive(localStorage.getItem(LIVE_RECONNECT_KEY));
+        if (saved?.sessionId) {
+          localStorage.setItem(
+            LIVE_RECONNECT_KEY,
+            formatSavedLive({ username: saved.username, sessionId: null }),
+          );
+        }
+      } catch {
+        // Sin red la pantalla queda en modo manual: el botón sigue ahí.
+      } finally {
+        setLoading(false);
+      }
+    },
+    [getToken, startLive],
+  );
+
+  // Una pasada apenas se conoce la tienda; otra solo si el monitor confirma un
+  // live que el servidor ya no tiene en memoria.
+  const resumeProbe = useRef<"none" | "quiet" | "live">("none");
 
   useEffect(() => {
-    if (autoReconnectAttempted.current) return;
-    // Espera a tener la tienda: sin storeId el API rechaza el arranque.
-    if (!storeId) return;
-    const saved = localStorage.getItem(RECONNECT_KEY);
-    if (saved && !initialTikTokUsername) {
-      autoReconnectAttempted.current = true;
-      startLive(saved, true);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storeId]);
+    if (!storeId || !storeUsername || activeSessionId) return;
+    const monitorSaysLive = monitorStatus === "live";
+    if (resumeProbe.current === "live") return;
+    if (resumeProbe.current === "quiet" && !monitorSaysLive) return;
+    resumeProbe.current = monitorSaysLive ? "live" : "quiet";
+    void resumeLive(storeUsername, monitorSaysLive);
+  }, [storeId, storeUsername, monitorStatus, activeSessionId, resumeLive]);
 
   // Tienda del usuario: el API exige storeId para arrancar un live.
   useEffect(() => {
@@ -237,58 +346,21 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     };
   }, [activeSessionId, storeUsername]);
 
-  const startLive = async (username: string, isAutoReconnect = false) => {
-    setLastUsername(username);
-    setLoading(true);
-
-    try {
-      const res = await fetch("/api/lives/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
-        body: JSON.stringify({ username, storeId }),
-      });
-      const data = await res.json().catch(() => ({ raw: "respuesta no-JSON" }));
-
-      if (res.ok) {
-        const sessionId = data.live?.sessionId;
-        if (sessionId) {
-          setActiveSessionId(sessionId);
-        }
-        localStorage.setItem(RECONNECT_KEY, username);
-        trackEvent(isAutoReconnect ? "Live Reconnected" : "Live Started", { username });
-      } else {
-        trackEvent("Live Start Failed", { username, status: res.status });
-        // 402: acceso vencido, se ofrece el cobro en lugar del mensaje del API
-        if (res.status === 402) {
-          setExpired(true);
-          toast.error("Tu acceso venció. Registra tu pago para volver a iniciar lives.");
-        } else {
-          toast.error(`Error al iniciar: ${data.message || res.status}`);
-        }
-        localStorage.removeItem(RECONNECT_KEY);
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error desconocido";
-      toast.error(`Fallo de red: ${msg}`);
-      localStorage.removeItem(RECONNECT_KEY);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const liveEndedHandled = useRef(false);
 
   const handleConnectionError = useCallback((error: string) => {
     if (error === "El live ha finalizado") {
       if (liveEndedHandled.current) return;
       liveEndedHandled.current = true;
+      // Un live terminado no se reengancha solo si el monitor llega tarde.
+      resumeProbe.current = "live";
       setActiveSessionId(null);
       setShowLiveEndedDialog(true);
       // Keep the UI data + state visible so the user can review leads
       return;
     }
     toast.error(`Error al conectar: ${error}`);
-    localStorage.removeItem(RECONNECT_KEY);
+    localStorage.removeItem(LIVE_RECONNECT_KEY);
     setActiveSessionId(null);
     setSelectedUserIds(new Set());
     setAttendedMap(new Map());
@@ -369,34 +441,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     const username = extractUsername(input)!;
     setLastUsername(username);
     setShowEditInput(false);
-    setLoading(true);
-
-    try {
-      const res = await fetch("/api/lives/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
-        body: JSON.stringify({ username, storeId }),
-      });
-      const data = await res.json().catch(() => ({ raw: "respuesta no-JSON" }));
-
-      if (res.ok) {
-        const sessionId = data.live?.sessionId;
-        if (sessionId) {
-          setActiveSessionId(sessionId);
-        }
-        localStorage.setItem(RECONNECT_KEY, username);
-        trackEvent("Live Started", { username });
-        toast.success(`Live iniciado: @${username}`);
-      } else {
-        trackEvent("Live Start Failed", { username, status: res.status });
-        toast.error(`Error al iniciar: ${data.message || res.status}`);
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error desconocido";
-      toast.error(`Fallo de red: ${msg}`);
-    } finally {
-      setLoading(false);
-    }
+    await startLive(username);
   };
 
   const handleStop = async () => {
@@ -425,7 +470,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
       trackEvent("Live Stop Failed", { username: lastUsername, status: msg });
     } finally {
       // Always clean up locally — even if the API fails, the user just wants to stop
-      localStorage.removeItem(RECONNECT_KEY);
+      localStorage.removeItem(LIVE_RECONNECT_KEY);
       setActiveSessionId(null);
       setShowLiveEndedDialog(true);
       setLoading(false);
@@ -510,32 +555,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                     wsRef.current.close();
                     wsRef.current = null;
                   }
-                  const username = storeUsername;
-                  setLastUsername(username);
-                  setLoading(true);
-                  try {
-                    const res = await fetch("/api/lives/start", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
-                      body: JSON.stringify({ username, storeId }),
-                    });
-                    const data = await res.json().catch(() => ({ raw: "respuesta no-JSON" }));
-                    if (res.ok) {
-                      const sessionId = data.live?.sessionId;
-                      if (sessionId) setActiveSessionId(sessionId);
-                      localStorage.setItem(RECONNECT_KEY, username);
-                      trackEvent("Live Started", { username });
-                      toast.success(`Live iniciado: @${username}`);
-                    } else {
-                      trackEvent("Live Start Failed", { username, status: res.status });
-                      toast.error(`Error al iniciar: ${data.message || res.status}`);
-                    }
-                  } catch (err) {
-                    const msg = err instanceof Error ? err.message : "Error desconocido";
-                    toast.error(`Fallo de red: ${msg}`);
-                  } finally {
-                    setLoading(false);
-                  }
+                  await startLive(storeUsername);
                 }}
                 disabled={loading || expired || (monitorStatus !== "live" && monitorStatus !== "idle")}
                 className="w-full h-12 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-bold text-sm rounded-xl shadow-lg shadow-[#fe2c55]/25 disabled:opacity-40 transition-all"

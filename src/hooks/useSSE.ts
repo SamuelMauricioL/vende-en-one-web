@@ -4,6 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@clerk/astro/react";
 import { authHeaders } from "@/lib/api-auth";
 import { getSSEUrl } from "@/lib/api";
+import {
+  EVENT_SOURCE_CLOSED,
+  isDeadSessionStatus,
+  shouldRetryStream,
+} from "@/lib/live-reconnect";
 import type { Totals } from "@/lib/filters-api";
 
 /**
@@ -55,23 +60,44 @@ export function useSSE<T>(
     setData(null);
     setTotals(null);
 
-    const fetchTicket = async (): Promise<string> => {
+    /** Ticket de corta vida; `status` es el HTTP del pedido (0 si la red falló). */
+    const fetchTicket = async (): Promise<{ ticket: string; status: number }> => {
       try {
         const res = await fetch(
           `/api/lives/ticket?kind=session&target=${encodeURIComponent(sessionId)}`,
           { headers: await authHeaders(getTokenRef.current) },
         );
-        if (!res.ok) return "";
+        if (!res.ok) return { ticket: "", status: res.status };
         const body = (await res.json()) as { ticket?: string };
-        return body.ticket ?? "";
+        return { ticket: body.ticket ?? "", status: res.status };
       } catch {
-        return "";
+        return { ticket: "", status: 0 };
       }
     };
 
-    const connect = async () => {
-      const ticket = await fetchTicket();
+    /** La sesión ya no existe: el live terminó. No se reintenta más. */
+    const reportDeadSession = () => {
+      setConnected(false);
+      setStatus("error");
+      setConnectionError("El live ha finalizado");
+    };
+
+    const connect = async (retries: number) => {
+      const { ticket, status: ticketStatus } = await fetchTicket();
       if (cancelled) return;
+
+      if (!ticket) {
+        setConnected(false);
+        if (isDeadSessionStatus(ticketStatus)) {
+          reportDeadSession();
+          return;
+        }
+        // Sin ticket no hay stream: misma regla que un corte de red.
+        if (shouldRetryStream({ ticketStatus, readyState: EVENT_SOURCE_CLOSED, retries })) {
+          retry = setTimeout(() => void connect(retries + 1), 2_000);
+        }
+        return;
+      }
 
       const eventSource = new EventSource(
         getSSEUrl(`${path}?ticket=${encodeURIComponent(ticket)}`),
@@ -98,11 +124,8 @@ export function useSSE<T>(
           } else if (parsed.type === "initial") {
             setData(parsed.chat);
           } else {
-            setData((prev) => {
-              const next = [...(prev ?? []), ...parsed.chat];
-              if (next.length > 50) next.splice(0, next.length - 50);
-              return next;
-            });
+            // El tope lo pone el servidor: acá no se recorta nada.
+            setData((prev) => [...(prev ?? []), ...parsed.chat]);
           }
         } catch (error) {
           console.error("Error parsing SSE message:", error);
@@ -110,15 +133,22 @@ export function useSSE<T>(
       };
 
       eventSource.onerror = () => {
+        // Se lee antes de cerrar: CLOSED significa que el servidor rechazó.
+        const readyStateBefore = eventSource.readyState;
         setConnected(false);
         eventSource.close();
         if (cancelled) return;
+        if (isDeadSessionStatus(ticketStatus)) {
+          reportDeadSession();
+          return;
+        }
+        if (!shouldRetryStream({ ticketStatus, readyState: readyStateBefore, retries })) return;
         // Reintento con ticket nuevo: el anterior puede haber caducado.
-        retry = setTimeout(() => void connect(), 2_000);
+        retry = setTimeout(() => void connect(retries + 1), 2_000);
       };
     };
 
-    void connect();
+    void connect(0);
 
     return () => {
       cancelled = true;
