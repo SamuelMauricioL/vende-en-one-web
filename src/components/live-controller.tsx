@@ -63,6 +63,7 @@ export interface LiveControllerHandle {
 
 export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?: (active: boolean) => void; initialTikTokUsername?: string }>(({ onActiveChange, initialTikTokUsername = "" }, ref) => {
   const { getToken } = useAuth();
+  const [storeId, setStoreId] = useState("");
 
   const [input, setInput] = useState(initialTikTokUsername ? `https://www.tiktok.com/@${initialTikTokUsername}` : "");
   const [loading, setLoading] = useState(false);
@@ -94,13 +95,39 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
 
   useEffect(() => {
     if (autoReconnectAttempted.current) return;
+    // Espera a tener la tienda: sin storeId el API rechaza el arranque.
+    if (!storeId) return;
     const saved = localStorage.getItem(RECONNECT_KEY);
     if (saved && !initialTikTokUsername) {
       autoReconnectAttempted.current = true;
       startLive(saved, true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [storeId]);
+
+  // Tienda del usuario: el API exige storeId para arrancar un live.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/stores", { headers: await authHeaders(getToken) });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          stores?: Array<{ _id: string; tiktokUsername: string }>;
+        };
+        const list = data.stores ?? [];
+        const norm = (v: string) => v.replace(/^@/, "").trim().toLowerCase();
+        const match =
+          list.find((x) => norm(x.tiktokUsername) === norm(initialTikTokUsername)) ?? list[0];
+        if (!cancelled && match) setStoreId(match._id);
+      } catch {
+        // sin tienda, el arranque del live responderá con un error claro
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [getToken, initialTikTokUsername]);
 
   // ── Live monitor WebSocket ──
   useEffect(() => {
@@ -175,7 +202,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
       const res = await fetch("/api/lives/start", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ username, storeId }),
       });
       const data = await res.json().catch(() => ({ raw: "respuesta no-JSON" }));
 
@@ -299,7 +326,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
       const res = await fetch("/api/lives/start", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ username, storeId }),
       });
       const data = await res.json().catch(() => ({ raw: "respuesta no-JSON" }));
 
@@ -451,7 +478,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                     const res = await fetch("/api/lives/start", {
                       method: "POST",
                       headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
-                      body: JSON.stringify({ username }),
+                      body: JSON.stringify({ username, storeId }),
                     });
                     const data = await res.json().catch(() => ({ raw: "respuesta no-JSON" }));
                     if (res.ok) {
