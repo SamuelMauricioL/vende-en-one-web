@@ -105,3 +105,12 @@ Decisión: borrar `/app/history` y absorber lo único que aportaba.
 - Se borró `history-page.tsx`, `src/pages/app/history.astro` y `src/app/` (resto de Next.js que ensuciaba el arranque del dev server). Nav sin "Historial"; el onboarding ahora dice "abre la Bandeja de rescate".
 - `buildConversations` recibe el clasificador inyectado (`classifyStage`): así el módulo no depende del clasificador y los tests corren con `node --test` sin resolver extensiones.
 - Verificado: 14/14 tests, `pnpm build` verde, y en navegador el chip "7 nov" muestra `1h 12min · 1 compra` y el "6 nov" `45 min · sin leads con intención`.
+
+### L11 (el inbox pasa a leerse del servidor, paso 6)
+
+- `src/lib/inbox-api.ts` reemplaza a `inbox-state.ts`: mapea el agregado del API (`InboxRow` + `InboxLead`) a `Conversation`, y conserva las reglas de lectura (cierre por desenlace, reapertura por `closedThrough`, no leídos por `lastSeenAt`). 10 tests con `node:test`.
+- `ChatThread` ya no lee `localStorage`: recibe los mensajes paginados y avisa el desenlace con `onOutcome`; la página hace el `PATCH`.
+- `inbox-page` pide `GET /api/stores`, luego `GET /api/stores/:storeId/inbox`, carga el hilo bajo demanda (`?before&limit`) y **migra una sola vez** `ll_inbox_state` al servidor (y borra la clave cuando termina).
+- Se borró `inbox-state.ts` y sus 14 tests: las reglas que probaban ahora viven en Convex (`leadStatus`) y las de lectura están cubiertas por los tests nuevos.
+- Verificado en Chromium con harness (borrado antes del commit): chips `Todos · 2 / 7 nov 2 / 6 nov 1`, filas con conteo y `NUEVO`, hilo con separadores `6 nov` y `7 nov`, motivos de ignorar, banner `Ignorado` con el contador bajando de 2 a 1, deshacer devolviéndolo a 2, y las llamadas de desenlace registradas. Sin errores JS.
+- La línea de métricas por live ahora muestra solo el conteo pendiente: el agregado ya no trae los textos por live, así que la etapa por live se perdió a propósito. Recuperarla exige clasificar en el servidor.

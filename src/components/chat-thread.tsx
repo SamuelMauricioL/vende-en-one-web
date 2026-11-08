@@ -1,103 +1,55 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 import {
   IGNORE_REASONS,
   OUTCOME_LABEL,
-  clearOutcome,
-  dayKey,
-  liveLabel,
-  markSeen,
-  setOutcome,
+  groupThread,
+  timeOf,
   type Conversation,
   type IgnoreReason,
-  type InboxState,
-} from "@/lib/inbox-state";
+  type LeadState,
+  type ThreadMessage,
+} from "@/lib/inbox-api";
+
+export type OutcomePayload =
+  | { action: "clear" }
+  | { action: "close"; state: LeadState; reason?: IgnoreReason; waNumber?: string };
 
 interface ChatThreadProps {
   conversation: Conversation;
-  store: string;
-  state: InboxState;
-  onStateChange: (next: InboxState) => void;
+  messages: ThreadMessage[];
+  loading: boolean;
+  hasMore: boolean;
   onBack: () => void;
+  onOutcome: (payload: OutcomePayload) => void;
+  onLoadMore: () => void;
 }
 
-function timeOf(ts: number): string {
-  const d = new Date(ts);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
-export function ChatThread({ conversation, store, state, onStateChange, onBack }: ChatThreadProps) {
+export function ChatThread({
+  conversation,
+  messages,
+  loading,
+  hasMore,
+  onBack,
+  onOutcome,
+  onLoadMore,
+}: ChatThreadProps) {
   const [panel, setPanel] = useState<"none" | "ignore" | "whatsapp">("none");
   const [waNumber, setWaNumber] = useState("");
 
   const closed = conversation.closed;
-
-  // Abrir el hilo marca visto; no cierra el bucle (S7).
-  useEffect(() => {
-    onStateChange(markSeen(state, store, conversation.tiktokUserId, Date.now()));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversation.key]);
-
-  const groups = useMemo(() => {
-    const out: { key: string; label: string; items: typeof conversation.messages }[] = [];
-    for (const msg of conversation.messages) {
-      const k = dayKey(msg.at);
-      const last = out[out.length - 1];
-      if (last && last.key === k) last.items.push(msg);
-      else out.push({ key: k, label: liveLabel(msg.at), items: [msg] });
-    }
-    return out;
-  }, [conversation.messages]);
-
-  const openDm = () => {
-    const handle = conversation.name.startsWith("@") ? conversation.name.slice(1) : conversation.name;
-    window.open(`https://www.tiktok.com/@${handle}`, "_blank");
-    onStateChange(
-      setOutcome(state, store, conversation.tiktokUserId, Date.now(), "contactado", {
-        through: conversation.lastAt,
-      }),
-    );
-    toast.success("Marcado como contactado");
-  };
-
-  const ignore = (reason: IgnoreReason) => {
-    onStateChange(
-      setOutcome(state, store, conversation.tiktokUserId, Date.now(), "ignorado", {
-        reason,
-        through: conversation.lastAt,
-      }),
-    );
-    setPanel("none");
-    toast.success("Conversación ignorada");
-  };
+  const groups = groupThread(messages);
 
   const saveNumber = () => {
-    const digits = waNumber.trim();
-    if (!/^9\d{8}$/.test(digits)) {
-      toast.error("El número tiene 9 dígitos y empieza con 9");
-      return;
-    }
-    onStateChange(
-      setOutcome(state, store, conversation.tiktokUserId, Date.now(), "whatsapp", {
-        waNumber: digits,
-        through: conversation.lastAt,
-      }),
-    );
+    if (!/^9\d{8}$/.test(waNumber.trim())) return;
+    onOutcome({ action: "close", state: "whatsapp", waNumber: waNumber.trim() });
     setPanel("none");
     setWaNumber("");
-    toast.success("Guardado. Ya puedes escribirle por WhatsApp");
-  };
-
-  const undo = () => {
-    onStateChange(clearOutcome(state, store, conversation.tiktokUserId));
-    toast.success("Conversación reabierta");
   };
 
   return (
     <div className="flex flex-col h-full w-full" style={{ backgroundColor: "#0b0f1a" }}>
-      {/* Header */}
       <header
         className="shrink-0 px-4 py-3 flex items-center gap-3"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
@@ -123,7 +75,10 @@ export function ChatThread({ conversation, store, state, onStateChange, onBack }
           <span
             className="text-[10px] font-bold px-2 py-1 rounded-md shrink-0"
             style={{
-              background: closed.state === "ignorado" ? "rgba(255,255,255,0.08)" : "rgba(74,222,128,0.15)",
+              background:
+                closed.state === "ignorado"
+                  ? "rgba(255,255,255,0.08)"
+                  : "rgba(74,222,128,0.15)",
               color: closed.state === "ignorado" ? "rgba(255,255,255,0.5)" : "#4ade80",
             }}
           >
@@ -132,11 +87,13 @@ export function ChatThread({ conversation, store, state, onStateChange, onBack }
         )}
       </header>
 
-      {/* Closed banner */}
       {closed && (
         <div
           className="shrink-0 px-4 py-2 flex items-center justify-between gap-3 text-[11px]"
-          style={{ background: "rgba(255,255,255,0.03)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+          style={{
+            background: "rgba(255,255,255,0.03)",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+          }}
         >
           <span className="text-white/40">
             {closed.state === "ignorado"
@@ -145,14 +102,34 @@ export function ChatThread({ conversation, store, state, onStateChange, onBack }
                 ? `En WhatsApp${closed.waNumber ? ` · +51 ${closed.waNumber}` : ""}`
                 : "Contactado por DM"}
           </span>
-          <button type="button" onClick={undo} className="text-[#25f4ee] hover:underline">
+          <button
+            type="button"
+            onClick={() => onOutcome({ action: "clear" })}
+            className="text-[#25f4ee] hover:underline"
+          >
             Deshacer
           </button>
         </div>
       )}
 
-      {/* Messages */}
       <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3">
+        {hasMore && (
+          <button
+            type="button"
+            onClick={onLoadMore}
+            disabled={loading}
+            className="w-full text-[11px] text-white/30 hover:text-white/60 py-2 disabled:opacity-40"
+          >
+            {loading ? "Cargando…" : "Ver mensajes anteriores"}
+          </button>
+        )}
+
+        {!loading && messages.length === 0 && (
+          <p className="text-center text-xs text-white/25 py-8">
+            No hay mensajes guardados de esta persona.
+          </p>
+        )}
+
         {groups.map((group) => (
           <div key={group.key} className="space-y-2">
             <div className="flex items-center gap-2 py-1">
@@ -161,13 +138,18 @@ export function ChatThread({ conversation, store, state, onStateChange, onBack }
               <span className="h-px flex-1" style={{ background: "rgba(255,255,255,0.06)" }} />
             </div>
             {group.items.map((msg, i) => (
-              <div key={`${msg.at}-${i}`} className="flex justify-start">
+              <div key={`${msg.createdAt}-${i}`} className="flex justify-start">
                 <div
                   className="max-w-[85%] rounded-xl px-3 py-2"
-                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                  }}
                 >
                   <p className="text-sm text-white/75 break-words">{msg.text}</p>
-                  <p className="text-[10px] text-white/25 mt-1 text-right">{timeOf(msg.at)}</p>
+                  <p className="text-[10px] text-white/25 mt-1 text-right">
+                    {timeOf(msg.createdAt)}
+                  </p>
                 </div>
               </div>
             ))}
@@ -175,7 +157,6 @@ export function ChatThread({ conversation, store, state, onStateChange, onBack }
         ))}
       </div>
 
-      {/* Panels */}
       {panel === "ignore" && (
         <div className="shrink-0 px-4 py-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
           <p className="text-[11px] text-white/40 mb-2">¿Por qué la ignoras?</p>
@@ -184,7 +165,10 @@ export function ChatThread({ conversation, store, state, onStateChange, onBack }
               <button
                 key={r.key}
                 type="button"
-                onClick={() => ignore(r.key)}
+                onClick={() => {
+                  onOutcome({ action: "close", state: "ignorado", reason: r.key });
+                  setPanel("none");
+                }}
                 className="h-8 px-3 rounded-lg text-xs font-medium text-white/60 hover:text-white transition-colors"
                 style={{ border: "1px solid rgba(255,255,255,0.1)" }}
               >
@@ -227,7 +211,6 @@ export function ChatThread({ conversation, store, state, onStateChange, onBack }
         </div>
       )}
 
-      {/* CTAs del desenlace */}
       <footer
         className="shrink-0 px-4 py-3 flex items-center gap-2"
         style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
@@ -235,7 +218,7 @@ export function ChatThread({ conversation, store, state, onStateChange, onBack }
         {closed ? (
           <button
             type="button"
-            onClick={undo}
+            onClick={() => onOutcome({ action: "clear" })}
             className="flex-1 h-10 rounded-xl text-sm font-semibold text-white/70 hover:text-white transition-colors"
             style={{ border: "1px solid rgba(255,255,255,0.12)" }}
           >
@@ -243,14 +226,16 @@ export function ChatThread({ conversation, store, state, onStateChange, onBack }
           </button>
         ) : (
           <>
-            <button
-              type="button"
-              onClick={openDm}
-              className="flex-1 h-10 rounded-xl text-sm font-semibold text-white transition-transform hover:scale-[1.01] active:scale-[0.99]"
+            <a
+              href={`https://www.tiktok.com/@${conversation.name.replace(/^@/, "")}`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => onOutcome({ action: "close", state: "contactado" })}
+              className="flex-1 h-10 rounded-xl text-sm font-semibold text-white flex items-center justify-center transition-transform hover:scale-[1.01] active:scale-[0.99]"
               style={{ background: "linear-gradient(135deg, #fe2c55, #e8254a)" }}
             >
               Abrir en TikTok
-            </button>
+            </a>
             <button
               type="button"
               onClick={() => setPanel(panel === "whatsapp" ? "none" : "whatsapp")}

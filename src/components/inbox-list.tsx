@@ -1,30 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  durationLabel,
-  isUnread,
-  pendingForLive,
-  stageCountsForLive,
-  type Conversation,
-  type InboxState,
-} from "@/lib/inbox-state";
-import { STAGE_CONFIG } from "@/lib/lead-classifier";
-
-export type InboxFilter = { kind: "all" } | { kind: "closed" } | { kind: "live"; sessionId: string };
+import { liveFilters, type Conversation } from "@/lib/inbox-api";
 
 interface InboxListProps {
   conversations: Conversation[];
-  lives: { sessionId: string; label: string; startedAt: number; endedAt: number }[];
-  inbox: InboxState;
-  onOpen: (key: string) => void;
+  onOpen: (tiktokUserId: string) => void;
 }
 
-export function InboxList({ conversations, lives, inbox, onOpen }: InboxListProps) {
-  const [filter, setFilter] = useState<InboxFilter>({ kind: "all" });
+export function InboxList({ conversations, onOpen }: InboxListProps) {
+  const [filter, setFilter] = useState<{ kind: "all" | "closed" | "live"; sessionId?: string }>({
+    kind: "all",
+  });
   const [query, setQuery] = useState("");
 
-  const pendingTotal = conversations.filter((c) => !c.closed).length;
+  const lives = useMemo(() => liveFilters(conversations), [conversations]);
+  const pending = conversations.filter((c) => !c.closed).length;
 
   const visible = useMemo(() => {
     let list = conversations;
@@ -34,14 +25,14 @@ export function InboxList({ conversations, lives, inbox, onOpen }: InboxListProp
     const q = query.trim().toLowerCase();
     if (q)
       list = list.filter(
-        (c) => c.name.toLowerCase().includes(q) || c.lastMessage.toLowerCase().includes(q),
+        (c) => c.name.toLowerCase().includes(q) || c.lastText.toLowerCase().includes(q),
       );
     return list;
   }, [conversations, filter, query]);
 
   return (
     <div>
-      {/* Chips de live */}
+      {/* Chips por live */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
         <button
           type="button"
@@ -52,10 +43,9 @@ export function InboxList({ conversations, lives, inbox, onOpen }: InboxListProp
             color: filter.kind === "all" ? "#fe2c55" : "rgba(255,255,255,0.4)",
           }}
         >
-          Todos · {pendingTotal}
+          Todos · {pending}
         </button>
         {lives.map((live) => {
-          const pending = pendingForLive(conversations, live.sessionId);
           const active = filter.kind === "live" && filter.sessionId === live.sessionId;
           return (
             <button
@@ -66,18 +56,18 @@ export function InboxList({ conversations, lives, inbox, onOpen }: InboxListProp
               style={{
                 background: active
                   ? "rgba(37,244,238,0.15)"
-                  : pending
+                  : live.pending
                     ? "rgba(255,255,255,0.07)"
                     : "rgba(255,255,255,0.03)",
                 color: active
                   ? "#25f4ee"
-                  : pending
+                  : live.pending
                     ? "rgba(255,255,255,0.75)"
                     : "rgba(255,255,255,0.25)",
               }}
             >
               {live.label}
-              {pending > 0 && <span className="ml-1 tabular-nums">{pending}</span>}
+              {live.pending > 0 && <span className="ml-1 tabular-nums">{live.pending}</span>}
             </button>
           );
         })}
@@ -94,29 +84,6 @@ export function InboxList({ conversations, lives, inbox, onOpen }: InboxListProp
         </button>
       </div>
 
-      {/* Métricas del live seleccionado: duración y leads por etapa */}
-      {filter.kind === "live" && (() => {
-        const live = lives.find((l) => l.sessionId === filter.sessionId);
-        if (!live) return null;
-        const counts = stageCountsForLive(conversations, live.sessionId);
-        const hasLeads = Object.values(counts).some((c) => c > 0);
-        return (
-          <p className="text-[11px] text-white/30 mt-2 flex items-center gap-1.5 flex-wrap">
-            <span className="tabular-nums">{durationLabel(live.startedAt, live.endedAt)}</span>
-            {hasLeads &&
-              (["compra", "negociando", "interesado"] as const)
-                .filter((stage) => counts[stage] > 0)
-                .map((stage) => (
-                  <span key={stage} style={{ color: STAGE_CONFIG[stage].color }}>
-                    · {counts[stage]} {STAGE_CONFIG[stage].label.toLowerCase()}
-                  </span>
-                ))}
-            {!hasLeads && <span>· sin leads con intención</span>}
-          </p>
-        );
-      })()}
-
-      {/* Buscador */}
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
@@ -136,55 +103,52 @@ export function InboxList({ conversations, lives, inbox, onOpen }: InboxListProp
         </div>
       ) : (
         <ul className="mt-3 space-y-1">
-          {visible.map((conv) => {
-            const entry = inbox[conv.key];
-            const unread = isUnread(conv, entry);
-            const lastTag = conv.liveTags[0];
-            return (
-              <li key={conv.key}>
-                <button
-                  type="button"
-                  onClick={() => onOpen(conv.key)}
-                  className="w-full text-left flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/[0.03] transition-colors"
-                >
-                  <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{
-                      background: unread
-                        ? "#fe2c55"
-                        : conv.closed
-                          ? "rgba(74,222,128,0.5)"
-                          : "rgba(255,255,255,0.2)",
-                    }}
-                  />
-                  <span className="flex-1 min-w-0">
-                    <span className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-white/85 truncate">
-                        {conv.name}
-                      </span>
-                      <span className="text-[10px] text-white/25 shrink-0">{lastTag?.label}</span>
+          {visible.map((conv) => (
+            <li key={conv.key}>
+              <button
+                type="button"
+                onClick={() => onOpen(conv.tiktokUserId)}
+                className="w-full text-left flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/[0.03] transition-colors"
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{
+                    background: conv.unread
+                      ? "#fe2c55"
+                      : conv.closed
+                        ? "rgba(74,222,128,0.5)"
+                        : "rgba(255,255,255,0.2)",
+                  }}
+                />
+                <span className="flex-1 min-w-0">
+                  <span className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-white/85 truncate">
+                      {conv.name}
                     </span>
-                    <span className="block text-xs text-white/35 truncate mt-0.5">
-                      {conv.lastMessage}
+                    <span className="text-[10px] text-white/25 shrink-0">
+                      {conv.liveTags[0]?.label}
                     </span>
                   </span>
-                  <span className="shrink-0 flex flex-col items-end gap-1">
-                    <span className="text-[10px] text-white/25 tabular-nums">
-                      {conv.totalMessages} msgs
-                    </span>
-                    {unread && !conv.closed && (
-                      <span
-                        className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-                        style={{ background: "rgba(254,44,85,0.15)", color: "#fe2c55" }}
-                      >
-                        NUEVO
-                      </span>
-                    )}
+                  <span className="block text-xs text-white/35 truncate mt-0.5">
+                    {conv.lastText}
                   </span>
-                </button>
-              </li>
-            );
-          })}
+                </span>
+                <span className="shrink-0 flex flex-col items-end gap-1">
+                  <span className="text-[10px] text-white/25 tabular-nums">
+                    {conv.totalMessages} msgs
+                  </span>
+                  {conv.unread && !conv.closed && (
+                    <span
+                      className="text-[9px] font-bold px-1.5 py-0.5 rounded"
+                      style={{ background: "rgba(254,44,85,0.15)", color: "#fe2c55" }}
+                    >
+                      NUEVO
+                    </span>
+                  )}
+                </span>
+              </button>
+            </li>
+          ))}
         </ul>
       )}
     </div>
