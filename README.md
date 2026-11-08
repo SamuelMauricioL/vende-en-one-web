@@ -47,7 +47,7 @@ Todo ocurre en `/onboarding` (el middleware manda ahí a quien entra a `/app` si
 |---|---|---|
 | 1 | Tu cuenta | Sesión de Google vía Clerk. No hay confirmación por correo. |
 | 2 | Tu TikTok | Guarda el usuario en `POST /api/users/profile/tiktok`. |
-| 3 | Tus filtros | Ofrece `ONBOARDING_PRESETS` (Quiere comprar, Pregunta precio, Pregunta talla, Envío) y los guarda con `saveFilters()` en `localStorage.customKeywordFilters`, el mismo store que lee `/app/filters`. Tiene salida "Lo hago después". |
+| 3 | Tus filtros | Ofrece `ONBOARDING_PRESETS` (Quiere comprar, Pregunta precio, Pregunta talla, Envío) y los crea en el servidor con `POST /api/stores/:storeId/filters` (mismo origen que lee `/app/filters`). El API deduplica por nombre, así que repetir el clic no duplica. Tiene salida "Lo hago después". |
 | 4 | Tu primer live | Explica el ciclo (live en TikTok → Iniciar live → clasificación → Historial), muestra los **7 días gratis** y termina en `/app`. |
 
 Los pasos 3 y 4 salen del prototipo (`liveleads-demo`) sin el paso de correo. Colores, fuentes y componentes son los de la web: no se importó la paleta del prototipo.

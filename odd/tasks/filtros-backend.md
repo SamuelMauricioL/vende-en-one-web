@@ -37,14 +37,17 @@ type LeadRow = {
 
 type Totals = { commented: number; qualified: number; byStage: Record<LeadStage, number> };
 
+// Stats: siempre la lista completa ya ordenada. `delta` existe solo para el chat.
 type StatsFrame =
   | { type: "initial" | "update"; stats: LeadRow[]; totals: Totals }
-  | { type: "delta"; stats: LeadRow; totals: Totals }
   | { type: "status"; status: string; error?: string };
+
+type ChatFrame = { type: "initial"; chat: ChatMessage[] } | { type: "delta"; chat: ChatMessage[] };
 ```
 
-Orden del servidor: prioridad de etapa (`compra` > `negociando` > `interesado`) y dentro de cada etapa `score` descendente. El cliente NO reordena.
+El stream de stats manda siempre la lista completa y ordenada, aunque cambie una sola persona: el navegador reemplaza el arreglo y nunca calcula posiciones ni reordena. `delta` queda reservado al chat, que es un append natural por tiempo.
 
+Orden del servidor: prioridad de etapa (`compra` > `negociando` > `interesado`) y dentro de cada etapa `score` descendente. El cliente NO reordena.
 Contrato de filtros (`GET /stores/:storeId/filters`):
 
 ```ts
@@ -70,13 +73,13 @@ S10. **Buenas prácticas.** «usa buenas prácticas para la implementación del 
 
 Rutas de trabajo: `R-API` = `/Users/samuelaimarmauriciolaime/Documents/personal/vende-en-one/vende-en-one-api` (rama `feat/filtros-backend`), `R-WEB` = `/Users/samuelaimarmauriciolaime/Documents/personal/vende-en-one/vende-en-one-web` (rama `feat/filtros-backend`).
 
-- [ ] **T1 · S2 · R-API · C1** — `src/config/systemFilters.ts`: constantes de filtros del sistema (`name`, `keywords[]`, `stage`) + `mergeFilters(system, store)` que deduplica por nombre normalizado.
-- [ ] **T2 · S4 · R-API · C1** — `src/services/filterEngine.ts`: motor de matching (regex escapada, case-insensitive), prioridad de etapa, `stageLabel` del filtro ganador, segmentación `Span[]` con fusión de solapes. Portar los patrones de intención desde `vende-en-one-web/src/lib/lead-classifier.ts` + `keyword-filters.ts`. Tests unitarios.
-- [ ] **T3 · S4,S7 · R-API · C2** — `liveStatsManager.recordChat`: evaluar contra el conjunto efectivo al entrar cada comentario, guardar `stage`/`stageLabel`/`spans` en `UserStats`, descartar no coincidencias de la emisión, mantener contador crudo para `totals`. `getStats` ordena en el servidor. Filtros cargados en `manager.start`.
-- [ ] **T4 · S8 · R-API · C2** — Contrato SSE en `src/routes/lives.routes.ts`: frames `initial|update|delta|status` con `stats: LeadRow[]` y `totals`; sin campos de clasificación calculados en el cliente. Actualizar `/lives/:sessionId/chat/stream` al set limpio.
-- [ ] **T5 · S7 · R-API · C2** — Persistencia: `tiktokLiveManager.saveSummary`/`saveMessages` guardan solo coincidencias; `totalMessages` sin cambiar de significado silenciosamente (documentar y usar el conteo que corresponda); summary `topUsers` solo coincidencias.
-- [ ] **T6 · S1,S3 · R-API · C3** — Convex: tabla `keywordFilters` en `convex/schema.ts` (`storeId`, `name`, `keywords`, `stage`, `createdAt`, `updatedAt`, índice `by_store`), `convex/keywordFilters.ts` (list/upsert/delete, idempotente por nombre), wrappers en `src/services/convexClient.ts`, rutas `/stores/:storeId/filters` en `src/routes/stores.routes.ts` con Zod + `authorizeStore`, `source`/`editable` resueltos en el servidor.
-- [ ] **T7 · S10 · R-API · C3** — Tests: prioridad de etapa, solapes de spans, descarte, autorización 403/404 por tienda, upsert idempotente. `npm run typecheck` + `npm test` verdes.
+- [x] **T1 · S2 · R-API · C1** — commit `7385149` — `src/config/systemFilters.ts`: constantes de filtros del sistema (`name`, `keywords[]`, `stage`) + `mergeFilters(system, store)` que deduplica por nombre normalizado.
+- [x] **T2 · S4 · R-API · C1** — commit `7385149` — `src/services/filterEngine.ts`: motor de matching (regex escapada, case-insensitive), prioridad de etapa, `stageLabel` del filtro ganador, segmentación `Span[]` con fusión de solapes. Portar los patrones de intención desde `vende-en-one-web/src/lib/lead-classifier.ts` + `keyword-filters.ts`. Tests unitarios.
+- [x] **T3 · S4,S7 · R-API · C2** — commit `5c0a4b8` — `liveStatsManager.recordChat`: evaluar contra el conjunto efectivo al entrar cada comentario, guardar `stage`/`stageLabel`/`spans` en `UserStats`, descartar no coincidencias de la emisión, mantener contador crudo para `totals`. `getStats` ordena en el servidor. Filtros cargados en `manager.start`.
+- [x] **T4 · S8 · R-API · C2** — commit `5c0a4b8` — Contrato SSE en `src/routes/lives.routes.ts`: frames `initial|update` con `stats: LeadRow[]` y `totals`, más `status`; `delta` queda solo para el chat. Sin campos de clasificación calculados en el cliente. Actualizar `/lives/:sessionId/chat/stream` al set limpio.
+- [x] **T5 · S7 · R-API · C2** — commit `5c0a4b8` — Persistencia: `tiktokLiveManager.saveSummary`/`saveMessages` guardan solo coincidencias; `totalMessages` sin cambiar de significado silenciosamente (documentar y usar el conteo que corresponda); summary `topUsers` solo coincidencias.
+- [x] **T6 · S1,S3 · R-API · C3** — commit `f269189` — Convex: tabla `keywordFilters` en `convex/schema.ts` (`storeId`, `name`, `keywords`, `stage`, `createdAt`, `updatedAt`, índice `by_store`), `convex/keywordFilters.ts` (list/upsert/delete, idempotente por nombre), wrappers en `src/services/convexClient.ts`, rutas `/stores/:storeId/filters` en `src/routes/stores.routes.ts` con Zod + `authorizeStore`, `source`/`editable` resueltos en el servidor.
+- [x] **T7 · S10 · R-API · C3** — commit `f269189` — Tests: prioridad de etapa, solapes de spans, descarte, autorización 403/404 por tienda, upsert idempotente. `npm run typecheck` + `npm test` verdes.
 - [ ] **T8 · S1,S8 · R-WEB · C1** — `src/lib/filters-api.ts`: tipos del contrato + `fetchFilters`/`createFilter`/`updateFilter`/`deleteFilter` con `authHeaders`. `src/lib/keyword-filters.ts` queda sin persistencia.
 - [ ] **T9 · S3,S6 · R-WEB · C1** — `src/components/filters-page.tsx`: carga y guardado async contra el servidor, un solo color, filas `system` de solo lectura, estados de carga/error/retry, sin duplicados.
 - [ ] **T10 · S3 · R-WEB · C1** — `src/components/onboarding-steps.tsx`: presets se crean en el servidor de forma idempotente (sin `localStorage`, sin duplicar).
