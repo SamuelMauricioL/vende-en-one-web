@@ -30,13 +30,13 @@ S11. **Una sola réplica del API.** El estado del live vive en el proceso; el st
 
 Rutas: `R-API` = `vende-en-one-api` (rama `feat/live-sin-perdida`), `R-WEB` = `vende-en-one-web` (rama `feat/live-sin-perdida`).
 
-- [ ] **U1 · S3,S4 · R-API** — Log de coincidencias sin tope separado del chat visible; `externalId` + índice por sesión en `convex/schema.ts`; volcado periódico idempotente con cursor; `saveSummary` con upsert y sin recortar a 50. Prueba: 60 coincidencias → 60 filas (hoy 50), volcar dos veces no duplica, matar el proceso conserva lo volcado.
-- [ ] **U2 · S1,S2,S5 · R-API** — Ciclo de vida: auto-stop a 10 min, corte duro a 24 h, teardown en `ERROR`, `disconnect()` en `handleEnded`, cierre de streams SSE, limpieza completa en `endSession`. Prueba: un `ERROR` simulado deja la sesión persistida y `start` libre; un `ended` cierra socket y streams.
-- [ ] **U3 · S6 · R-API** — Barrido al arrancar de sesiones sin runtime: `ended` + resumen parcial + nota. Prueba: sembrar una fila `live`, arrancar la app, verificar el cierre.
-- [ ] **U4 · S7 · R-WEB** — Reenganche por `status`, sin `POST /start`; quitar la condición de `initialTikTokUsername`; cortar el retry de `useSSE` ante 404; quitar el 50 del cliente. Prueba: recargar con 300 coincidencias devuelve la lista completa y sigue recibiendo.
-- [ ] **U5 · S8 · R-API** — `GET /stores/:storeId/live/stream` con ticket `kind: "store"`, resolución tienda→sesión, frames `idle|live|ended` + `LeadRow[]` + `totals` + chat. Prueba: dos dispositivos de la misma cuenta ven el mismo conjunto filtrado en menos de 1 s.
-- [ ] **U6 · S9 · R-WEB** — Bloque pinneado "EN VIVO" en la bandeja con sus cuatro estados, destello de fila nueva y aviso de desconexión. Prueba: la banda cambia sola al empezar y terminar el live; al cortar el stream lo dice.
-- [ ] **U7 · S10 · R-API + R-WEB** — `outcome` en `LeadRow`, publicación del cambio desde `PATCH /stores/:id/leads/:uid`, lectura inicial desde `leadStatus`, y borrado del atender local en `top-users`, `LeadsMobile`, `live-controller` y el diálogo de fin de live. Prueba: el resolutor marca y el vendedor lo ve en menos de 1 s sin recargar.
+- [x] **U1 · S3,S4 · R-API** — commit `46e484e` — Log de coincidencias sin tope separado del chat visible; `externalId` + índice por sesión en `convex/schema.ts`; volcado periódico idempotente con cursor; `saveSummary` con upsert y sin recortar a 50. Prueba: 60 coincidencias → 60 filas (hoy 50), volcar dos veces no duplica, matar el proceso conserva lo volcado.
+- [x] **U2 · S1,S2,S5 · R-API** — commit `46e484e` — Ciclo de vida: auto-stop a 10 min, corte duro a 24 h, teardown en `ERROR`, `disconnect()` en `handleEnded`, cierre de streams SSE, limpieza completa en `endSession`. Prueba: un `ERROR` simulado deja la sesión persistida y `start` libre; un `ended` cierra socket y streams.
+- [x] **U3 · S6 · R-API** — commit `e3b287e` — Barrido al arrancar de sesiones sin runtime: `ended` + resumen parcial + nota. Prueba: sembrar una fila `live`, arrancar la app, verificar el cierre.
+- [x] **U4 · S7 · R-WEB** — commit `efdb805` — Reenganche por `status`, sin `POST /start`; quitar la condición de `initialTikTokUsername`; cortar el retry de `useSSE` ante 404; quitar el 50 del cliente. Prueba: recargar con 300 coincidencias devuelve la lista completa y sigue recibiendo.
+- [x] **U5 · S8 · R-API** — commit `fa92acb` — `GET /stores/:storeId/live/stream` con ticket `kind: "store"`, resolución tienda→sesión, frames `idle|live|ended` + `LeadRow[]` + `totals` + chat. Prueba: dos dispositivos de la misma cuenta ven el mismo conjunto filtrado en menos de 1 s.
+- [x] **U6 · S9 · R-WEB** — commit `e0ac03a` — Bloque pinneado "EN VIVO" en la bandeja con sus cuatro estados, destello de fila nueva y aviso de desconexión. Prueba: la banda cambia sola al empezar y terminar el live; al cortar el stream lo dice.
+- [x] **U7 · S10 · R-API + R-WEB** — commit `fa92acb + 31d27f7` — `outcome` en `LeadRow`, publicación del cambio desde `PATCH /stores/:id/leads/:uid`, lectura inicial desde `leadStatus`, y borrado del atender local en `top-users`, `LeadsMobile`, `live-controller` y el diálogo de fin de live. Prueba: el resolutor marca y el vendedor lo ve en menos de 1 s sin recargar.
 
 ## Log
 
@@ -55,3 +55,7 @@ L6. «6. bloque pineado, solo aparece cuando está en vivo luego ya desaparece e
 L7. «3. el usuario vendedor que está en la pantalla de live ya no tendría la función de cambiar a atender o desatender, solo vería la actualización del estado de ese mensaje en tiempo real porque el "personal resolverdor" se encargaría de eso».
 
 L8. «5. vamos por la 1» (una sola réplica como invariante).
+
+L9. Railway tiene una sola réplica: S11 queda confirmada como invariante.
+
+L10. Verificación final: API 86 tests y typecheck limpio; web 73 tests y build completo. El contrato del stream se reconcilió después de la oleada 2 (el cliente asumía otro nombre de frame y otro endpoint de ticket); la versión final está en el commit `e0ac03a`.
