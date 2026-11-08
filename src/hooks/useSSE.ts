@@ -9,7 +9,7 @@ import {
   isDeadSessionStatus,
   shouldRetryStream,
 } from "@/lib/live-reconnect";
-import type { Totals } from "@/lib/filters-api";
+import type { LeadRow, Totals } from "@/lib/filters-api";
 
 /**
  * Frames del API (S8).
@@ -19,10 +19,19 @@ import type { Totals } from "@/lib/filters-api";
  */
 type StatsFrame<T> = { type: "initial" | "update"; stats: T[]; totals: Totals };
 type ChatFrame<T> = { type: "initial" | "delta"; chat: T[] };
+/** S8: el stream por tienda se queda abierto entre sesiones y avisa su fase. */
+type StoreFrame<T> = { type: "idle" | "live" | "ended"; stats?: T[]; totals?: Totals };
 type StreamFrame<T> =
   | StatsFrame<T>
   | ChatFrame<T>
+  | StoreFrame<T>
   | { type: "status"; status: string; error?: string };
+
+/** `session` es el stream de una sesión; `store` el de la bandeja (S8). */
+export type StreamKind = "session" | "store";
+
+/** Fase del live tal como la emite el stream por tienda. */
+export type StoreLivePhase = "idle" | "live" | "ended";
 
 /**
  * Stream de stats o chat de una sesión.
@@ -32,7 +41,8 @@ type StreamFrame<T> =
  */
 export function useSSE<T>(
   path: string,
-  sessionId: string,
+  target: string,
+  kind: StreamKind = "session",
 ): {
   data: T[] | null;
   totals: Totals | null;
@@ -52,7 +62,7 @@ export function useSSE<T>(
   const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    if (!path || !sessionId) return;
+    if (!path || !target) return;
 
     let cancelled = false;
     let retry: ReturnType<typeof setTimeout> | null = null;
@@ -64,7 +74,7 @@ export function useSSE<T>(
     const fetchTicket = async (): Promise<{ ticket: string; status: number }> => {
       try {
         const res = await fetch(
-          `/api/lives/ticket?kind=session&target=${encodeURIComponent(sessionId)}`,
+          `/api/lives/ticket?kind=${kind}&target=${encodeURIComponent(target)}`,
           { headers: await authHeaders(getTokenRef.current) },
         );
         if (!res.ok) return { ticket: "", status: res.status };
@@ -82,20 +92,33 @@ export function useSSE<T>(
       setConnectionError("El live ha finalizado");
     };
 
+    /**
+     * Sin el ticket la conexión no arranca. Sesión muerta corta el reintento;
+     * el stream por tienda sobrevive a las sesiones, así que siempre reintenta.
+     */
+    const scheduleRetry = (
+      retries: number,
+      ticketStatus: number,
+      readyState: number,
+    ): boolean => {
+      if (kind === "session") {
+        if (isDeadSessionStatus(ticketStatus)) {
+          reportDeadSession();
+          return false;
+        }
+        if (!shouldRetryStream({ ticketStatus, readyState, retries })) return false;
+      }
+      retry = setTimeout(() => void connect(retries + 1), 2_000);
+      return true;
+    };
+
     const connect = async (retries: number) => {
       const { ticket, status: ticketStatus } = await fetchTicket();
       if (cancelled) return;
 
       if (!ticket) {
         setConnected(false);
-        if (isDeadSessionStatus(ticketStatus)) {
-          reportDeadSession();
-          return;
-        }
-        // Sin ticket no hay stream: misma regla que un corte de red.
-        if (shouldRetryStream({ ticketStatus, readyState: EVENT_SOURCE_CLOSED, retries })) {
-          retry = setTimeout(() => void connect(retries + 1), 2_000);
-        }
+        scheduleRetry(retries, ticketStatus, EVENT_SOURCE_CLOSED);
         return;
       }
 
@@ -117,15 +140,26 @@ export function useSSE<T>(
             if (parsed.status === "error" && parsed.error) {
               setConnectionError(parsed.error);
             }
-          } else if ("stats" in parsed) {
-            // Lista completa y ordenada por el servidor: se reemplaza tal cual.
-            setData(parsed.stats);
-            setTotals(parsed.totals);
-          } else if (parsed.type === "initial") {
-            setData(parsed.chat);
+          } else if (parsed.type === "idle" || parsed.type === "live" || parsed.type === "ended") {
+            // Stream por tienda: la fase viaja en el `type` del frame.
+            setStatus(parsed.type);
+            if ("stats" in parsed && parsed.stats) {
+              setData(parsed.stats);
+              setTotals(parsed.totals ?? null);
+            }
+          } else if ("chat" in parsed) {
+            if (parsed.type === "initial") {
+              setData(parsed.chat);
+            } else {
+              // El tope lo pone el servidor: acá no se recorta nada.
+              setData((prev) => [...(prev ?? []), ...parsed.chat]);
+            }
           } else {
-            // El tope lo pone el servidor: acá no se recorta nada.
-            setData((prev) => [...(prev ?? []), ...parsed.chat]);
+            // Lista completa y ordenada por el servidor: se reemplaza tal cual.
+            if ("stats" in parsed && parsed.stats) {
+              setData(parsed.stats);
+              setTotals(parsed.totals ?? null);
+            }
           }
         } catch (error) {
           console.error("Error parsing SSE message:", error);
@@ -138,13 +172,8 @@ export function useSSE<T>(
         setConnected(false);
         eventSource.close();
         if (cancelled) return;
-        if (isDeadSessionStatus(ticketStatus)) {
-          reportDeadSession();
-          return;
-        }
-        if (!shouldRetryStream({ ticketStatus, readyState: readyStateBefore, retries })) return;
         // Reintento con ticket nuevo: el anterior puede haber caducado.
-        retry = setTimeout(() => void connect(retries + 1), 2_000);
+        scheduleRetry(retries, ticketStatus, readyStateBefore);
       };
     };
 
@@ -156,7 +185,28 @@ export function useSSE<T>(
       eventSourceRef.current?.close();
       eventSourceRef.current = null;
     };
-  }, [path, sessionId]);
+  }, [path, target, kind]);
 
   return { data, totals, connected, status, connectionError };
+}
+
+/**
+ * S8/S9: stream de la tienda para la bandeja. Se mantiene abierto entre
+ * sesiones y emite `idle`, `live` y `ended`.
+ */
+export function useStoreLiveStream(storeId: string | null): {
+  rows: LeadRow[] | null;
+  totals: Totals | null;
+  connected: boolean;
+  phase: StoreLivePhase | null;
+} {
+  const stream = useSSE<LeadRow>(
+    storeId ? `/stores/${encodeURIComponent(storeId)}/live/stream` : "",
+    storeId ?? "",
+    "store",
+  );
+  const { status } = stream;
+  const phase: StoreLivePhase | null =
+    status === "idle" || status === "live" || status === "ended" ? status : null;
+  return { rows: stream.data, totals: stream.totals, connected: stream.connected, phase };
 }

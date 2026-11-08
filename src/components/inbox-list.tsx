@@ -1,16 +1,33 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { liveFilters, type Conversation } from "@/lib/inbox-api";
+import { liveFilters, OUTCOME_COLOR, OUTCOME_LABEL, type Conversation } from "@/lib/inbox-api";
+import type { LiveBand } from "@/lib/inbox-live";
 
 interface InboxListProps {
   conversations: Conversation[];
   /** Cuando se ven varias tiendas, cada fila dice de cuál es. */
   showStore?: boolean;
+  /** S9: bloque pinneado; ausente o invisible = bandeja como siempre. */
+  band?: LiveBand;
+  /** Claves que entraron por el stream: solo esas destellan. */
+  freshKeys?: string[];
   onOpen: (conversation: Conversation) => void;
 }
 
-export function InboxList({ conversations, showStore = false, onOpen }: InboxListProps) {
+const BAND_STYLE: Record<LiveBand["tone"], { background: string; color: string; border: string }> = {
+  live: { background: "rgba(254,44,85,0.14)", color: "#ff7591", border: "1px solid rgba(254,44,85,0.3)" },
+  pending: { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.08)" },
+  warning: { background: "rgba(245,158,11,0.14)", color: "#fbbf24", border: "1px solid rgba(245,158,11,0.35)" },
+};
+
+export function InboxList({
+  conversations,
+  showStore = false,
+  band,
+  freshKeys = [],
+  onOpen,
+}: InboxListProps) {
   const [filter, setFilter] = useState<{ kind: "all" | "closed" | "live"; sessionId?: string }>({
     kind: "all",
   });
@@ -34,6 +51,25 @@ export function InboxList({ conversations, showStore = false, onOpen }: InboxLis
 
   return (
     <div>
+      {/* S9: el bloque solo existe mientras hay live; las filas no anuncian nada. */}
+      {band?.visible && (
+        <div
+          className="sticky top-0 z-10 mb-2 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold backdrop-blur"
+          style={{
+            background: BAND_STYLE[band.tone].background,
+            color: BAND_STYLE[band.tone].color,
+            border: BAND_STYLE[band.tone].border,
+          }}
+        >
+          <span className="truncate">{band.label}</span>
+          {band.countLabel && (
+            <span aria-live="polite" className="shrink-0 tabular-nums opacity-80">
+              · {band.countLabel}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Chips por live */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
         <button
@@ -106,7 +142,7 @@ export function InboxList({ conversations, showStore = false, onOpen }: InboxLis
       ) : (
         <ul className="mt-3 space-y-1">
           {visible.map((conv) => (
-            <li key={conv.key}>
+            <li key={conv.key} className={freshKeys.includes(conv.key) ? "inbox-row-flash rounded-xl" : undefined}>
               <button
                 type="button"
                 onClick={() => onOpen(conv)}
@@ -127,6 +163,18 @@ export function InboxList({ conversations, showStore = false, onOpen }: InboxLis
                     <span className="text-sm font-semibold text-white/85 truncate">
                       {conv.name}
                     </span>
+                    {/* S10: el estado lo produce el resolutor; acá solo se muestra. */}
+                    {conv.outcome && (
+                      <span
+                        className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded leading-none"
+                        style={{
+                          color: OUTCOME_COLOR[conv.outcome],
+                          background: "rgba(255,255,255,0.06)",
+                        }}
+                      >
+                        {OUTCOME_LABEL[conv.outcome]}
+                      </span>
+                    )}
                     <span className="text-[10px] text-white/25 shrink-0">
                       {showStore && conv.storeLabel ? `${conv.storeLabel} · ` : ""}
                       {conv.liveTags[0]?.label}
@@ -154,6 +202,16 @@ export function InboxList({ conversations, showStore = false, onOpen }: InboxLis
           ))}
         </ul>
       )}
+
+      {/* Destello de fila nueva: breve, decorativo y sin anuncio. */}
+      <style>{`
+        @keyframes inboxRowFlash {
+          from { background-color: rgba(254,44,85,0.18); }
+          to { background-color: transparent; }
+        }
+        .inbox-row-flash { animation: inboxRowFlash 1.4s ease-out; }
+        @media (prefers-reduced-motion: reduce) { .inbox-row-flash { animation: none; } }
+      `}</style>
     </div>
   );
 }

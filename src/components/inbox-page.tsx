@@ -7,8 +7,10 @@ import { ChatThread, type OutcomePayload } from "@/components/chat-thread";
 import { InboxLayout } from "@/components/inbox-layout";
 import { InboxList } from "@/components/inbox-list";
 import { Toaster } from "@/components/ui/sonner";
+import { useStoreLiveStream } from "@/hooks/useSSE";
 import { authHeaders } from "@/lib/api-auth";
 import { readActiveStoreId, useActiveStoreId } from "@/lib/active-store";
+import { liveBand, mergeLiveRows } from "@/lib/inbox-live";
 import {
   mapConversations,
   pendingTotal,
@@ -52,6 +54,8 @@ export default function InboxPageClient() {
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
   const [threadLoading, setThreadLoading] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  // S8/S9: el stream por tienda manda mientras hay live; `null` es "sin live".
+  const live = useStoreLiveStream(store?._id ?? null);
 
   const api = useCallback(
     async (path: string, init?: RequestInit) => {
@@ -171,7 +175,7 @@ export default function InboxPageClient() {
     // activeStoreId cambia cuando se elige otra tienda en el menú
   }, [isLoaded, userId, api, loadInbox, migrateLegacy, activeStoreId]);
 
-  const conversations = useMemo(
+  const baseConversations = useMemo(
     () =>
       data.flatMap((chunk) =>
         mapConversations(chunk.rows, chunk.leads, {
@@ -181,6 +185,26 @@ export default function InboxPageClient() {
       ),
     [data],
   );
+
+  // El servidor ya entregó el mismo conjunto filtrado que ve el vendedor:
+  // acá solo se suma a la lista, sin filtrar nada. Al terminar el live la
+  // bandeja vuelve a su comportamiento normal (S9).
+  const { conversations, freshKeys } = useMemo(() => {
+    if (scope !== "store" || !store || !live.rows || live.phase !== "live") {
+      return { conversations: baseConversations, freshKeys: [] as string[] };
+    }
+    return mergeLiveRows(baseConversations, live.rows, {
+      storeId: store._id,
+      storeLabel: `@${store.tiktokUsername}`,
+    });
+  }, [baseConversations, scope, store, live.rows, live.phase]);
+
+  const band = liveBand({
+    phase: live.phase,
+    connected: live.connected,
+    totals: live.totals,
+    storeLabel: store ? store.tiktokUsername : "",
+  });
 
   const openConversation = conversations.find((c) => c.key === openKey) ?? null;
 
@@ -323,6 +347,8 @@ export default function InboxPageClient() {
               <InboxList
                 conversations={conversations}
                 showStore={scope === "all"}
+                band={band}
+                freshKeys={freshKeys}
                 onOpen={openThread}
               />
             </>
