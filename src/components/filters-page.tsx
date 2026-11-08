@@ -9,11 +9,13 @@ import { useActiveStoreId } from "@/lib/active-store";
 import {
   createFilter,
   deleteFilter,
+  discardFilters,
   fetchFilters,
   groupFiltersByStage,
   normalizeFilters,
   updateFilter,
   type FilterView,
+  type StageFilter,
 } from "@/lib/filters-api";
 import { STAGE_CONFIG, STAGE_ORDER, type LeadStage } from "@/lib/stages";
 
@@ -85,7 +87,7 @@ export default function FiltersClient() {
   }, [newKeyword, creating, state, storeId, filters, getToken]);
 
   const changeStage = useCallback(
-    async (filter: FilterView) => {
+    async (filter: StageFilter) => {
       if (!storeId || busyId) return;
       const index = STAGE_ORDER.indexOf(filter.stage);
       const stage = STAGE_ORDER[(index + 1) % STAGE_ORDER.length];
@@ -126,6 +128,8 @@ export default function FiltersClient() {
 
   const canSubmit = state === "ready" && !!newKeyword.trim() && !creating;
   const groups = groupFiltersByStage(filters);
+  /** S11: el filtro de descarte no tiene etapa ni acciones; se muestra aparte. */
+  const discarded = discardFilters(filters);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0b0f1a" }}>
@@ -329,6 +333,68 @@ export default function FiltersClient() {
                 </div>
               );
             })}
+
+            {/* Filtros del sistema que descartan: sin etapa y sin acciones. */}
+            {discarded.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: "rgba(255,255,255,0.25)" }}
+                  />
+                  <span
+                    className="text-xs font-semibold tracking-wider uppercase"
+                    style={{ color: "rgba(255,255,255,0.35)" }}
+                  >
+                    Descartados
+                  </span>
+                  <span
+                    className="text-[10px] font-mono tabular-nums"
+                    style={{ color: "rgba(255,255,255,0.2)" }}
+                  >
+                    {discarded.length}
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  {discarded.map((filter) => (
+                    <div
+                      key={filter.id}
+                      className="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all"
+                      style={{
+                        background: "rgba(255,255,255,0.02)",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                      }}
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: FILTER_COLOR }}
+                      />
+                      <span
+                        className="flex-1 text-sm font-semibold min-w-0 truncate"
+                        style={{ color: "rgba(255,255,255,0.85)" }}
+                      >
+                        {filter.name}
+                      </span>
+                      <span
+                        className="px-2 py-0.5 rounded-lg text-[10px] font-semibold shrink-0"
+                        style={{ backgroundColor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.4)" }}
+                        title="Filtro del sistema: no se puede editar"
+                      >
+                        Sistema
+                      </span>
+                      <span
+                        className="px-2 py-0.5 rounded-lg text-[10px] font-semibold shrink-0"
+                        style={{ backgroundColor: "rgba(245,158,11,0.12)", color: "#f59e0b" }}
+                        title="Estos mensajes se descartan: no se clasifican ni llegan a tus leads"
+                      >
+                        Descarta
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>

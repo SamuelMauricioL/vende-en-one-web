@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   createFilter,
   deleteFilter,
+  discardFilters,
   fetchFilters,
   groupFiltersByStage,
   leadMessage,
@@ -42,10 +43,25 @@ function filter(overrides: Partial<FilterView> = {}): FilterView {
     id: "f1",
     name: "PS5",
     keywords: ["PS5"],
+    action: "classify",
     stage: "compra",
     editable: true,
     ...overrides,
   };
+}
+
+/** S11: el filtro de sistema que descarta comentarios. */
+function discardFilter(overrides: Partial<FilterView> = {}): FilterView {
+  return filter({
+    id: "sys-abuse",
+    name: "Insultos y acoso",
+    keywords: ["idiota"],
+    source: "system",
+    action: "discard",
+    stage: null,
+    editable: false,
+    ...overrides,
+  });
 }
 
 function lead(overrides: Partial<LeadRow> = {}): LeadRow {
@@ -83,6 +99,29 @@ test("groupFiltersByStage agrupa por etapa en orden compra → interesado y omit
   ]);
   assert.deepEqual(groups.map((group) => group.stage), ["compra", "interesado"]);
   assert.deepEqual(groups[0].filters.map((item) => item.id), ["c"]);
+});
+
+test("un filtro de descarte no cuenta en los grupos por etapa", () => {
+  const discard = discardFilter();
+  const groups = groupFiltersByStage([filter({ id: "c" }), discard]);
+
+  const ids = groups.flatMap((group) => group.filters.map((item) => item.id));
+  assert.deepEqual(ids, ["c"]);
+  assert.deepEqual(
+    discardFilters([filter({ id: "c" }), discard]).map((item) => item.id),
+    [discard.id],
+  );
+});
+
+test("normalizeFilters deja el descarte sin etapa y no editable", () => {
+  const [sanitized] = normalizeFilters([
+    discardFilter({ stage: "compra", editable: true }),
+  ]);
+
+  assert.equal(sanitized.action, "discard");
+  assert.equal(sanitized.stage, null);
+  assert.equal(sanitized.editable, false);
+  assert.deepEqual(groupFiltersByStage([sanitized]), []);
 });
 
 test("leadMessage usa los spans del servidor y cae al primer comentario", () => {

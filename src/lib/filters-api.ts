@@ -45,15 +45,23 @@ export type StatsFrame =
 
 /* ── Contrato de filtros (S8) ── */
 
+/** S11: "discard" no clasifica, descarta el comentario en el servidor. */
+export type FilterAction = "classify" | "discard";
+
 export interface FilterView {
   /** Solo "store" es editable/borrable. */
   source: "system" | "store";
   id: string;
   name: string;
   keywords: string[];
-  stage: LeadStage;
+  action: FilterAction;
+  /** null solo en los filtros que descartan: no tienen etapa. */
+  stage: LeadStage | null;
   editable: boolean;
 }
+
+/** Un filtro que clasifica: siempre tiene etapa. */
+export type StageFilter = FilterView & { action: "classify"; stage: LeadStage };
 
 export interface FilterInput {
   keywords: string[];
@@ -73,18 +81,33 @@ export function normalizeFilters(filters: readonly FilterView[]): FilterView[] {
     const key = filter.name.trim().toLowerCase();
     if (!key || seen.has(key)) continue;
     seen.add(key);
-    list.push(filter);
+    // S11: un filtro que descarta no tiene etapa y nunca es editable.
+    list.push(
+      filter.action === "discard"
+        ? { ...filter, action: "discard", stage: null, editable: false }
+        : { ...filter, action: "classify" },
+    );
   }
   return list;
 }
 
-/** Agrupa por etapa conservando el orden del servidor. */
+export function isStageFilter(filter: FilterView): filter is StageFilter {
+  return filter.action === "classify" && filter.stage !== null;
+}
+
+/** S11: filtros que descartan el mensaje, fuera de los grupos por etapa. */
+export function discardFilters(filters: readonly FilterView[]): FilterView[] {
+  return filters.filter((filter) => filter.action === "discard");
+}
+
+/** Agrupa por etapa conservando el orden del servidor. Los de descarte quedan fuera. */
 export function groupFiltersByStage(
   filters: readonly FilterView[],
-): { stage: LeadStage; filters: FilterView[] }[] {
+): { stage: LeadStage; filters: StageFilter[] }[] {
+  const classified = filters.filter(isStageFilter);
   return STAGE_ORDER.map((stage) => ({
     stage,
-    filters: filters.filter((filter) => filter.stage === stage),
+    filters: classified.filter((filter) => filter.stage === stage),
   })).filter((group) => group.filters.length > 0);
 }
 
