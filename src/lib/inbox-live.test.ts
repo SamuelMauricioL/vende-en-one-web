@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import { liveBand, mergeLiveRows } from "./inbox-live.ts";
+import { EMPTY_LIVE_STREAM, applyStoreFrame, liveBand, mergeLiveRows } from "./inbox-live.ts";
 import type { Conversation } from "./inbox-api.ts";
 import type { LeadRow, Totals } from "./filters-api.ts";
 
@@ -78,7 +78,13 @@ test("en vivo sin totals todavía cuenta cero", () => {
 });
 
 test("el stream cortado se avisa en ámbar", () => {
-  const band = liveBand({ phase: "live", connected: false, totals: TOTALS, storeLabel: "tienda" });
+  const band = liveBand({
+    phase: "live",
+    connected: false,
+    error: null,
+    totals: TOTALS,
+    storeLabel: "tienda",
+  });
   assert.equal(band.visible, true);
   assert.equal(band.phase, "offline");
   assert.equal(band.tone, "warning");
@@ -88,6 +94,117 @@ test("el stream cortado se avisa en ámbar", () => {
 test("el contador se anuncia con la etiqueta de aria-live", () => {
   const band = liveBand({ phase: "live", connected: true, totals: TOTALS, storeLabel: "tienda" });
   assert.match(band.countLabel, /con intención$/);
+});
+
+/* ── Frames reales del stream por tienda (S8) ── */
+
+test("status cambia la fase y guarda sesión y usuario", () => {
+  const next = applyStoreFrame(EMPTY_LIVE_STREAM, {
+    type: "status",
+    state: "live",
+    sessionId: "ses-1",
+    username: "tienda",
+  });
+  assert.equal(next.phase, "live");
+  assert.equal(next.sessionId, "ses-1");
+  assert.equal(next.username, "tienda");
+  assert.equal(next.error, null);
+});
+
+test("stats reemplaza filas y totals", () => {
+  const before = applyStoreFrame(EMPTY_LIVE_STREAM, {
+    type: "stats",
+    stats: [lead()],
+    totals: TOTALS,
+  });
+  const after = applyStoreFrame(before, {
+    type: "stats",
+    stats: [lead({ tiktokUserId: "u-luz", comments: 7 })],
+    totals: { ...TOTALS, qualified: 9 },
+  });
+  assert.equal(after.rows?.length, 1);
+  assert.equal(after.rows?.[0].tiktokUserId, "u-luz");
+  assert.equal(after.rows?.[0].comments, 7);
+  assert.equal(after.totals?.qualified, 9);
+});
+
+test("outcome corrige la fila de esa persona", () => {
+  const stats = applyStoreFrame(EMPTY_LIVE_STREAM, {
+    type: "stats",
+    stats: [lead(), lead({ tiktokUserId: "u-luz" })],
+    totals: TOTALS,
+  });
+  const next = applyStoreFrame(stats, {
+    type: "outcome",
+    lead: lead({ outcome: "whatsapp" }),
+  });
+  assert.equal(next.rows?.length, 2);
+  assert.equal(next.rows?.find((row) => row.tiktokUserId === "u-rosa")?.outcome, "whatsapp");
+});
+
+test("outcome agrega una fila que no estaba", () => {
+  const next = applyStoreFrame(
+    applyStoreFrame(EMPTY_LIVE_STREAM, { type: "stats", stats: [lead()], totals: TOTALS }),
+    { type: "outcome", lead: lead({ tiktokUserId: "u-luz", outcome: "contactado" }) },
+  );
+  assert.equal(next.rows?.length, 2);
+  assert.equal(next.rows?.[1].tiktokUserId, "u-luz");
+  assert.equal(next.rows?.[1].outcome, "contactado");
+});
+
+test("chat no toca la bandeja", () => {
+  const stats = applyStoreFrame(EMPTY_LIVE_STREAM, {
+    type: "stats",
+    stats: [lead()],
+    totals: TOTALS,
+  });
+  const next = applyStoreFrame(stats, { type: "chat", chat: [{ text: "hola" }] });
+  assert.deepEqual(next, stats);
+});
+
+test("un status con error deja el aviso ámbar visible", () => {
+  const live = applyStoreFrame(EMPTY_LIVE_STREAM, {
+    type: "status",
+    state: "live",
+    sessionId: "ses-1",
+    username: "tienda",
+  });
+  const broken = applyStoreFrame(live, {
+    type: "status",
+    state: "live",
+    sessionId: "ses-1",
+    username: "tienda",
+    error: "Se cortó el live",
+  });
+  const band = liveBand({
+    phase: broken.phase,
+    connected: false,
+    error: broken.error,
+    totals: TOTALS,
+    storeLabel: "tienda",
+  });
+  assert.equal(band.visible, true);
+  assert.equal(band.phase, "offline");
+  assert.equal(band.tone, "warning");
+  assert.equal(band.label, "Se cortó el live");
+});
+
+test("ended oculta el bloque y descarta la foto de esa sesión", () => {
+  const stats = applyStoreFrame(EMPTY_LIVE_STREAM, {
+    type: "stats",
+    stats: [lead()],
+    totals: TOTALS,
+  });
+  const ended = applyStoreFrame(stats, {
+    type: "status",
+    state: "ended",
+    sessionId: null,
+    username: null,
+  });
+  assert.equal(ended.phase, "ended");
+  assert.equal(ended.rows, null);
+  const band = liveBand({ phase: ended.phase, connected: true, error: null, totals: null, storeLabel: "tienda" });
+  assert.equal(band.visible, false);
 });
 
 /* ── Filas que llegan por el stream (S9/S10) ── */

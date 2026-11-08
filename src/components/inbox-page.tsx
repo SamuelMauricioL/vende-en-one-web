@@ -187,8 +187,9 @@ export default function InboxPageClient() {
   );
 
   // El servidor ya entregó el mismo conjunto filtrado que ve el vendedor:
-  // acá solo se suma a la lista, sin filtrar nada. Al terminar el live la
-  // bandeja vuelve a su comportamiento normal (S9).
+  // acá solo se suma a la lista, sin filtrar nada. Mientras hay `live`, `stats`
+  // es la foto completa y `outcome` ya viene aplicado fila por fila. Al terminar
+  // el live la bandeja vuelve a su comportamiento normal (S9).
   const { conversations, freshKeys } = useMemo(() => {
     if (scope !== "store" || !store || !live.rows || live.phase !== "live") {
       return { conversations: baseConversations, freshKeys: [] as string[] };
@@ -202,6 +203,7 @@ export default function InboxPageClient() {
   const band = liveBand({
     phase: live.phase,
     connected: live.connected,
+    error: live.error,
     totals: live.totals,
     storeLabel: store ? store.tiktokUsername : "",
   });

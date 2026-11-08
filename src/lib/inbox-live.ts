@@ -11,6 +11,89 @@ import type { Conversation } from "./inbox-api.ts";
 /** Fases que emite `GET /stores/:storeId/live/stream`. `null` = aún sin frame. */
 export type LivePhase = "idle" | "live" | "ended";
 
+/**
+ * Frames reales del stream por tienda (S8). La fase viaja en `state` dentro del
+ * frame `status`, no en el `type`; el stream se queda abierto entre sesiones.
+ */
+export type StoreFrame =
+  | {
+      type: "status";
+      state: LivePhase;
+      sessionId: string | null;
+      username: string | null;
+      /** La API avisa el corte por acá cuando sabe por qué terminó. */
+      error?: string;
+    }
+  | { type: "stats"; stats: LeadRow[]; totals: Totals }
+  | { type: "chat"; chat: readonly unknown[] }
+  | { type: "outcome"; lead: LeadRow };
+
+/** Lo que el stream sabe del live de la tienda. `null` = todavía nada. */
+export interface LiveStreamState {
+  phase: LivePhase | null;
+  sessionId: string | null;
+  username: string | null;
+  /** Foto completa de `stats`: el servidor ya entregó el conjunto filtrado. */
+  rows: LeadRow[] | null;
+  totals: Totals | null;
+  error: string | null;
+}
+
+export const EMPTY_LIVE_STREAM: LiveStreamState = {
+  phase: null,
+  sessionId: null,
+  username: null,
+  rows: null,
+  totals: null,
+  error: null,
+};
+
+function isPhase(value: unknown): value is LivePhase {
+  return value === "idle" || value === "live" || value === "ended";
+}
+
+/**
+ * Aplica un frame del stream por tienda y devuelve el estado siguiente.
+ * `stats` es la foto completa; `outcome` corrige (o agrega) una sola persona.
+ */
+export function applyStoreFrame(
+  state: LiveStreamState,
+  frame: StoreFrame,
+): LiveStreamState {
+  switch (frame.type) {
+    case "status": {
+      const phase = isPhase(frame.state) ? frame.state : state.phase;
+      return {
+        ...state,
+        phase,
+        sessionId: frame.sessionId ?? null,
+        username: frame.username ?? null,
+        error: frame.error ?? null,
+        // Al cerrarse la sesión su foto deja de valer: la próxima manda la suya.
+        rows: phase === "live" ? state.rows : null,
+      };
+    }
+    case "stats":
+      // Lista completa y ordenada por el servidor: se reemplaza tal cual.
+      return { ...state, rows: frame.stats, totals: frame.totals };
+    case "outcome": {
+      const rows = state.rows ?? [];
+      const known = rows.some((row) => row.tiktokUserId === frame.lead.tiktokUserId);
+      return {
+        ...state,
+        rows: known
+          ? rows.map((row) =>
+              row.tiktokUserId === frame.lead.tiktokUserId ? frame.lead : row,
+            )
+          : [...rows, frame.lead],
+      };
+    }
+    default:
+      // `chat` no se usa en la bandeja: el hilo se lee aparte.
+      return state;
+  }
+}
+
 export interface LiveBand {
   /** Solo existe mientras hay live: `idle` y `ended` la dejan invisible. */
   visible: boolean;
@@ -47,9 +130,23 @@ export function liveBand(input: {
   connected: boolean;
   totals: Pick<Totals, "qualified"> | null;
   storeLabel: string;
+  error?: string | null;
 }): LiveBand {
   const { phase, connected, totals } = input;
+  const error = input.error ?? null;
   if (phase === "idle" || phase === "ended") return HIDDEN;
+
+  const offline = (label: string): LiveBand => ({
+    visible: true,
+    phase: "offline",
+    tone: "warning",
+    label,
+    countLabel: "",
+    count: 0,
+  });
+
+  // Un error explícito de la API manda: es el motivo real del corte.
+  if (error) return offline(error);
 
   if (phase === null) {
     return {
@@ -62,16 +159,7 @@ export function liveBand(input: {
     };
   }
 
-  if (!connected) {
-    return {
-      visible: true,
-      phase: "offline",
-      tone: "warning",
-      label: "Sin conexión al live, reintentando",
-      countLabel: "",
-      count: 0,
-    };
-  }
+  if (!connected) return offline("Sin conexión al live, reintentando");
 
   const count = totals?.qualified ?? 0;
   const store = at(input.storeLabel);
