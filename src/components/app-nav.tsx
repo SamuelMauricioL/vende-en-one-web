@@ -16,13 +16,17 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
   const [open, setOpen] = useState(false);
   const { isSignedIn, isLoaded, getToken, signOut } = useAuth();
   const [expired, setExpired] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Aviso de vencimiento: solo consulta, nunca bloquea otras pantallas.
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
     let cancelled = false;
     void fetchBillingState(getToken).then((state) => {
-      if (!cancelled && state) setExpired(state.access === "expired");
+      if (!cancelled && state) {
+        setExpired(state.access === "expired");
+        setIsAdmin(state.role === "admin");
+      }
     });
     return () => {
       cancelled = true;
@@ -249,6 +253,33 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
               </span>
             ) : null}
           </a>
+
+          {isAdmin && (
+            <a
+              href="/app/admin"
+              onClick={() => setOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                isActive("admin")
+                  ? "bg-white/10 text-white"
+                  : "text-white/50 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <svg
+                className={`w-4 h-4 ${isActive("admin") ? "text-[#facc15]" : "text-current"}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12.75L11.25 15 15 9.75M21 12c0 4.556-4.03 8.25-9 8.25a9.76 9.76 0 01-2.555-.337A5.97 5.97 0 015.41 20.97a5.97 5.97 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
+                />
+              </svg>
+              Pagos pendientes
+            </a>
+          )}
 
           <a
             href="/app/profile"
