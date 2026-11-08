@@ -16,10 +16,10 @@ interface FilterExample {
 
 /** Ejemplos por categoría: el usuario ve qué atrapa cada filtro y a qué embudo va. */
 const FILTER_EXAMPLES: FilterExample[] = [
-  { id: "compra", text: "quiero 2 blusas de lino", keyword: "quiero", stage: "compra" },
-  { id: "precio", text: "cuánto cuesta la casaca negra", keyword: "cuesta", stage: "negociando" },
-  { id: "talla", text: "tienes talla M en la blusa?", keyword: "talla", stage: "negociando" },
-  { id: "envio", text: "envías a Trujillo?", keyword: "envías", stage: "negociando" },
+  { id: "ps5", text: "¿tienes la PS5?", keyword: "PS5", stage: "compra" },
+  { id: "cartera", text: "cuánto cuesta la cartera", keyword: "cartera", stage: "negociando" },
+  { id: "mochila", text: "quiero la mochila negra", keyword: "mochila", stage: "compra" },
+  { id: "shalom", text: "envías por shalom?", keyword: "shalom", stage: "negociando" },
 ];
 
 const primaryButton = {
