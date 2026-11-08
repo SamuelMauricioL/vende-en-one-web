@@ -12,6 +12,7 @@ import { LiveEndedDialog } from "./LiveEndedDialog";
 import { trackEvent } from "@/lib/plausible";
 import { getMonitorWS } from "@/lib/api";
 import { authHeaders } from "@/lib/api-auth";
+import { fetchBillingState } from "@/lib/billing";
 import { useAuth } from "@clerk/astro/react";
 
 const TIKTOK_URL_REGEX = /^(?:https?:\/\/)?(?:www\.)?tiktok\.com\/@([a-zA-Z0-9_.-]+)/;
@@ -61,6 +62,23 @@ export interface LiveControllerHandle {
   loading: boolean;
 }
 
+function PaywallNotice() {
+  return (
+    <div
+      className="mt-3 rounded-xl px-3 py-2.5 flex items-start gap-2"
+      style={{ background: "rgba(254,44,85,0.08)", border: "1px solid rgba(254,44,85,0.18)" }}
+    >
+      <span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: "#fe2c55" }} />
+      <p className="text-[11px] text-white/50 leading-relaxed">
+        Tu acceso venció. El historial y la bandeja siguen disponibles, pero no puedes iniciar lives.{" "}
+        <a href="/app/billing" className="font-bold hover:underline" style={{ color: "#25f4ee" }}>
+          Registrar pago
+        </a>
+      </p>
+    </div>
+  );
+}
+
 export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?: (active: boolean) => void; initialTikTokUsername?: string }>(({ onActiveChange, initialTikTokUsername = "" }, ref) => {
   const { getToken } = useAuth();
   const [storeId, setStoreId] = useState("");
@@ -76,7 +94,19 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
   const [stageCounts, setStageCounts] = useState<Record<string, number>>({ compra: 0, negociando: 0, interesado: 0 });
   const [compraReport, setCompraReport] = useState<{ sessionId: string; leads: CompraLead[] } | null>(null);
   const [monitorStatus, setMonitorStatus] = useState<"idle" | "connecting" | "waiting" | "live" | "error">("idle");
+  const [expired, setExpired] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
+
+  // Acceso vencido: el botón de iniciar live queda bloqueado con enlace al cobro.
+  useEffect(() => {
+    let cancelled = false;
+    void fetchBillingState(getToken).then((state) => {
+      if (!cancelled && state) setExpired(state.access === "expired");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [getToken]);
 
   const onStageCountsReport = useCallback((counts: Record<string, number>) => {
     setStageCounts(counts);
@@ -215,7 +245,13 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
         trackEvent(isAutoReconnect ? "Live Reconnected" : "Live Started", { username });
       } else {
         trackEvent("Live Start Failed", { username, status: res.status });
-        toast.error(`Error al iniciar: ${data.message || res.status}`);
+        // 402: acceso vencido, se ofrece el cobro en lugar del mensaje del API
+        if (res.status === 402) {
+          setExpired(true);
+          toast.error("Tu acceso venció. Registra tu pago para volver a iniciar lives.");
+        } else {
+          toast.error(`Error al iniciar: ${data.message || res.status}`);
+        }
         localStorage.removeItem(RECONNECT_KEY);
       }
     } catch (err) {
@@ -498,7 +534,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                     setLoading(false);
                   }
                 }}
-                disabled={loading || (monitorStatus !== "live" && monitorStatus !== "idle")}
+                disabled={loading || expired || (monitorStatus !== "live" && monitorStatus !== "idle")}
                 className="w-full h-12 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-bold text-sm rounded-xl shadow-lg shadow-[#fe2c55]/25 disabled:opacity-40 transition-all"
               >
                 {loading ? (
@@ -525,6 +561,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                   </span>
                 )}
               </Button>
+              {expired && <PaywallNotice />}
             </div>
           </div>
 
@@ -593,7 +630,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
 
                 <Button
                   type="submit"
-                  disabled={loading || !extracted}
+                  disabled={loading || !extracted || expired}
                   className="w-full h-12 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white font-bold text-sm rounded-xl shadow-lg shadow-[#fe2c55]/25 disabled:opacity-40 transition-all"
                 >
                   {loading ? (
@@ -618,6 +655,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                   )}
                 </Button>
               </form>
+              {expired && <PaywallNotice />}
             </div>
           </div>
 
