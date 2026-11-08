@@ -10,7 +10,7 @@ export type IgnoreReason = "no_cliente" | "spam" | "ya_compro";
 export const OUTCOME_LABEL: Record<LeadState, string> = {
   contactado: "Contactado",
   whatsapp: "En WhatsApp",
-  ignorado: "Ignorado",
+  ignorado: "Atendido",
 };
 
 /** Color de la marca de estado en las filas. */
