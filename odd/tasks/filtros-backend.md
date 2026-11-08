@@ -68,7 +68,8 @@ type FilterView = {
 S11. **Insultos y acoso son un filtro del sistema que descarta.** «el descarte de insultos y acoso lo tenemos que mover como parte de los filtros del sistema». Reglas:
 - Existe un filtro de sistema (`source: "system"`, `editable: false`) que **no clasifica: descarta**. Cuando coincide, el comentario se trata igual que un no-match: no viaja por el stream, no se persiste y no genera lead.
 - El contrato gana `action: "classify" | "discard"` en `FilterView` y en `FilterDefinition`. Para `action: "discard"` la etapa es `null`.
-- El motor evalúa primero los filtros con acción descartar; si uno coincide, no se calculan etapa ni spans.
+- **La intención de compra gana sobre el descarte.** Si un filtro que clasifica coincide, el mensaje es lead aunque además insulte; solo se descarta cuando es ofensivo y no trae ninguna intención de las que clasifican. Sin esta regla se perdían compradores reales («quiero el pack de 3 blusas»).
+- Los patrones del filtro de descarte son decisiones de producto tomadas revisando lives reales: ingeniería los porta tal cual y no decide qué palabra es ambigua.
 - Los patrones se portan desde el clasificador borrado en la web (`git show b3b139f^:src/lib/lead-classifier.ts`, `OFFENSIVE_PATTERNS`).
 - La pantalla de Filtros muestra la fila del sistema con una marca de que descarta y sin acciones; el agrupamiento por etapa ignora los filtros de descarte.
 
@@ -123,3 +124,4 @@ L9. «1. se descartan 2. desde el código 3. el IU ya no se encarga, la decisió
 
 L10. «el descarte de insultos y acoso lo tenemos que mover como parte de los filtros del sistema».
 L11. Verificacion de T17 con comentarios reales: `quiero el pack de 3 blusas`, `pack de gorras precio`, `tienen ropa para perro?` y `date la vuelta para ver la espalda` se descartan como ofensivos. Los patrones se portaron tal cual del clasificador viejo, asi que el falso positivo viene heredado; falta decidir la regla antes de mergear.
+L12. «soo A, los patrones ambiguos se registraron a base de revisión de varios lives, entonces tu no puedes decidir ahí si es ambiguo o no».
