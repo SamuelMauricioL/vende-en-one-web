@@ -87,9 +87,9 @@ Rutas de trabajo: `R-API` = `/Users/samuelaimarmauriciolaime/Documents/personal/
 - [x] **T12 · S4,S8 · R-WEB · C2** — commit `b3b139f` — `top-users.tsx` y `LeadsMobile.tsx`: render de `stage`/`stageLabel`/`spans`/`totals`; eliminar `classifierCache`, orden local y resaltado local; borrar `src/lib/lead-classifier.ts`.
 - [x] **T13 · S10 · R-WEB · C3** — commit `b731250` — Tests (`node --test "src/lib/**/*.test.ts"`) del cliente de filtros y del mapeo del contrato; docs: `README.md:50`, `odd/tasks/onboarding-web.md:8,42-43`, `odd/tasks/tienda-activa.md:8,29,33`. `npm run build` verde.
 
-- [ ] **T14 · S3,S7 · R-API · C4** — Fallo al leer los filtros de la tienda al abrir la sesión: no se puede descartar en silencio lo que solo casaba con ellos. Reintentar una vez y, si sigue fallando, rechazar el arranque del live con error explícito (503 con mensaje claro) en vez de caer a solo-sistema.
-- [ ] **T15 · S3 · R-API · C4** — POST/PATCH de un filtro de tienda con el mismo nombre que uno del sistema: hoy responde 201 y el filtro queda invisible porque el sistema gana el merge. Devolver 409 con mensaje que diga qué nombre está ocupado.
-- [ ] **T16 · S7 · R-API · C4** — Precisar el comentario de `totalUsers`/`totalMessages` en `tiktokLiveManager.saveSummary`: `totalUsers` es el crudo de personas que comentaron y `totalMessages` cuenta solo coincidencias; que el comentario no prometa otra cosa.
+- [x] **T14 · S3,S7 · R-API · C4** — commit `4c838b3` — Fallo al leer los filtros de la tienda al abrir la sesión: no se puede descartar en silencio lo que solo casaba con ellos. Reintentar una vez y, si sigue fallando, rechazar el arranque del live con error explícito (503 con mensaje claro) en vez de caer a solo-sistema.
+- [x] **T15 · S3 · R-API · C4** — commit `4c838b3` — POST/PATCH de un filtro de tienda con el mismo nombre que uno del sistema: hoy responde 201 y el filtro queda invisible porque el sistema gana el merge. Devolver 409 con mensaje que diga qué nombre está ocupado.
+- [x] **T16 · S7 · R-API · C4** — commit `4c838b3` — Precisar el comentario de `totalUsers`/`totalMessages` en `tiktokLiveManager.saveSummary`: `totalUsers` es el crudo de personas que comentaron y `totalMessages` cuenta solo coincidencias; que el comentario no prometa otra cosa.
 
 ## Log
 
