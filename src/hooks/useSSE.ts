@@ -78,16 +78,17 @@ export function useSSE<T>(
             setData(parsed.stats || parsed.chat || null);
           } else if (parsed.type === "delta") {
             if (parsed.stats) {
+              const incoming = parsed.stats;
               // Merge by tiktokUserId — replace existing or add new
               setData((prev) => {
-                if (!prev) return parsed.stats;
+                if (!prev) return incoming;
                 const map = new Map(
                   (prev as any[]).map((u: any) => [u.tiktokUserId, u]),
                 );
-                for (const u of parsed.stats as any[]) {
+                for (const u of incoming as any[]) {
                   map.set(u.tiktokUserId, u);
                 }
-                return Array.from(map.values());
+                return Array.from(map.values()) as T[];
               });
             } else if (parsed.chat) {
               setData((prev) => {
