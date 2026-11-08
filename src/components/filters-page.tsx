@@ -144,13 +144,11 @@ export default function FiltersClient() {
             Filtros personalizados
           </h1>
           <p className="text-sm leading-relaxed max-w-sm mx-auto" style={{ color: "rgba(255,255,255,0.5)" }}>
-            Vendes <strong style={{ color: "#fe2c55" }}>PS5</strong>, ropa o cualquier producto?{" "}
-            Atrapa a los que preguntan por él en el chat.{" "}
-            Agrega palabras clave como{" "}
-            <strong style={{ color: "#fe2c55" }}>PS5</strong> o{" "}
-            <strong style={{ color: "#facc15" }}>PlayStation</strong> y cada vez que alguien las mencione,{" "}
-            se clasificará automáticamente como comprador.{" "}
-            <strong style={{ color: "rgba(255,255,255,0.7)" }}>Mientras más filtros agregues, más clientes convertirás.</strong>
+            Agrega el nombre de tus productos —{" "}
+            <strong style={{ color: "#fe2c55" }}>PS5</strong>,{" "}
+            <strong style={{ color: "#facc15" }}>cartera</strong>,{" "}
+            <strong style={{ color: "#fe2c55" }}>mochila</strong>{" "}
+            — y cada mensaje que los mencione cae en tu lista, con la intención ya marcada.
           </p>
         </div>
 

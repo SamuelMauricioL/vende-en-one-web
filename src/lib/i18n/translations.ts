@@ -64,9 +64,9 @@ export const es = {
   "features.2.title": "Filtro IA de compradores",
   "features.2.desc":
     "Nuestro algoritmo analiza el comportamiento en vivo y asigna probabilidad de compra. Solo los leads calientes llegan a tu bandeja.",
-  "features.4.title": "Métricas en tiempo real",
+  "features.4.title": "Todo lo que pasó, en números",
   "features.4.desc":
-    "Ve cuántos leads capturaste, cuántos están calificados y cuántos convirtieron. Todo en vivo.",
+    "Cuántos comentaron, cuántos pasaron tus filtros y a cuántos ya les escribiste. Al terminar el live.",
   "features.5.title": "Sin fricción",
   "features.5.desc":
     "No necesitas ser técnico. Conectas tu live y empiezas a capturar leads al instante.",
@@ -150,9 +150,9 @@ export const en: Record<TranslationKey, string> = {
   "features.2.title": "AI buyer filter",
   "features.2.desc":
     "Our algorithm analyzes live behavior and assigns a purchase probability. Only hot leads reach your inbox.",
-  "features.4.title": "Real-time metrics",
+  "features.4.title": "Everything that happened, in numbers",
   "features.4.desc":
-    "See how many leads you captured, how many are qualified, and how many converted. All live.",
+    "How many commented, how many passed your filters, and how many you already wrote to.",
   "features.5.title": "Zero friction",
   "features.5.desc":
     "No technical skills needed. Connect your live and start capturing leads instantly.",
