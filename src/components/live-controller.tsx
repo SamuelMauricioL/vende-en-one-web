@@ -12,6 +12,7 @@ import { LiveEndedDialog } from "./LiveEndedDialog";
 import { trackEvent } from "@/lib/plausible";
 import { getMonitorWS } from "@/lib/api";
 import { authHeaders } from "@/lib/api-auth";
+import { resolveActiveStore, useActiveStoreId } from "@/lib/active-store";
 import { fetchBillingState } from "@/lib/billing";
 import { useAuth } from "@clerk/astro/react";
 
@@ -82,6 +83,7 @@ function PaywallNotice() {
 export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?: (active: boolean) => void; initialTikTokUsername?: string }>(({ onActiveChange, initialTikTokUsername = "" }, ref) => {
   const { getToken } = useAuth();
   const [storeId, setStoreId] = useState("");
+  const activeStoreId = useActiveStoreId();
 
   const [input, setInput] = useState(initialTikTokUsername ? `https://www.tiktok.com/@${initialTikTokUsername}` : "");
   const [loading, setLoading] = useState(false);
@@ -146,9 +148,8 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
           stores?: Array<{ _id: string; tiktokUsername: string }>;
         };
         const list = data.stores ?? [];
-        const norm = (v: string) => v.replace(/^@/, "").trim().toLowerCase();
-        const match =
-          list.find((x) => norm(x.tiktokUsername) === norm(initialTikTokUsername)) ?? list[0];
+        // La tienda activa del menú manda; el @ del perfil es el respaldo.
+        const match = resolveActiveStore(list, initialTikTokUsername);
         if (!cancelled && match) setStoreId(match._id);
       } catch {
         // sin tienda, el arranque del live responderá con un error claro
@@ -487,16 +488,6 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInput(initialTikTokUsername ? `https://www.tiktok.com/@${initialTikTokUsername}` : "");
-                    setShowEditInput(true);
-                  }}
-                  className="text-[11px] text-white/30 hover:text-white/60 transition-colors px-2 py-1 shrink-0"
-                >
-                  Cambiar
-                </button>
               </div>
 
               <Button

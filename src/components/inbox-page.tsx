@@ -8,6 +8,7 @@ import { InboxLayout } from "@/components/inbox-layout";
 import { InboxList } from "@/components/inbox-list";
 import { Toaster } from "@/components/ui/sonner";
 import { authHeaders } from "@/lib/api-auth";
+import { readActiveStoreId, useActiveStoreId, writeActiveStoreId } from "@/lib/active-store";
 import {
   mapConversations,
   pendingTotal,
@@ -31,6 +32,7 @@ interface StoreSummary {
 export default function InboxPageClient() {
   const { userId, isLoaded, getToken } = useAuth();
   const [stores, setStores] = useState<StoreSummary[]>([]);
+  const activeStoreId = useActiveStoreId();
   const [store, setStore] = useState<StoreSummary | null>(null);
   const [rows, setRows] = useState<InboxRow[]>([]);
   const [leads, setLeads] = useState<InboxLead[]>([]);
@@ -111,11 +113,7 @@ export default function InboxPageClient() {
     async (id: string) => {
       const next = stores.find((s) => s._id === id);
       if (!next) return;
-      try {
-        localStorage.setItem(ACTIVE_STORE_KEY, id);
-      } catch {
-        // sin localStorage el cambio dura la sesión
-      }
+      writeActiveStoreId(id);
       setStore(next);
       setOpenId(null);
       setMessages([]);
@@ -144,12 +142,8 @@ export default function InboxPageClient() {
         const profile = profileRes.ok
           ? ((await profileRes.json()) as { profile?: { tiktokUsername?: string } })
           : null;
-        let saved: string | null = null;
-        try {
-          saved = localStorage.getItem(ACTIVE_STORE_KEY);
-        } catch {
-          saved = null;
-        }
+        // La tienda activa del menú manda; el @ del perfil es el respaldo.
+        const saved = activeStoreId ?? readActiveStoreId();
         const active = pickActiveStore(list, profile?.profile?.tiktokUsername, saved);
         if (cancelled) return;
         setStores(list);

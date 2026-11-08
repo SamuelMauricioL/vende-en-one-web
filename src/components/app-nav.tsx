@@ -2,7 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/astro/react";
+import { authHeaders } from "@/lib/api-auth";
 import { fetchBillingState } from "@/lib/billing";
+import {
+  readActiveStoreId,
+  resolveActiveStore,
+  useActiveStoreId,
+  writeActiveStoreId,
+} from "@/lib/active-store";
 
 interface AppNavProps {
   current: "live" | "inbox" | "filters" | "profile" | "billing" | "admin";
@@ -17,6 +24,8 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
   const { isSignedIn, isLoaded, getToken, signOut } = useAuth();
   const [expired, setExpired] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<Array<{ _id: string; tiktokUsername: string }>>([]);
+  const activeStoreId = useActiveStoreId();
 
   // Aviso de vencimiento: solo consulta, nunca bloquea otras pantallas.
   useEffect(() => {
@@ -28,6 +37,26 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
         setIsAdmin(state.role === "admin");
       }
     });
+
+    void (async () => {
+      try {
+        const res = await fetch("/api/stores", { headers: await authHeaders(getToken) });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          stores?: Array<{ _id: string; tiktokUsername: string }>;
+        };
+        const list = data.stores ?? [];
+        if (cancelled) return;
+        setStores(list);
+        // Primera visita: deja fijada una tienda activa para todos los módulos.
+        if (list.length && !readActiveStoreId()) {
+          const resolved = resolveActiveStore(list);
+          if (resolved) writeActiveStoreId(resolved._id);
+        }
+      } catch {
+        // sin tiendas el selector no se muestra
+      }
+    })();
     return () => {
       cancelled = true;
     };
@@ -132,6 +161,33 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
           borderRight: "1px solid rgba(255,255,255,0.06)",
         }}
       >
+        {stores.length > 0 && (
+        <div className="px-3 pb-3">
+          <span className="block text-[10px] uppercase tracking-wide text-white/25 mb-1">
+            Tienda activa
+          </span>
+          <select
+            value={activeStoreId ?? stores[0]?._id ?? ""}
+            onChange={(e) => writeActiveStoreId(e.target.value)}
+            className="w-full h-9 px-2 rounded-lg text-xs bg-white/5 border border-white/10 text-white/80 focus:outline-none focus:ring-2 focus:ring-[#fe2c55]/40"
+          >
+            {stores.map((store) => (
+              <option key={store._id} value={store._id} style={{ color: "#0b0f1a" }}>
+                @{store.tiktokUsername}
+              </option>
+            ))}
+          </select>
+          <a
+            href="/app/profile#tiendas"
+            onClick={() => setOpen(false)}
+            className="mt-2 inline-block text-[11px] text-white/40 hover:text-white/70"
+          >
+            Gestionar tiendas
+          </a>
+        </div>
+
+        )}
+
         <nav className="space-y-1 pt-2">
           <a
             href="/app"
