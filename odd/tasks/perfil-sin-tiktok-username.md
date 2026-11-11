@@ -22,14 +22,22 @@
 
 ## Orden de despliegue
 
-0. **Pre-vuelo (con el código de `main`, antes de T1).** En producción: `npx convex run stores:backfillFromProfiles '{"dryRun":true}' --prod`. Si `created > 0`, correrlo sin `dryRun`. Hace falta **antes** de T1 porque en `main` el historial y el ticket funcionan con el `@` del perfil: un perfil con `@` y sin tienda pasaría de 200 a 403 en `GET /lives/history/:username` y en `GET /lives/ticket`. Iniciar live ya estaba bloqueado por el chequeo de `storeId`, así que el riesgo es de lectura, no de escritura.
-1. **T1** (API): la propiedad pasa a `stores`. Se despliega sola; arregla el 403 de las tiendas 2 y 3 y no rompe nada, porque el campo sigue ahí y sigue escribiéndose.
-2. **T2** (WEB): middleware y tienda activa ya no dependen del perfil. **Debe estar desplegada antes que T3/T4**, si no el gate manda a onboarding a todos.
-3. **T3** (API): se deja de escribir el campo y se borra el código muerto. Reversible con un revert.
-4. **T4** (API): `dryRun` del backfill en producción → backfill real → limpieza del campo con `dryRun` → limpieza real. Los datos quedan iguales salvo el campo.
-5. **T5** (API): se quita el campo del schema. **Solo después** de que T4 confirme `pendientes: 0`; si no, el deploy falla por campos extra.
+Hay dos despliegues distintos: **Convex** (`npx convex deploy`, funciones + schema juntos) y **servidor** (Railway para el API, Vercel para la web). El orden importa dentro de cada uno y entre ellos.
 
-Cada paso es desplegable y reversible por separado. T4 es el único que escribe en producción y no tiene vuelta atrás simétrica: lo borrado no se reconstruye (por eso T4 copia primero cualquier `@` sin tienda a `stores`).
+0. **Pre-vuelo, antes de todo.** En producción, con el código ya desplegado: `npx convex run stores:backfillFromProfiles --prod`. La versión que está en producción **no tiene `dryRun`** (llega en el paso 3), pero es idempotente: solo crea las tiendas que falten y devuelve `{profiles, created, skipped}`. Si `created > 0`, el riesgo desapareció: ese era el número de perfiles con `@` y sin tienda. Hace falta antes de T1 porque en `main` el historial y el ticket funcionan con el `@` del perfil, y un perfil con `@` sin tienda pasaría de 200 a 403 en `GET /lives/history/:username` y `GET /lives/ticket`. Iniciar live ya estaba bloqueado por el chequeo de `storeId`: el riesgo es de lectura, no de escritura.
+1. **Servidor API en `feee903`** (T1). Arregla el 403 de las tiendas 2 y 3. Es seguro aunque el campo siga ahí: nadie lo lee.
+2. **WEB en `1d25144`** (T2). **Antes** de cualquier deploy de Convex del paso 3: si el campo desaparece antes, el gate manda a todos a `/onboarding`.
+3. **Convex en `9be0f05`** (T4): `npx convex deploy` desde ese commit. Publica `dryRun` + `clearTiktokUsername` y **deja** `tiktokUsername` en el schema (opcional), así que valida con los documentos que aún lo tienen.
+4. **Servidor API en `3149f23`** (T3): deja de escribir el campo.
+5. **Migrar en producción**, con `dryRun` primero y repitiendo hasta `remaining: 0`:
+   `npx convex run stores:backfillFromProfiles '{"dryRun":true}' --prod` → real si hace falta;
+   `npx convex run userProfiles:clearTiktokUsername '{"dryRun":true}' --prod` → real.
+6. **Convex en `cdfbdf0`** (T5): `npx convex deploy` sin el campo en el schema. Solo con `pending: 0`; si queda un documento con el campo, el deploy falla por campos extra (falla ruidosa, sin pérdida de datos).
+7. **Verificación** (T6): 3 tiendas operando, panel de admin intacto, nadie en `/onboarding`.
+
+Los pasos 3 y 6 son **dos deploys de Convex distintos**, no uno: `convex deploy` publica funciones y schema juntos, así que quitar el campo en el mismo deploy que trae la limpieza haría fallar la validación. Por eso el schema sin el campo va último.
+
+Cada paso es reversible con un revert salvo el 5: lo que borra no se reconstruye (por eso el backfill corre antes que la limpieza).
 
 ## Entrega por cortes
 
@@ -46,7 +54,7 @@ Rutas: `R-API` = `vende-en-one-api` (rama `feat/perfil-sin-tiktok-username`), `R
 - [x] **T1 · S1 · R-API** — commit `feee903` — `ownUsernameOf`/`isOwn` en `src/routes/lives.routes.ts` se reemplazan por `ownUsernames()` + `findStore`; el filtro de `GET /lives`, el guard de `GET /lives/history/:username` y el ticket de streams usan la misma fuente; se borra la lectura de `profile.tiktokUsername` en los 6 sitios. Prueba: `src/routes/lives.ownership.test.ts` (6 casos, perfil con solo el último `@`) — 3 tiendas en `start`/`stop`/`status`/`ticket`/`history`, 403 en el `@` ajeno, lista filtrada, y sin tiendas `history` responde el mensaje de TikTok sin vincular.
 - [x] **T2 · S5,S6 · R-WEB** — commit `1d25144` — `src/middleware.ts` decide por cantidad de tiendas (`GET /stores`) con el mismo criterio de fallo; `pickActiveStore` pierde el `@` del perfil y `resolveActiveStore` también; se borra el fetch del perfil en `AppPageClient`, `inbox-page` y `live-controller` (el `@` inicial del input ahora viene de la tienda activa). Prueba: `inbox-api.test.ts` (guardada gana, guardada inexistente cae en la primera, lista vacía → null) + `astro build` y `tsc` sin errores nuevos. El middleware no tiene test automatizado: su única rama nueva es «lista vacía → onboarding».
 - [x] **T3 · S2,D5 · R-API** — commit `3149f23` — `linkTikTokWithStore` ya no escribe `tiktokUsername` (solo `updatedAt`); se borran `userProfiles:linkTikTok`, `convexClient.linkTikTok` y `LinkTikTokArgs`. Prueba: `src/routes/userProfiles.link.test.ts` — 3 tiendas dejan el perfil sin el campo y con la prueba de 7 días intacta.
-- [x] **T4 · S3,S4 · R-API** — commit `9be0f05` — `dryRun` en `stores:backfillFromProfiles`; `userProfiles:clearTiktokUsername` con `dryRun`, lote y `remaining`. Prueba: `src/routes/convexMigration.test.ts` (5 casos: dryRun sin escribir, backfill idempotente, limpieza idempotente, lote respetado, `stores` intactas).
+- [x] **T4 · S3,S4 · R-API** — commit `9be0f05` — `dryRun` en `stores:backfillFromProfiles`; `userProfiles:clearTiktokUsername` con `dryRun`, lote y `remaining`. Prueba: `src/routes/convexMigration.test.ts` (5 casos: dryRun sin escribir, backfill idempotente, limpieza idempotente, lote respetado, `stores` intactas). Ese archivo se retira en T5 junto con las migraciones.
 - [x] **T5 · S7 · R-API** — commit `cdfbdf0` — `tiktokUsername` fuera de `userProfiles` en `convex/schema.ts`; se retiran las dos migraciones de un solo uso (leían un campo que ya no existe en el schema y no volverán a correr). Prueba: `tsc` y suite sin referencias al campo; el deploy del schema queda para el humano, en el orden de `Orden de despliegue`.
 - [ ] **T6 · cierre · R-API + R-WEB** — commit `—` — `modelo-v2.md` S1 y paso 2 actualizados, `tienda-activa.md` D6/S3 sin el `@` del perfil. Pendiente: verificar en producción que las 3 tiendas operan, que el panel de admin sigue en pie y que nadie quedó en `/onboarding`.
 
@@ -61,3 +69,5 @@ L3. «dale define el plan para remover usando odd si lo necesitas»
 L4. «dale y hazlo todo». Decisiones de la implementación: (a) T1 tocó 6 sitios, no 5 — el ticket de streams (`GET /lives/ticket`) también leía el perfil y sin él las tiendas 2 y 3 no podían abrir el SSE; (b) las dos migraciones de T4 se retiran en T5 porque leen un campo que ya no existe en el schema y no volverán a correr — el histórico queda en git; (c) el middleware no tiene test automatizado: se verificó con `astro build` y `tsc`, y su única rama nueva es «lista de tiendas vacía → `/onboarding`».
 
 L5. Verificación de los cambios (segunda pasada sobre ambos diffs). Se corrigieron dos defectos propios: (a) el comentario de `linkTikTokWithStore` se había perdido al borrar la mutación legacy — restaurado y actualizado; (b) en `live-controller`, el `setInput` que agregué al resolver la tienda era redundante porque el efecto de `storeUsername` ya sincroniza el campo — eliminado. Se agregó el paso 0 al despliegue: sin el backfill previo, un perfil con `@` y sin tienda pierde historial y ticket con T1 (antes los tenía porque se leían del perfil).
+
+L6. «cual dryrun?» — la versión desplegada de `backfillFromProfiles` no acepta `dryRun`; el pre-vuelo se hace corriéndola sin argumentos (es idempotente) y leyendo `created`. Además, el schema sin el campo no puede viajar en el mismo `convex deploy` que trae la limpieza: son dos deploys (pasos 3 y 6).
