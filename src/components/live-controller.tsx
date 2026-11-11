@@ -263,8 +263,6 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
         if (!cancelled && match) {
           setStoreId(match._id);
           setStoreUsername(match.tiktokUsername);
-          // El campo arranca con la tienda activa, salvo que ya esté escrito.
-          setInput((current) => current || `https://www.tiktok.com/@${match.tiktokUsername}`);
         }
       } catch {
         // sin tienda, el arranque del live responderá con un error claro

@@ -22,6 +22,7 @@
 
 ## Orden de despliegue
 
+0. **Pre-vuelo (con el código de `main`, antes de T1).** En producción: `npx convex run stores:backfillFromProfiles '{"dryRun":true}' --prod`. Si `created > 0`, correrlo sin `dryRun`. Hace falta **antes** de T1 porque en `main` el historial y el ticket funcionan con el `@` del perfil: un perfil con `@` y sin tienda pasaría de 200 a 403 en `GET /lives/history/:username` y en `GET /lives/ticket`. Iniciar live ya estaba bloqueado por el chequeo de `storeId`, así que el riesgo es de lectura, no de escritura.
 1. **T1** (API): la propiedad pasa a `stores`. Se despliega sola; arregla el 403 de las tiendas 2 y 3 y no rompe nada, porque el campo sigue ahí y sigue escribiéndose.
 2. **T2** (WEB): middleware y tienda activa ya no dependen del perfil. **Debe estar desplegada antes que T3/T4**, si no el gate manda a onboarding a todos.
 3. **T3** (API): se deja de escribir el campo y se borra el código muerto. Reversible con un revert.
@@ -58,3 +59,5 @@ L2. «entonces también se tendría que eliminar el campo tiktokUsername?»
 L3. «dale define el plan para remover usando odd si lo necesitas»
 
 L4. «dale y hazlo todo». Decisiones de la implementación: (a) T1 tocó 6 sitios, no 5 — el ticket de streams (`GET /lives/ticket`) también leía el perfil y sin él las tiendas 2 y 3 no podían abrir el SSE; (b) las dos migraciones de T4 se retiran en T5 porque leen un campo que ya no existe en el schema y no volverán a correr — el histórico queda en git; (c) el middleware no tiene test automatizado: se verificó con `astro build` y `tsc`, y su única rama nueva es «lista de tiendas vacía → `/onboarding`».
+
+L5. Verificación de los cambios (segunda pasada sobre ambos diffs). Se corrigieron dos defectos propios: (a) el comentario de `linkTikTokWithStore` se había perdido al borrar la mutación legacy — restaurado y actualizado; (b) en `live-controller`, el `setInput` que agregué al resolver la tienda era redundante porque el efecto de `storeUsername` ya sincroniza el campo — eliminado. Se agregó el paso 0 al despliegue: sin el backfill previo, un perfil con `@` y sin tienda pierde historial y ticket con T1 (antes los tenía porque se leían del perfil).
