@@ -49,4 +49,6 @@ L3. Decisiones del humano: diseño con los componentes del sitio (no copiar el H
 
 L5. Verificación del 2026-11-10: la página quedó publicada, pero el endpoint del Sheet está caído. No se puede validar el guardado hasta redeployar el Apps Script o cambiar de almacenamiento.
 
+L6. El humano encarga el redeploy del Apps Script a su socio (fue quien creó el Sheet). Se queda con `no-cors` y la URL actual hasta que vuelva; cuando devuelvan la URL `/exec`, se actualiza `WAITLIST_ENDPOINT`, se redeploya y se valida con un POST real. La página no se enlaza desde el navbar ni el footer, así que no hay tráfico que pueda perder registros mientras tanto.
+
 L4. El mapeo de la web confirmó dos cosas que cambiaron la implementación: (a) los archivos `.astro` no pueden consumir el i18n del sitio porque es un contexto React, así que la copia y el formulario viven en una isla (`waitlist-page.tsx`) y la página solo compone layout; (b) `es` es la fuente de tipos (`TranslationKey = keyof typeof es`) y `en` está tipado contra ella, así que las 20 claves se agregaron a los dos idiomas o el `tsc` falla. De paso quedó a la vista un defecto preexistente del sitio: el `LanguageSwitcher` no propaga el idioma entre islas. No se toca acá.
