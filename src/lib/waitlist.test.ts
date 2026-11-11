@@ -6,6 +6,7 @@ import {
   FREQUENCIES,
   buildPayload,
   normalizeTiktok,
+  submitWaitlist,
   validateWaitlist,
   type WaitlistInput,
 } from "./waitlist.ts";
@@ -68,4 +69,47 @@ test("normalizeTiktok no duplica la arroba", () => {
   assert.equal(normalizeTiktok("@nick"), "@nick");
   assert.equal(normalizeTiktok("nick"), "@nick");
   assert.equal(normalizeTiktok(" @@nick "), "@nick");
+});
+
+/** S3 de `odd/tasks/waitlist.md`: el envío habla con nuestro API y el fallo se ve. */
+
+function fakeFetch(status: number, ok = status >= 200 && status < 300) {
+  const calls: Array<{ url: string; body: unknown }> = [];
+  const doFetch = (async (url: string, init: RequestInit) => {
+    calls.push({ url, body: JSON.parse(String(init.body)) });
+    return { ok, status } as Response;
+  }) as unknown as typeof fetch;
+  return { doFetch, calls };
+}
+
+test("un 201 resuelve y manda el payload tal cual", async () => {
+  const { doFetch, calls } = fakeFetch(201);
+
+  await submitWaitlist(buildPayload(ok), doFetch);
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "/api/waitlist");
+  assert.deepEqual(calls[0].body, {
+    email: "tienda@correo.com",
+    store: "Esther Joyería",
+    tiktok: "@estherjoyeria",
+    category: "Joyería y accesorios",
+    frequency: "3 a 5",
+    website: "",
+  });
+});
+
+test("400 y 429 lanzan, para que la pantalla muestre el error y no un éxito falso", async () => {
+  for (const status of [400, 429, 500]) {
+    const { doFetch } = fakeFetch(status);
+    await assert.rejects(() => submitWaitlist(buildPayload(ok), doFetch), new RegExp(String(status)));
+  }
+});
+
+test("un fallo de red también lanza", async () => {
+  const doFetch = (async () => {
+    throw new TypeError("Failed to fetch");
+  }) as unknown as typeof fetch;
+
+  await assert.rejects(() => submitWaitlist(buildPayload(ok), doFetch));
 });

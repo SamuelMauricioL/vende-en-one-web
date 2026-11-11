@@ -8,6 +8,16 @@ import { Toaster } from "@/components/ui/sonner";
 import { authHeaders } from "@/lib/api-auth";
 import { formatDay, formatSoles } from "@/lib/billing";
 
+interface WaitlistEntry {
+  _id: string;
+  email: string;
+  store: string;
+  tiktok: string;
+  category: string;
+  frequency: string;
+  createdAt: number;
+}
+
 interface PendingPayment {
   _id: string;
   clerkUserId: string;
@@ -24,6 +34,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
 
   const load = useCallback(async () => {
     try {
@@ -42,6 +53,13 @@ export default function AdminPage() {
       }
       const data = (await res.json()) as PendingPayment[] | { payments?: PendingPayment[] };
       setPayments(Array.isArray(data) ? data : (data.payments ?? []));
+
+      // S13: la waitlist vive en el mismo panel, debajo de los pagos.
+      const wlRes = await fetch("/api/admin/waitlist", { headers: await authHeaders(getToken) });
+      if (wlRes.ok) {
+        const wl = (await wlRes.json()) as { entries?: WaitlistEntry[] };
+        setWaitlist(wl.entries ?? []);
+      }
     } catch {
       toast.error("Error de red al cargar los pagos");
     } finally {
@@ -160,6 +178,35 @@ export default function AdminPage() {
               </li>
             ))}
           </ul>
+        )}
+        {!denied && waitlist.length > 0 && (
+          <section className="pt-4">
+            <h2 className="text-xl font-extrabold text-white/90 tracking-tight">
+              Waitlist <span className="text-white/30 text-sm font-bold">{waitlist.length}</span>
+            </h2>
+            <p className="text-sm text-white/40 mt-1">Registros de /waitlist, el más nuevo primero.</p>
+            <ul className="mt-4 space-y-3">
+              {waitlist.map((entry) => (
+                <li
+                  key={entry._id}
+                  className="rounded-3xl p-5"
+                  style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-white/90 break-all">{entry.email}</p>
+                      <p className="mt-1 text-sm text-white/60">{entry.store}</p>
+                      <p className="mt-1 text-sm font-mono text-[#25f4ee] break-all">{entry.tiktok}</p>
+                      <p className="mt-1 text-[11px] text-white/35">
+                        {entry.category} · {entry.frequency}
+                      </p>
+                    </div>
+                    <p className="text-[11px] text-white/25 shrink-0">{formatDay(entry.createdAt) || "—"}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
       </main>
 

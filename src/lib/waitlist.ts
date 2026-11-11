@@ -4,8 +4,8 @@
  * escribe en su Google Sheet: este repo no guarda los registros.
  */
 
-export const WAITLIST_ENDPOINT =
-  "https://script.google.com/macros/s/AKfycbyZX6ws3xqGAxhLZWXLXCdqkp8dyi4rm5-LU-KiKkvh06YlNJaTwllTvhmkiKuN4MIH/exec";
+/** Nuestro API (Vercel reescribe `/api/*` a Railway). Antes era un Apps Script. */
+export const WAITLIST_ENDPOINT = "/api/waitlist";
 
 export const CATEGORIES = [
   "Ropa y calzado",
@@ -74,17 +74,18 @@ export function validateWaitlist(input: WaitlistInput): "invalid" | null {
 }
 
 /**
- * S3: `no-cors` porque el Apps Script no responde cabeceras CORS; la respuesta es
- * opaca, así que el éxito se asume al no haber error de red.
+ * S3: JSON normal contra nuestro API, sin `no-cors`, para que un 400 o un 429 se
+ * vean como error en pantalla en vez de un éxito falso (eso pasaba con el Apps
+ * Script, que no permitía leer la respuesta).
  */
 export async function submitWaitlist(
   payload: WaitlistPayload,
-  endpoint: string = WAITLIST_ENDPOINT,
+  doFetch: typeof fetch = fetch,
 ): Promise<void> {
-  await fetch(endpoint, {
+  const response = await doFetch(WAITLIST_ENDPOINT, {
     method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+  if (!response.ok) throw new Error(`waitlist ${response.status}`);
 }
