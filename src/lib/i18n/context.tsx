@@ -1,13 +1,8 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { es, en, type Locale, type TranslationKey } from "./translations";
+import { getLocale, readStoredLocale, setLocale, subscribe } from "./locale-store";
 
 type I18nContext = {
   locale: Locale;
@@ -16,39 +11,41 @@ type I18nContext = {
   toggleLocale: () => void;
 };
 
-const ctx = createContext<I18nContext | null>(null);
-
 const messages: Record<Locale, Record<TranslationKey, string>> = { es, en };
 
+/**
+ * S17 de `odd/tasks/kit-live-sin-improvisar.md`: el idioma vive en un store de
+ * módulo, no en `useState`. Astro monta cada isla como un árbol de React
+ * propio, así que un proveedor de contexto nunca alcanza a las islas hermanas
+ * y el botón del navbar quedaba sin efecto. `useSyncExternalStore` sí comparte
+ * el valor entre islas y el snapshot del servidor es `es` para hidratar igual
+ * que el HTML enviado.
+ */
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>("es");
+  return <>{children}</>;
+}
+
+export function useI18n(): I18nContext {
+  const locale = useSyncExternalStore(subscribe, getLocale, () => "es" as Locale);
+
+  // La elección guardada se aplica después de montar: leerla antes rompería la
+  // hidratación cuando el HTML se generó en el servidor con `es`.
+  useEffect(() => {
+    const stored = readStoredLocale();
+    if (stored) setLocale(stored);
+  }, []);
 
   const t = useCallback(
     (key: TranslationKey): string => messages[locale][key] ?? key,
-    [locale]
+    [locale],
   );
 
-  const toggleLocale = useCallback(() => {
-    setLocale((prev) => (prev === "es" ? "en" : "es"));
-  }, []);
+  const change = useCallback((next: Locale) => setLocale(next), []);
 
-  return (
-    <ctx.Provider value={{ locale, setLocale, t, toggleLocale }}>
-      {children}
-    </ctx.Provider>
+  const toggleLocale = useCallback(
+    () => setLocale(getLocale() === "es" ? "en" : "es"),
+    [],
   );
-}
 
-export function useI18n() {
-  const context = useContext(ctx);
-  if (!context) {
-    // SSR fallback — Astro islands render independently, context may not be available
-    return {
-      locale: "es" as Locale,
-      setLocale: () => {},
-      t: (key: TranslationKey): string => (messages.es[key] ?? key),
-      toggleLocale: () => {},
-    };
-  }
-  return context;
+  return { locale, setLocale: change, t, toggleLocale };
 }
