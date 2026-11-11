@@ -12,7 +12,7 @@
 
 ## Specs
 
-- **S1.** La propiedad de un `@` se valida contra `stores`, en las cinco rutas que hoy leen el perfil: `GET /lives` (filtro de la lista), `GET /lives/:username/status`, `POST /lives/start`, `POST /lives/stop` y `GET /lives/history/:username`. Un usuario con 3 tiendas opera las 3 sin 403.
+- **S1.** La propiedad de un `@` se valida contra `stores` en las seis lecturas que antes usaban el perfil: `GET /lives` (filtro de la lista), `GET /lives/:username/status`, `POST /lives/start`, `POST /lives/stop`, `GET /lives/ticket` (`kind=monitor` y `kind=session`) y `GET /lives/history/:username`. Un usuario con 3 tiendas opera las 3 sin 403.
 - **S2.** `linkTikTokWithStore` deja de escribir `userProfiles.tiktokUsername`; sigue creando la tienda y sigue creando el perfil con sus 7 días de prueba cuando no existe. `GET /users/profile/:clerkUserId` no cambia de forma: cuando el campo ya no exista, simplemente no aparece.
 - **S3.** `stores:backfillFromProfiles` acepta `dryRun: true` y devuelve el plan (cuántos perfiles tienen `@`, cuántas tiendas crearía, cuántos saltaría) sin escribir. En modo real es idempotente.
 - **S4.** `userProfiles:clearTiktokUsername` borra el campo documento por documento, con lote y `dryRun`, e informa cuántos limpió y cuántos quedan. Idempotente: se puede correr varias veces.
@@ -30,16 +30,24 @@
 
 Cada paso es desplegable y reversible por separado. T4 es el único que escribe en producción y no tiene vuelta atrás simétrica: lo borrado no se reconstruye (por eso T4 copia primero cualquier `@` sin tienda a `stores`).
 
+## Entrega por cortes
+
+- **Corte 1 — el arreglo (T1 + T2).** `feee903` (API) + `1d25144` (web). Desplegable solo: la propiedad ya es por tienda y la web ya no lee el campo, pero el campo sigue existiendo y se sigue escribiendo. Si algo sale mal, revertir estos dos no deja datos a medias.
+- **Corte 2 — el retiro (T3 + T4 + T5).** `3149f23`, `9be0f05`, `cdfbdf0`. T3 y T4 son independientes de T5 en el código, pero T5 no se despliega hasta que T4 haya corrido en producción.
+- **Corte 3 — documentación (T6).** Cierra la ficha y sincroniza `modelo-v2.md` y `tienda-activa.md`.
+
+El primer corte pasa de las ~400 líneas del work unit: se deja marcado acá para que el PR se abra en dos revisiones (corte 1 y corte 2) y no en una sola.
+
 ## Tasks
 
 Rutas: `R-API` = `vende-en-one-api` (rama `feat/perfil-sin-tiktok-username`), `R-WEB` = `vende-en-one-web` (rama `feat/perfil-sin-tiktok-username`). Sin push: el humano publica.
 
-- [ ] **T1 · S1 · R-API** — commit `—` — `ownUsernameOf`/`isOwn` en `src/routes/lives.routes.ts` pasan a resolver contra `stores` (`findStore` del cliente Convex); el filtro de `GET /lives` y el guard de `GET /lives/history/:username` usan la misma fuente; se borra la lectura de `profile.tiktokUsername` en las 5 rutas. Prueba: con 3 tiendas, `start`, `stop`, `status` y `history` responden 200 en las 3 y 403 en el `@` de otro usuario; sin tiendas, `GET /lives` no filtra y `history` responde 403.
-- [ ] **T2 · S5,S6 · R-WEB** — commit `—` — `src/middleware.ts` decide por cantidad de tiendas (`GET /stores`) con el mismo criterio de fallo (nunca expulsar por error de red o auth); `pickActiveStore` en `src/lib/inbox-api.ts` pierde el parámetro del `@` del perfil y `src/lib/active-store.ts` deja de pedir el perfil. Prueba: usuario sin tiendas → `/onboarding`; usuario con 1 tienda → su tienda activa; `localStorage` con id ajeno → primera tienda; API caída → no redirige.
-- [ ] **T3 · S2,D5 · R-API** — commit `—` — `convex/userProfiles.ts`: `linkTikTokWithStore` ya no escribe `tiktokUsername`; se borran `linkTikTok` y `convexClient.linkTikTok`; se ajustan los tests que los usaban. Prueba: vincular 3 tiendas deja el perfil sin el campo y con sus 7 días de prueba intactos.
-- [ ] **T4 · S3,S4 · R-API** — commit `—` — `convex/stores.ts`: `dryRun` en `backfillFromProfiles`; nuevo `convex/userProfiles.ts:clearTiktokUsername` con `dryRun`, lote y conteo de pendientes. Prueba: `dryRun` no crea ni borra nada; el backfill real crea la tienda de un perfil que solo tenía `@`; la limpieza deja `pendientes: 0` y no toca `stores` ni `liveSessions`.
-- [ ] **T5 · S7 · R-API** — commit `—` — quitar `tiktokUsername` de `userProfiles` en `convex/schema.ts` y del tipo del cliente. Prueba: `npx convex dev` valida el schema sin documentos en conflicto; typecheck y suite pasan.
-- [ ] **T6 · cierre · R-API + R-WEB** — commit `—` — actualizar `modelo-v2.md` (S1 deja de mencionar el dato heredado) y `tienda-activa.md` (S3 sin el escalón del perfil); verificar en producción: 3 tiendas operan, el panel de admin sigue funcionando y nadie quedó en onboarding.
+- [x] **T1 · S1 · R-API** — commit `feee903` — `ownUsernameOf`/`isOwn` en `src/routes/lives.routes.ts` se reemplazan por `ownUsernames()` + `findStore`; el filtro de `GET /lives`, el guard de `GET /lives/history/:username` y el ticket de streams usan la misma fuente; se borra la lectura de `profile.tiktokUsername` en los 6 sitios. Prueba: `src/routes/lives.ownership.test.ts` (6 casos, perfil con solo el último `@`) — 3 tiendas en `start`/`stop`/`status`/`ticket`/`history`, 403 en el `@` ajeno, lista filtrada, y sin tiendas `history` responde el mensaje de TikTok sin vincular.
+- [x] **T2 · S5,S6 · R-WEB** — commit `1d25144` — `src/middleware.ts` decide por cantidad de tiendas (`GET /stores`) con el mismo criterio de fallo; `pickActiveStore` pierde el `@` del perfil y `resolveActiveStore` también; se borra el fetch del perfil en `AppPageClient`, `inbox-page` y `live-controller` (el `@` inicial del input ahora viene de la tienda activa). Prueba: `inbox-api.test.ts` (guardada gana, guardada inexistente cae en la primera, lista vacía → null) + `astro build` y `tsc` sin errores nuevos. El middleware no tiene test automatizado: su única rama nueva es «lista vacía → onboarding».
+- [x] **T3 · S2,D5 · R-API** — commit `3149f23` — `linkTikTokWithStore` ya no escribe `tiktokUsername` (solo `updatedAt`); se borran `userProfiles:linkTikTok`, `convexClient.linkTikTok` y `LinkTikTokArgs`. Prueba: `src/routes/userProfiles.link.test.ts` — 3 tiendas dejan el perfil sin el campo y con la prueba de 7 días intacta.
+- [x] **T4 · S3,S4 · R-API** — commit `9be0f05` — `dryRun` en `stores:backfillFromProfiles`; `userProfiles:clearTiktokUsername` con `dryRun`, lote y `remaining`. Prueba: `src/routes/convexMigration.test.ts` (5 casos: dryRun sin escribir, backfill idempotente, limpieza idempotente, lote respetado, `stores` intactas).
+- [x] **T5 · S7 · R-API** — commit `cdfbdf0` — `tiktokUsername` fuera de `userProfiles` en `convex/schema.ts`; se retiran las dos migraciones de un solo uso (leían un campo que ya no existe en el schema y no volverán a correr). Prueba: `tsc` y suite sin referencias al campo; el deploy del schema queda para el humano, en el orden de `Orden de despliegue`.
+- [ ] **T6 · cierre · R-API + R-WEB** — commit `—` — `modelo-v2.md` S1 y paso 2 actualizados, `tienda-activa.md` D6/S3 sin el `@` del perfil. Pendiente: verificar en producción que las 3 tiendas operan, que el panel de admin sigue en pie y que nadie quedó en `/onboarding`.
 
 ## Log
 
@@ -48,3 +56,5 @@ L1. «por qué si tenemos hasta max 3 tiendas por usuario el parámetro username
 L2. «entonces también se tendría que eliminar el campo tiktokUsername?»
 
 L3. «dale define el plan para remover usando odd si lo necesitas»
+
+L4. «dale y hazlo todo». Decisiones de la implementación: (a) T1 tocó 6 sitios, no 5 — el ticket de streams (`GET /lives/ticket`) también leía el perfil y sin él las tiendas 2 y 3 no podían abrir el SSE; (b) las dos migraciones de T4 se retiran en T5 porque leen un campo que ya no existe en el schema y no volverán a correr — el histórico queda en git; (c) el middleware no tiene test automatizado: se verificó con `astro build` y `tsc`, y su única rama nueva es «lista de tiendas vacía → `/onboarding`».
