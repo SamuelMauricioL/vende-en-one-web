@@ -138,22 +138,16 @@ export default function InboxPageClient() {
 
     void (async () => {
       try {
-        const [storesRes, profileRes] = await Promise.all([
-          api("/api/stores"),
-          api(`/api/users/profile/${userId}`),
-        ]);
+        const storesRes = await api("/api/stores");
         if (!storesRes.ok) {
           if (!cancelled) setLoading(false);
           return;
         }
         const payload = (await storesRes.json()) as { stores: StoreSummary[] };
         const list = payload.stores ?? [];
-        const profile = profileRes.ok
-          ? ((await profileRes.json()) as { profile?: { tiktokUsername?: string } })
-          : null;
-        // La tienda activa del menú manda; el @ del perfil es el respaldo.
+        // La tienda activa del menú manda; sin elección, la primera.
         const saved = activeStoreId ?? readActiveStoreId();
-        const active = pickActiveStore(list, profile?.profile?.tiktokUsername, saved);
+        const active = pickActiveStore(list, saved);
         if (cancelled) return;
         setStores(list);
         setStore(active);

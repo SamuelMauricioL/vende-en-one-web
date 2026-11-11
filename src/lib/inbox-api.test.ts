@@ -168,29 +168,19 @@ const stores = [
   { _id: "s-nueva", tiktokUsername: "cevichero.purito.mar" },
 ];
 
-test("sin elección guardada, la tienda activa es la del @ del perfil", () => {
-  assert.equal(pickActiveStore(stores, "cevichero.purito.mar")?._id, "s-nueva");
-  assert.equal(pickActiveStore(stores, "@cevichero.purito.mar")?._id, "s-nueva");
+test("sin elección guardada, cae en la primera tienda", () => {
+  assert.equal(pickActiveStore(stores)?._id, "s-vieja");
+  assert.equal(pickActiveStore(stores, null)?._id, "s-vieja");
 });
 
-test("la tienda elegida en el menú gana sobre el @ del perfil", () => {
-  // El bug del Live: el perfil apuntaba a la cuenta vieja y siempre ganaba.
-  assert.equal(
-    pickActiveStore(stores, "tienda.vieja", "s-nueva")?._id,
-    "s-nueva",
-    "elegir la nueva debe imponerse al @ del perfil",
-  );
-  assert.equal(pickActiveStore(stores, "cevichero.purito.mar", "s-vieja")?._id, "s-vieja");
+test("la tienda elegida en el menú gana", () => {
+  assert.equal(pickActiveStore(stores, "s-nueva")?._id, "s-nueva");
+  assert.equal(pickActiveStore(stores, "s-vieja")?._id, "s-vieja");
 });
 
-test("sin coincidencia con el perfil, usa la última tienda abierta", () => {
-  assert.equal(pickActiveStore(stores, "otra.cuenta", "s-nueva")?._id, "s-nueva");
-  assert.equal(pickActiveStore(stores, undefined, "s-vieja")?._id, "s-vieja");
-});
-
-test("sin perfil ni guardada, cae en la primera", () => {
-  assert.equal(pickActiveStore(stores, undefined, null)?._id, "s-vieja");
-  assert.equal(pickActiveStore([], "x", "y"), null);
+test("una tienda guardada que ya no existe cae en la primera", () => {
+  assert.equal(pickActiveStore(stores, "s-borrada")?._id, "s-vieja");
+  assert.equal(pickActiveStore([], "s-borrada"), null);
 });
 
 test("cada conversación sabe de qué tienda es", () => {

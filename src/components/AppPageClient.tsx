@@ -18,27 +18,12 @@ export default function AppPageClient() {
   const controllerRef = useRef<LiveControllerHandle>(null);
   const [sessionActive, setSessionActive] = useState(false);
   const { userId, isLoaded, getToken } = useAuth();
-  const [tiktokUsername, setTiktokUsername] = useState("");
 
   // S5: sin filtros cargados no se puede empezar el live.
   const activeStoreId = useActiveStoreId();
   const [filtersState, setFiltersState] = useState<FiltersState>("loading");
   const [filtersError, setFiltersError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
-
-  // Fetch TikTok username from user profile
-  useEffect(() => {
-    if (!isLoaded || !userId) return;
-    authHeaders(getToken)
-      .then((headers) => fetch(`/api/users/profile/${userId}`, { headers }))
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.profile?.tiktokUsername) {
-          setTiktokUsername(data.profile.tiktokUsername);
-        }
-      })
-      .catch(() => {});
-  }, [userId, isLoaded, getToken]);
 
   // Precarga de los filtros de la tienda activa y recarga al cambiarla (S1, S5).
   useEffect(() => {
@@ -55,7 +40,7 @@ export default function AppPageClient() {
         const data = (await res.json()) as {
           stores?: Array<{ _id: string; tiktokUsername: string }>;
         };
-        const store = resolveActiveStore(data.stores ?? [], tiktokUsername);
+        const store = resolveActiveStore(data.stores ?? []);
         if (!store) throw new Error("No encontramos tu tienda activa.");
         const list = await fetchFilters(store._id, getToken);
         if (cancelled) return;
@@ -71,7 +56,7 @@ export default function AppPageClient() {
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, userId, getToken, tiktokUsername, activeStoreId, reloadKey]);
+  }, [isLoaded, userId, getToken, activeStoreId, reloadKey]);
 
   const handleActiveChange = useCallback((active: boolean) => {
     setSessionActive(active);
@@ -107,7 +92,6 @@ export default function AppPageClient() {
             <LiveController
               ref={controllerRef}
               onActiveChange={handleActiveChange}
-              initialTikTokUsername={tiktokUsername}
             />
           ) : (
             <div
