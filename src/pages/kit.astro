@@ -1,0 +1,22 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { AppProviders } from "@/components/AppProviders";
+import Navbar from "@/components/landing/navbar";
+import Footer from "@/components/landing/Footer.astro";
+import { KitPage } from "@/components/kit/kit-page";
+---
+
+<Layout
+  title="Kit Live sin improvisar — Live Leads"
+  description="Checklist antes, durante y después de tu live, y 12 mensajes de seguimiento para escribirle a cada lead de tu TikTok Live. Recurso gratuito de Live Leads."
+>
+  <AppProviders client:load>
+    <div class="min-h-screen flex flex-col">
+      <Navbar client:load />
+      <main class="flex-1">
+        <KitPage client:load />
+      </main>
+      <Footer />
+    </div>
+  </AppProviders>
+</Layout>
