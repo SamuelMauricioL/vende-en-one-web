@@ -60,13 +60,19 @@ Ruta `R-WEB` = `vende-en-one-web` (rama `feat/kit-live-sin-improvisar`) · `R-AP
 - [x] **T2 · S5,S6 · R-WEB** — `src/lib/kit/lead-magnet.ts` (validación, normalización, payload) con tests: correo inválido, `@` de 1 y de 25 caracteres, rubro vacío, honeypot, y los estados de `submit` (201 resuelve, 400/429/red lanzan).
 - [x] **T3 · S7,S8 · R-API** — tabla `leadMagnets` en `convex/schema.ts`, `convex/leadMagnets.ts` con dedupe por correo, y `src/routes/leadMagnets.routes.ts` con zod, honeypot y throttle. Tests: 201, 400, 429, dedupe y honeypot sin escritura.
 - [x] **T4 · S16 · R-API** — `GET /admin/lead-magnets` con guard de admin. Tests: 401 sin token, 403 sin rol, orden más nuevo primero.
-- [ ] **T5 · S10,S11,S12,S13 · R-WEB** — componentes `kit-checklist`, `kit-templates`, `kit-video-carousel`, `kit-faq` con sus tests de lógica pura (progreso, copy, un video a la vez). Prueba: `pnpm test`.
-- [ ] **T6 · S1,S2,S4,S9,S14 · R-WEB** — `kit-compare`, `kit-lead-board`, `kit-page.tsx`, `src/pages/<ruta>.astro` y los dos mp4 en `public/video/`. Prueba: `astro build` y revisión del HTML generado contra el inventario de S2.
-- [ ] **T7 · S15 · R-WEB** — tabs de `admin-page.tsx` y etiqueta de `app-nav.tsx`, con el fetch de `/api/admin/lead-magnets`. Prueba: build y revisión de los dos estados (con y sin datos).
+- [x] **T5 · S10,S11,S12,S13 · R-WEB** — componentes `kit-checklist`, `kit-templates`, `kit-video-carousel`, `kit-faq` con sus tests de lógica pura (progreso, copy, un video a la vez). Prueba: `pnpm test`.
+- [x] **T6 · S1,S2,S4,S9,S14 · R-WEB** — `kit-compare`, `kit-lead-board`, `kit-page.tsx`, `src/pages/<ruta>.astro` y los dos mp4 en `public/video/`. Prueba: `astro build` y revisión del HTML generado contra el inventario de S2.
+- [x] **T7 · S15 · R-WEB** — tabs de `admin-page.tsx` y etiqueta de `app-nav.tsx`, con el fetch de `/api/admin/lead-magnets`. Prueba: build y revisión de los dos estados (con y sin datos).
 - [ ] **T8 · S1,S6,S16 · R-API + R-WEB** — deploy: `npx convex deploy`, Railway y Vercel; verificación en producción de la ruta, un POST real y el 403 del endpoint de admin.
 - [ ] **T9 · cierre · ambos** — registro de los commits por tarea y verificación en navegador de la página publicada.
 
 ## Log
+
+L9. T5, T6 y T7 cerradas y verificadas por el orquestador, no solo por el worker: `pnpm test` 110/110, `pnpm build` completo, y `GET /kit` servido en local devuelve **200 / 149.780 B** con los 13 bloques presentes uno a uno ("Kit Live sin improvisar", "Recibe el kit completo", "Cubriremos", "Preparación", "Evita", "Ofertas posibles", "Mientras transmites", "PARA QUE NO TE PASE ESTO", "3 leads detectados", "Bandeja de rescate", "Seguimiento", "Desbloquea los 12 mensajes", "¿Tiene costo?", "Siguiente paso", el pie con WhatsApp) y la estructura esperada: 4 `<details>`, 4 `role="progressbar"`, 1 `role="tablist"`, 1 `role="img"`, los anclajes `#antes #plantillas #captura` y las dos rutas `/video/kit-*.mp4`. Los mp4 son MP4 reales (1,79 y 2,24 MB), no páginas de error.
+
+L10. Un `@` mal escrito mostraba el mensaje del correo. Se agregó `form.status.invalidTiktok` a la copia nueva (en los dos idiomas) y el formulario ahora elige campo y mensaje según cuál regla falló. El rubro del `<select>` envía el canónico español y muestra la etiqueta traducida: el API valida en español, así que un envío en inglés no puede romper la lista cerrada.
+
+L11. Slices de entrega del lado web (`feat/kit-live-sin-improvisar`, 5 commits, 2.769 líneas): `c6d8caa` la ficha, `3416c80` el selector de idioma, `f7f9841` la copia y las reglas del kit, `6f39182` la página y los componentes, `da8a41d` los tabs del admin. El volumen es copia de contenido (los 13 bloques en dos idiomas); la lógica revisable son ~700 líneas.
 
 L8. Slice de entrega en `vende-en-one-api`: **un commit, `c9b4197`, 601 líneas** (`feat/kit-live-sin-improvisar`), nacido sobre `feat/waitlist` porque ese es el código desplegado hoy en Railway; los 11 commits previos de esa rama no son de esta feature y no se tocan. El commit del lado web se corta al cerrar T5-T7 y lleva su propio mensaje.
 
