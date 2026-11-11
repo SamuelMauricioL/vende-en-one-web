@@ -1,0 +1,22 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { AppProviders } from "@/components/AppProviders";
+import Navbar from "@/components/landing/navbar";
+import Footer from "@/components/landing/Footer.astro";
+import WaitlistPage from "@/components/waitlist-page";
+---
+
+<Layout
+  title="Waitlist — Live Leads"
+  description="Únete a la lista de espera de Live Leads: abrimos el acceso por tandas a vendedores de TikTok Live."
+>
+  <AppProviders client:load>
+    <div class="min-h-screen flex flex-col">
+      <Navbar client:load />
+      <main class="flex-1">
+        <WaitlistPage client:load />
+      </main>
+      <Footer />
+    </div>
+  </AppProviders>
+</Layout>

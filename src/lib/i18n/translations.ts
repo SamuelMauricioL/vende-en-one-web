@@ -84,6 +84,30 @@ export const es = {
   "cta.stat.precision": "Precisión IA",
   "cta.stat.setup": "En configurar",
 
+  // Waitlist
+  "waitlist.eyebrow": "Waitlist",
+  "waitlist.title": "Entra en la próxima tanda",
+  "waitlist.subtitle":
+    "Abrimos el acceso de a pocos vendedores para ajustar el producto con su feedback. Cuéntanos cómo vendes.",
+  "waitlist.email": "Correo",
+  "waitlist.email.placeholder": "tu@correo.com",
+  "waitlist.store": "Nombre de tu tienda",
+  "waitlist.store.placeholder": "Ej: Esther Joyería",
+  "waitlist.tiktok": "Usuario de TikTok",
+  "waitlist.tiktok.placeholder": "@tunickname",
+  "waitlist.category": "Categoría",
+  "waitlist.frequency": "Lives por semana",
+  "waitlist.choose": "Elige una",
+  "waitlist.submit": "Unirme a la waitlist",
+  "waitlist.sending": "Enviando…",
+  "waitlist.invalid":
+    "Revisa el correo y tu usuario de TikTok (ej: @tunickname), y completa todos los campos.",
+  "waitlist.failed":
+    "No pudimos guardar tu registro. Inténtalo de nuevo o escríbenos por WhatsApp.",
+  "waitlist.ok.title": "Listo.",
+  "waitlist.ok.body": "Te escribiremos al correo cuando abramos tu tanda.",
+  "waitlist.disclaimer": "Usamos estos datos solo para organizar el acceso. No los compartimos.",
+
   // Footer
   "footer.tagline": "Hecho para creadores que venden en vivo — Live Leads",
 } as const;
@@ -169,6 +193,29 @@ export const en: Record<TranslationKey, string> = {
   "cta.stat.creators": "Active sellers",
   "cta.stat.precision": "AI Precision",
   "cta.stat.setup": "To set up",
+
+  // Waitlist
+  "waitlist.eyebrow": "Waitlist",
+  "waitlist.title": "Join the next batch",
+  "waitlist.subtitle":
+    "We open access to a few sellers at a time so we can shape the product with their feedback. Tell us how you sell.",
+  "waitlist.email": "Email",
+  "waitlist.email.placeholder": "you@email.com",
+  "waitlist.store": "Your store name",
+  "waitlist.store.placeholder": "E.g. Esther Jewelry",
+  "waitlist.tiktok": "TikTok username",
+  "waitlist.tiktok.placeholder": "@yournickname",
+  "waitlist.category": "Category",
+  "waitlist.frequency": "Lives per week",
+  "waitlist.choose": "Pick one",
+  "waitlist.submit": "Join the waitlist",
+  "waitlist.sending": "Sending…",
+  "waitlist.invalid":
+    "Check your email and your TikTok username (e.g. @yournickname), and fill in every field.",
+  "waitlist.failed": "We could not save your entry. Try again or message us on WhatsApp.",
+  "waitlist.ok.title": "Done.",
+  "waitlist.ok.body": "We will email you when your batch opens.",
+  "waitlist.disclaimer": "We use this data only to organize access. We do not share it.",
 
   // Footer
   "footer.tagline": "Made for creators who sell live — Live Leads",
