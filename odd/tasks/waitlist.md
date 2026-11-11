@@ -32,7 +32,12 @@ Ruta `R-WEB` = `vende-en-one-web` (rama `feat/waitlist`).
 - [x] **T1 · S2,S8 · R-WEB** — 8 tests en `src/lib/waitlist.test.ts` (email, tienda, `@` de 1 carácter y 25, listas cerradas, honeypot, normalización); uno se vio en rojo por `@@nick` y se corrigió el normalizador a `/^@+/`. Prueba: 8/8 y suite completa 80/80. — `src/lib/waitlist.ts` con las listas cerradas, `validateWaitlist()` (devuelve el mensaje de error o `null`), `normalizeTiktok()` y `buildPayload()`; `src/lib/waitlist.test.ts` con los casos de S2 y S4. Prueba: email inválido, tienda vacía, `@` de 1 carácter, categoría o frecuencia vacías → mensaje; campos completos → `null` y `tiktok` con `@` delante; el honeypot viaja en el payload.
 - [x] **T2 · S2,S3,S4,S5 · R-WEB** — `src/components/waitlist-page.tsx` (`"use client"`): hero + tarjeta con los cinco campos, honeypot off-screen, botón de ancho completo con gradiente de marca y tres estados (enviando, inválido, fallo de red) más el estado de éxito. Prueba: `tsc` sin errores nuevos y `astro build` completo. — `src/components/waitlist-form.tsx` (`"use client"`): campos, validación con T1, estados enviando/error/ok y el `POST` no-cors. Prueba: `tsc`, `astro build` y revisión del HTML generado; el envío real se valida en la URL.
 - [x] **T3 · S1,S5,S6 · R-WEB** — `src/pages/waitlist.astro` con `Layout` (title/description), `AppProviders`, `Navbar`, `WaitlistPage` y `Footer`; 20 claves `waitlist.*` nuevas en `es` y `en`. Prueba: build OK; la ruta se verifica con la URL publicada. — `src/pages/waitlist.astro` con `Layout` + `Navbar` + bloque de título/bajada + `WaitlistForm` + `Footer`; claves nuevas en `src/lib/i18n/translations.ts` (es/en) para toda la copia. Prueba: build, y la página responde 200 sin sesión.
-- [ ] **T4 · cierre · R-WEB** — `vercel --prod`, verificar `https://www.tiktoklive.me/waitlist` (200, sin redirect a `/sign-in` ni a `/app`) y avisar al humano para que envíe un registro de prueba y lo vea llegar al Google Sheet.
+- [x] **T4 · R-WEB** — `vercel --prod` → `https://www.tiktoklive.me/waitlist` responde **200** sin redirect y sin sesión; el HTML servido trae la copia y el chunk `_astro/waitlist-page.*.js` contiene el endpoint y `no-cors`.
+- [ ] **T5 · S3 (bloqueante) · externo** — `vercel --prod`, verificar `https://www.tiktoklive.me/waitlist` (200, sin redirect a `/sign-in` ni a `/app`) y avisar al humano para que envíe un registro de prueba y lo vea llegar al Google Sheet.
+
+## Bloqueo abierto (T5)
+
+El Apps Script del demo **no está sirviendo el script**: cualquier request a su `/exec` (GET o POST, con o sin User-Agent de navegador y con `Origin`) responde un 302 hacia una página HTML de Google en vez del JSON de `dePost`. Consecuencias: (a) el formulario, al usar `no-cors`, no puede leer la respuesta y muestra «Listo.» aunque no se guarde nada; (b) el Sheet no recibe registros. La causa típica es que la implementación se borró o cambió a «solo con cuenta de Google»; la guía del demo pide «Ejecutar como: Yo / Quién tiene acceso: Cualquier persona».
 
 ## Log
 
@@ -41,5 +46,7 @@ L1. «revisa el repo de https://github.com/devCreceDigital/liveleads-demo/tree/m
 L2. «usa un subagente para que explore toda la web y luego organiza todo lo que se tiene que copiar usando odd, de por si ya te voy diciendo que te apruebo todo, me avisas cuando tenga que probar la url para valida»
 
 L3. Decisiones del humano: diseño con los componentes del sitio (no copiar el HTML del demo) y los registros siguen cayendo en el Google Sheet actual.
+
+L5. Verificación del 2026-11-10: la página quedó publicada, pero el endpoint del Sheet está caído. No se puede validar el guardado hasta redeployar el Apps Script o cambiar de almacenamiento.
 
 L4. El mapeo de la web confirmó dos cosas que cambiaron la implementación: (a) los archivos `.astro` no pueden consumir el i18n del sitio porque es un contexto React, así que la copia y el formulario viven en una isla (`waitlist-page.tsx`) y la página solo compone layout; (b) `es` es la fuente de tipos (`TranslationKey = keyof typeof es`) y `en` está tipado contra ella, así que las 20 claves se agregaron a los dos idiomas o el `tsc` falla. De paso quedó a la vista un defecto preexistente del sitio: el `LanguageSwitcher` no propaga el idioma entre islas. No se toca acá.
