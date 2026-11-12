@@ -66,7 +66,9 @@ L5. Verificado en local: `pnpm test` **124/124** (14 nuevos) y `pnpm build` comp
 
 L6. Desplegado y verificado el 2026-11-12 (`vercel --prod`, alias `www.tiktoklive.me`): `GET /waitlist` **200** con los 8 bloques y las 19 cadenas de control presentes una por una; `POST /api/waitlist` real **201 `{created: true}`** y la fila llegó a Convex con `source: waitlist-web` y `@prueba_landing`; correo inválido **400**; `/kit` **200** sin regresión. La captura no se interrumpió en ningún momento: la ruta nunca devolvió el formulario vacío ni un 5xx.
 
-L7. Filas de prueba a borrar del dashboard: `prueba-landing@tiktoklive.me` (waitlist), y de la ficha anterior `prueba-kit@tiktoklive.me` y `prueba-kit-2@tiktoklive.me` (lead magnets).
+L9. Desplegado el 2026-11-12 (`vercel --prod`): `GET /waitlist` **200** con **un** `<header>`, **un** `<footer>` y **un** `<main>`; el header sirve la marca, el selector ES/EN y el CTA «Unirme a la waitlist»; el pie conserva «Contacto», «Volver arriba», «Privacidad» y «Términos»; `POST /api/waitlist` real **201 `{created: true}`**; `/kit` **200** sin regresión.
+
+L7. Filas de prueba a borrar del dashboard: `prueba-landing@tiktoklive.me` (waitlist), y de la ficha anterior `prueba-kit@tiktoklive.me` y `prueba-kit-2@tiktoklive.me` (lead magnets), y `prueba-header@tiktoklive.me` de la verificación del header.
 
 L1. «genial! ahora otra cosa, teníamos una página de /waitlist que tiene un formulario, ese formulario es solo una parte de la página, la página completa debe estar en la ruta de liveleads-demo/landing/ del repo de https://github.com/devCreceDigital/liveleads-demo/ vamos a hacer lo mismo que hicimos para el /kit, necesitamos copiar todo el contenido de la página pero con las reglas de diseño que tenemos en tiktoklive.me, de todas formas si esa página tiene algún componente que necesitemos recrear porque es necesario para mantenernos fiel al diseño que tiene ese repo que te pasé entonces lo hacemos, usa odd define bien el trabajo, puedes usar los sub-agentes que necesites y me avisas cuando termines»
 
