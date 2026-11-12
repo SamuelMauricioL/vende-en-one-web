@@ -7,9 +7,12 @@ import {
   type ContactRow,
 } from "@/lib/waitlist-landing/contact";
 import type { WaitlistLandingContent } from "@/lib/waitlist-landing/content";
-import { card, ghostButton, ghostStyle, monoLabel, sectionClass } from "./landing-ui";
+import { card, ghostStyle, monoLabel, sectionClass } from "./landing-ui";
 
 type Copy = WaitlistLandingContent["contact"];
+
+const compactGhost =
+  "inline-flex items-center justify-center h-9 rounded-xl px-3.5 text-[13px] font-bold text-white/70 transition-colors hover:text-white outline-none focus-visible:ring-2 focus-visible:ring-[#fe2c55]/50";
 
 const rowClass =
   "flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-[15px]";
@@ -69,7 +72,7 @@ export function WaitlistContact({ copy }: { copy: Copy }) {
                   <button
                     type="button"
                     onClick={() => void copyValue(row)}
-                    className={`${ghostButton} h-9 px-3.5 text-[13px]`}
+                    className={compactGhost}
                     style={ghostStyle}
                   >
                     {labels[row.label] ?? copy.copy}
@@ -79,7 +82,7 @@ export function WaitlistContact({ copy }: { copy: Copy }) {
                     href={row.href}
                     target="_blank"
                     rel="noopener"
-                    className={`${ghostButton} h-9 px-3.5 text-[13px]`}
+                    className={compactGhost}
                     style={ghostStyle}
                   >
                     {copy.chat}
