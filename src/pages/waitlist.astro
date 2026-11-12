@@ -3,18 +3,18 @@ import Layout from "@/layouts/Layout.astro";
 import { AppProviders } from "@/components/AppProviders";
 import Navbar from "@/components/landing/navbar";
 import Footer from "@/components/landing/Footer.astro";
-import WaitlistPage from "@/components/waitlist-page";
+import { WaitlistLandingPage } from "@/components/waitlist-landing/waitlist-landing-page";
 ---
 
 <Layout
-  title="Waitlist — Live Leads"
-  description="Únete a la lista de espera de Live Leads: abrimos el acceso por tandas a vendedores de TikTok Live."
+  title="No pierdas oportunidades de venta en tus lives de TikTok — Live Leads"
+  description="Mientras presentas, Live Leads lee el chat de tu TikTok Live y separa a quien solo mira de quien pregunta el precio o quiere comprar. Únete a la waitlist y entra en la próxima tanda."
 >
   <AppProviders client:load>
     <div class="min-h-screen flex flex-col">
       <Navbar client:load />
-      <main class="flex-1">
-        <WaitlistPage client:load />
+      <main id="top" class="flex-1">
+        <WaitlistLandingPage client:load />
       </main>
       <Footer />
     </div>
