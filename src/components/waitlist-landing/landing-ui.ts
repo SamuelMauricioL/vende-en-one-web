@@ -30,4 +30,4 @@ export const accentText = {
   color: "transparent",
 };
 
-export const sectionClass = "py-16 sm:py-24 scroll-mt-24";
+export const sectionClass = "py-16 sm:py-24 scroll-mt-28";
