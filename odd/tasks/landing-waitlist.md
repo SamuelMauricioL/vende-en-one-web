@@ -46,16 +46,24 @@ La `/waitlist` de tiktoklive.me publica hoy solo el formulario de captura. La p�
 
 Ruta `R-WEB` = `vende-en-one-web` (rama `feat/landing-waitlist`).
 
-- [ ] **T1 · S2,S3 · R-WEB** — `src/lib/waitlist-landing/content.ts` con los 8 bloques en `es` y `en`, `demo-copy.ts` generado desde `landing/index.html`, y `content.test.ts` con la comparación verbatim y los conteos por bloque.
-- [ ] **T2 · S6,S15 · R-WEB** — extraer el formulario de `waitlist-page.tsx` a `src/components/waitlist-form.tsx` reusando `src/lib/waitlist.ts`; el formulario queda como sección, no como página. Prueba: la suite existente de `waitlist.test.ts` sigue verde y el formulario conserva sus cinco campos y sus cuatro estados.
-- [ ] **T3 · S9,S15 · R-WEB** — extraer `src/components/faq-list.tsx` (`{ items }`) y hacer que `/kit` lo use; `waitlist-landing/faq` lo reusa con las 6 preguntas.
-- [ ] **T4 · S5,S15 · R-WEB** — `src/lib/waitlist-landing/carousel.ts` (índice, `go`, `next`, `prev`, `wrap`, autoplay y pausa como funciones puras) con tests, y `src/components/waitlist-slider.tsx` con la ventana de producto, flechas, puntos, pie con `aria-live` y swipe.
-- [ ] **T5 · S4,S7,S8 · R-WEB** — componentes que el sitio no tiene: `waitlist-steps.tsx` (3 pasos con etiqueta), `waitlist-perms.tsx` (4 filas sí/no), `waitlist-contact.tsx` (3 filas con copiar y `wa.me`), y `src/lib/waitlist-landing/contact.ts` con la lógica de copiado y sus tests.
-- [ ] **T6 · S1,S10,S11,S12,S14 · R-WEB** — `waitlist-landing-page.tsx` componiendo los 8 bloques en orden, la tira de anclas, las 4 imágenes en `public/landing/` y `src/pages/waitlist.astro` con el `Layout` nuevo. Prueba: `pnpm build` y revisión del HTML generado contra el inventario de S2.
-- [ ] **T7 · S13 · R-WEB** — retirar `waitlist-page.tsx` y las 20 claves `waitlist.*` de `translations.ts` en los dos idiomas. Prueba: `tsc --noEmit` sin errores nuevos y `grep` sin referencias colgadas.
-- [ ] **T8 · S16 · R-WEB** — `vercel --prod`, verificación de `/waitlist` 200 y un `POST /api/waitlist` real con 201, y la fila visible en el tab Leads.
+- [x] **T1 · S2,S3 · R-WEB** — `src/lib/waitlist-landing/content.ts` con los 8 bloques en `es` y `en`, `demo-copy.ts` generado desde `landing/index.html`, y `content.test.ts` con la comparación verbatim y los conteos por bloque.
+- [x] **T2 · S6,S15 · R-WEB** — extraer el formulario de `waitlist-page.tsx` a `src/components/waitlist-form.tsx` reusando `src/lib/waitlist.ts`; el formulario queda como sección, no como página. Prueba: la suite existente de `waitlist.test.ts` sigue verde y el formulario conserva sus cinco campos y sus cuatro estados.
+- [x] **T3 · S9,S15 · R-WEB** — extraer `src/components/faq-list.tsx` (`{ items }`) y hacer que `/kit` lo use; `waitlist-landing/faq` lo reusa con las 6 preguntas.
+- [x] **T4 · S5,S15 · R-WEB** — `src/lib/waitlist-landing/carousel.ts` (índice, `go`, `next`, `prev`, `wrap`, autoplay y pausa como funciones puras) con tests, y `src/components/waitlist-slider.tsx` con la ventana de producto, flechas, puntos, pie con `aria-live` y swipe.
+- [x] **T5 · S4,S7,S8 · R-WEB** — componentes que el sitio no tiene: `waitlist-steps.tsx` (3 pasos con etiqueta), `waitlist-perms.tsx` (4 filas sí/no), `waitlist-contact.tsx` (3 filas con copiar y `wa.me`), y `src/lib/waitlist-landing/contact.ts` con la lógica de copiado y sus tests.
+- [x] **T6 · S1,S10,S11,S12,S14 · R-WEB** — `waitlist-landing-page.tsx` componiendo los 8 bloques en orden, la tira de anclas, las 4 imágenes en `public/landing/` y `src/pages/waitlist.astro` con el `Layout` nuevo. Prueba: `pnpm build` y revisión del HTML generado contra el inventario de S2.
+- [x] **T7 · S13 · R-WEB** — retirar `waitlist-page.tsx` y las 20 claves `waitlist.*` de `translations.ts` en los dos idiomas. Prueba: `tsc --noEmit` sin errores nuevos y `grep` sin referencias colgadas.
+- [x] **T8 · S16 · R-WEB** — `vercel --prod`, verificación de `/waitlist` 200 y un `POST /api/waitlist` real con 201, y la fila visible en el tab Leads.
 
 ## Log
+
+L4. Slices en `feat/landing-waitlist` (4 commits, 4.9 KB de copia y ~1.500 líneas nuevas incluyendo el módulo de contenido en dos idiomas): `d113907` el acordeón único y el formulario como sección, `6c903e1` la copia de los 8 bloques y la lógica del carrusel y el contacto, `b3e9a4b` la página con los cuatro patrones recreados y las 4 imágenes, `e98e12a` el retiro de la página vieja, `kit-faq.tsx` y las 19 claves `waitlist.*`. Cada slice compila por separado.
+
+L5. Verificado en local: `pnpm test` **124/124** (14 nuevos) y `pnpm build` completo; `GET /waitlist` 200 con los 8 bloques, 6 `<details>`, 4 anclas (`#waitlist #como #faq #contacto`), `aria-roledescription="carrusel"` y las 4 rutas `/landing/*`; `/kit` sigue en 200 usando el acordeón extraído. `tsc --noEmit` solo muestra los 2 errores preexistentes de `auth-button.tsx` y `lazy-sign-in.tsx`.
+
+L6. Desplegado y verificado el 2026-11-12 (`vercel --prod`, alias `www.tiktoklive.me`): `GET /waitlist` **200** con los 8 bloques y las 19 cadenas de control presentes una por una; `POST /api/waitlist` real **201 `{created: true}`** y la fila llegó a Convex con `source: waitlist-web` y `@prueba_landing`; correo inválido **400**; `/kit` **200** sin regresión. La captura no se interrumpió en ningún momento: la ruta nunca devolvió el formulario vacío ni un 5xx.
+
+L7. Filas de prueba a borrar del dashboard: `prueba-landing@tiktoklive.me` (waitlist), y de la ficha anterior `prueba-kit@tiktoklive.me` y `prueba-kit-2@tiktoklive.me` (lead magnets).
 
 L1. «genial! ahora otra cosa, teníamos una página de /waitlist que tiene un formulario, ese formulario es solo una parte de la página, la página completa debe estar en la ruta de liveleads-demo/landing/ del repo de https://github.com/devCreceDigital/liveleads-demo/ vamos a hacer lo mismo que hicimos para el /kit, necesitamos copiar todo el contenido de la página pero con las reglas de diseño que tenemos en tiktoklive.me, de todas formas si esa página tiene algún componente que necesitemos recrear porque es necesario para mantenernos fiel al diseño que tiene ese repo que te pasé entonces lo hacemos, usa odd define bien el trabajo, puedes usar los sub-agentes que necesites y me avisas cuando termines»
 
