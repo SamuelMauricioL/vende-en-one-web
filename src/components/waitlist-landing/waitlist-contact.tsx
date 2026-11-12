@@ -64,7 +64,7 @@ export function WaitlistContact({ copy }: { copy: Copy }) {
                 <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-white/40">
                   {row.label}
                 </span>
-                <span className="min-w-0 flex-1 truncate text-white/70 sm:text-left">{row.value}</span>
+                <span className="min-w-0 flex-1 break-all text-white/70 sm:text-left">{row.value}</span>
                 {row.action === "copy" ? (
                   <button
                     type="button"
