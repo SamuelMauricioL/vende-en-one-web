@@ -46,7 +46,7 @@ El lead magnet del demo (`devCreceDigital/liveleads-demo`, `kit-live-sin-improvi
 
 ## Fuera de alcance
 
-- Enlazar la página desde el navbar o el footer: no se pidió (mismo criterio que `waitlist.md`).
+- Enlazar la página desde el navbar o el footer: no se pidió, y el humano lo cerró en L12 —`/kit` es la página de una campaña y se comparte por URL directa—.
 - Generar el PDF del kit: el demo tampoco lo tiene (`LEEME.md`: «El PDF del kit todavía no existe»).
 - Enviar correos: la página captura y desbloquea; no hay proveedor de email ni se pide.
 - Tocar el comportamiento de los pagos pendientes más allá de moverlos a un tab.
@@ -63,10 +63,20 @@ Ruta `R-WEB` = `vende-en-one-web` (rama `feat/kit-live-sin-improvisar`) · `R-AP
 - [x] **T5 · S10,S11,S12,S13 · R-WEB** — componentes `kit-checklist`, `kit-templates`, `kit-video-carousel`, `kit-faq` con sus tests de lógica pura (progreso, copy, un video a la vez). Prueba: `pnpm test`.
 - [x] **T6 · S1,S2,S4,S9,S14 · R-WEB** — `kit-compare`, `kit-lead-board`, `kit-page.tsx`, `src/pages/<ruta>.astro` y los dos mp4 en `public/video/`. Prueba: `astro build` y revisión del HTML generado contra el inventario de S2.
 - [x] **T7 · S15 · R-WEB** — tabs de `admin-page.tsx` y etiqueta de `app-nav.tsx`, con el fetch de `/api/admin/lead-magnets`. Prueba: build y revisión de los dos estados (con y sin datos).
-- [ ] **T8 · S1,S6,S16 · R-API + R-WEB** — deploy: `npx convex deploy`, Railway y Vercel; verificación en producción de la ruta, un POST real y el 403 del endpoint de admin.
+- [x] **T8 · S1,S6,S16 · R-API + R-WEB** — deploy: `npx convex deploy`, Railway y Vercel; verificación en producción de la ruta, un POST real y el 403 del endpoint de admin.
 - [ ] **T9 · cierre · ambos** — registro de los commits por tarea y verificación en navegador de la página publicada.
 
 ## Log
+
+L13. Desplegado y verificado el 2026-11-12. Orden: **web primero** (`vercel --prod` → alias `www.tiktoklive.me`), **después API** (`railway up --ci`, build OK), **último Convex**. El último paso costó cuatro intentos y los tres fallos valen como receta para la próxima:
+  - `npx convex deploy` sin TTY **no publica**: escribe «Cannot prompt for input in non-interactive terminals» y sale sin tocar producción. Peor: encadenado con `| tail`, el código de salida del pipe es el de `tail`, así que `set -e` no corta la cadena y Railway y Vercel se despliegan igual contra un backend incompleto. El síntoma fue un **500 en el POST válido** con la web y el API ya arriba.
+  - `npx convex dev --once --url https://exciting-curlew-5.convex.cloud` **ignora `--url`** y empuja a dev (`scintillating-avocet-813`): creó `leadMagnets` y `waitlist` en dev. Inocuo, pero no es lo que parece.
+  - Lo que sí publica sin deploy key: `expect -c 'spawn npx convex deploy; expect "now?"; send "y\r"; expect eof'`. Con eso el push a `exciting-curlew-5` terminó con «Schema validation complete» y `leadMagnets.by_email`.
+  Regla para la ficha: `convex deploy` va **siempre con pty** o con `CONVEX_DEPLOY_KEY`; nunca dentro de un pipe encadenado con `set -e`.
+
+L14. Verificación en producción (`www.tiktoklive.me`, 2026-11-12): `GET /kit` **200** (54 KB) con los 13 bloques y las dos rutas de video; `POST /api/lead-magnets` con datos válidos **201 `{created: true}`**; mismo correo otra vez **201 `{created: false}` con el mismo id** y sin fila nueva; correo de `@` vacío guardado como `""` con `source: kit-live`; correo inválido **400**, rubro inválido **400**; honeypot **201 `{created: false}` sin escritura**; `GET /api/admin/lead-magnets` sin token **401**; `npx convex run --prod leadMagnets:listLeadMagnets` devuelve las dos filas con el más nuevo primero. Quedan dos filas de prueba (`prueba-kit@tiktoklive.me`, `prueba-kit-2@tiktoklive.me`) para borrar desde el dashboard. Sin verificar: el toggle ES/EN en navegador (T9) y el listado del tab Leads con sesión de admin.
+
+L12. Decisión del humano: `/kit` no lleva CTA ni enlace en el navbar o el footer porque **la web sirve para una campaña**; se llega solo por la URL que se comparta. Cierra la duda que quedaba abierta en Fuera de alcance.
 
 L9. T5, T6 y T7 cerradas y verificadas por el orquestador, no solo por el worker: `pnpm test` 110/110, `pnpm build` completo, y `GET /kit` servido en local devuelve **200 / 149.780 B** con los 13 bloques presentes uno a uno ("Kit Live sin improvisar", "Recibe el kit completo", "Cubriremos", "Preparación", "Evita", "Ofertas posibles", "Mientras transmites", "PARA QUE NO TE PASE ESTO", "3 leads detectados", "Bandeja de rescate", "Seguimiento", "Desbloquea los 12 mensajes", "¿Tiene costo?", "Siguiente paso", el pie con WhatsApp) y la estructura esperada: 4 `<details>`, 4 `role="progressbar"`, 1 `role="tablist"`, 1 `role="img"`, los anclajes `#antes #plantillas #captura` y las dos rutas `/video/kit-*.mp4`. Los mp4 son MP4 reales (1,79 y 2,24 MB), no páginas de error.
 
