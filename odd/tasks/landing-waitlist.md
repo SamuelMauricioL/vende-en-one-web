@@ -4,7 +4,7 @@ La `/waitlist` de tiktoklive.me publica hoy solo el formulario de captura. La p�
 
 ## Specs
 
-- **S1.** `/waitlist` deja de ser «formulario con hero» y pasa a ser la landing completa. Misma ruta, pública, sin sesión y fuera del gate de `/app` (`middleware.ts`: `protectedPaths` solo tiene `/app` y `/onboarding`). Compone `Layout` + `AppProviders` + `Navbar` + isla React + `Footer`, como `/kit`.
+- **S1.** `/waitlist` deja de ser «formulario con hero» y pasa a ser la landing completa. Misma ruta, pública, sin sesión y fuera del gate de `/app` (`middleware.ts`: `protectedPaths` solo tiene `/app` y `/onboarding`). Compone `Layout` + `AppProviders` + una sola isla React: el header del demo (S11) reemplaza al `Navbar` del sitio y el pie del demo reemplaza al `Footer`, así que la página no duplica chrome.
 - **S2.** **Ninguna copia se pierde, se resume ni se reescribe.** Fuente de verdad: `landing/index.html` del commit `d0320d8`. Inventario cerrado de 8 bloques, en este orden:
   1. **Marca y anclas**: «Live Leads» y los enlaces «Demo», «Cómo funciona», «Preguntas», «Unirme a la waitlist».
   2. **Hero**: «De la transmisión a la venta», «No pierdas oportunidades de venta en tus lives de TikTok», su bajada («Mientras presentas, Live Leads lee el chat…»), los botones «Unirme a la waitlist» y «Probar el demo», y la nota «Acceso por tandas · sin tarjeta».
@@ -22,7 +22,8 @@ La `/waitlist` de tiktoklive.me publica hoy solo el formulario de captura. La p�
 - **S8.** Contacto: tres filas con su etiqueta en mono; «Copiar» en Email y Teléfono escribe el valor completo y muestra «Copiado» (o «Selecciona y copia» si el portapapeles está bloqueado) durante ~1,8 s; «Abrir chat» usa `https://wa.me/51934000821` con `rel="noopener"`.
 - **S9.** El FAQ de 6 preguntas usa acordeón nativo. Se extrae el acordeón existente a `src/components/faq-list.tsx` con props `{ items }` y lo usan tanto `/kit` como `/waitlist`: no se escriben dos acordeones.
 - **S10.** Las 4 imágenes del demo (`demo-bg.jpg`, `slide-live-controller.jpg`, `slide-filtros.png`, `slide-historial.png`) se copian a `public/landing/`. La primera captura lleva `fetchpriority="high"`; las otras, `loading="lazy"`. Todas declaran `width` y `height` para no mover el layout. `demo-bg.jpg` se usa como fondo del bloque Demo con un degradado encima, y en móvil con cobertura completa.
-- **S11.** El nav del sitio (`Navbar`) encabeza la página y debajo va una tira de anclas con las 4 del demo; la cuarta («Unirme a la waitlist») es el CTA primario. En móvil se ocultan las tres primeras y queda el CTA. La tira se pega bajo el Navbar al hacer scroll.
+- **S11.** El header del demo reemplaza al `Navbar` del sitio en `/waitlist`: marca (`LL` con el gradiente del sitio + «Live Leads»), las 4 anclas del demo en orden y, como cuarta, el CTA primario «Unirme a la waitlist». Es `sticky` con fondo translúcido, y **conserva el selector ES/EN dentro**: sin él, el inglés de la página (S3) sería inalcanzable, porque esta ruta ya no monta el `Navbar`. En móvil se ocultan las tres anclas y quedan el selector y el CTA. El header va fuera de `<main>`: dentro quedan los bloques 2 a 8.
+- **S11b.** El pie del demo (bloque 8) es el **único** pie de la ruta: se le suman los enlaces legales que ponía el `Footer` del sitio (`/privacy` y `/terms`), para no perderlos al retirar el chrome general.
 - **S12.** Accesibilidad y movimiento: `focus-visible` en todos los controles, `aria-roledescription="carrusel"` con `aria-label` en el contenedor, botones con `aria-label`, el pie del carrusel con `aria-live="polite"`, y cero animación cuando el sistema pide movimiento reducido.
 - **S13.** Se retira lo que quede sin uso: `src/components/waitlist-page.tsx` y las claves `waitlist.*` de `src/lib/i18n/translations.ts` (en `es` y en `en`, o el `tsc` falla por `TranslationKey`). `/waitlist` deja de tener su propio hero duplicado.
 - **S14.** `title` y `description` de la ruta se actualizan a la promesa del hero («No pierdas oportunidades de venta en tus lives de TikTok»), no a «Entra en la próxima tanda».
@@ -32,7 +33,7 @@ La `/waitlist` de tiktoklive.me publica hoy solo el formulario de captura. La p�
 ## Decisiones tomadas
 
 - **D1 — destino.** `/waitlist` es la landing completa: la ruta que ya existía crece, no se crea otra ni se toca la home.
-- **D2 — nav.** `Navbar` del sitio + tira de anclas con las 4 del demo; no se duplica la marca ni se pierde el selector de idioma.
+- **D2 — nav.** *Corregida en L8*: el nav del demo (marca + 4 anclas + CTA) **reemplaza** al `Navbar` del sitio en esta ruta. La tira de anclas separada se retiró junto con el `Navbar`, y el selector ES/EN pasó a vivir dentro del header del demo.
 - **D3 — idioma.** Español e inglés, como `/kit`, ahora que el selector comparte idioma entre islas (S17 de la ficha del kit).
 
 ## Fuera de alcance
@@ -56,6 +57,8 @@ Ruta `R-WEB` = `vende-en-one-web` (rama `feat/landing-waitlist`).
 - [x] **T8 · S16 · R-WEB** — `vercel --prod`, verificación de `/waitlist` 200 y un `POST /api/waitlist` real con 201, y la fila visible en el tab Leads.
 
 ## Log
+
+L8. El humano pidió que el header del demo —el que trae los CTA— reemplace al header general del sitio en `/waitlist`. Hecho: `waitlist-header.tsx` sustituye a `waitlist-anchor-strip.tsx` y al `Navbar`; el selector ES/EN entra en el header (si no, el inglés quedaría inalcanzable, porque el selector solo existía en el `Navbar`); el `Footer` del sitio sale de la ruta y sus dos enlaces legales se suman al pie del demo. Verificado en local con `GET /waitlist`: **un** `<header>`, **un** `<footer>` y **un** `<main>` (antes había dos pies), el header con la marca, las 3 anclas, ES/EN y el CTA, y el pie con «Contacto», «Volver arriba», «Privacidad» y «Términos». `pnpm test` 124/124 y `pnpm build` completo.
 
 L4. Slices en `feat/landing-waitlist` (4 commits, 4.9 KB de copia y ~1.500 líneas nuevas incluyendo el módulo de contenido en dos idiomas): `d113907` el acordeón único y el formulario como sección, `6c903e1` la copia de los 8 bloques y la lógica del carrusel y el contacto, `b3e9a4b` la página con los cuatro patrones recreados y las 4 imágenes, `e98e12a` el retiro de la página vieja, `kit-faq.tsx` y las 19 claves `waitlist.*`. Cada slice compila por separado.
 

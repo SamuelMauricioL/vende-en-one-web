@@ -4,7 +4,7 @@ import { FaqList } from "@/components/faq-list";
 import { WaitlistForm } from "@/components/waitlist-form";
 import { useI18n } from "@/lib/i18n/context";
 import { waitlistContent } from "@/lib/waitlist-landing/content";
-import { WaitlistAnchorStrip } from "./waitlist-anchor-strip";
+import { WaitlistHeader } from "./waitlist-header";
 import { WaitlistContact } from "./waitlist-contact";
 import { WaitlistPerms } from "./waitlist-perms";
 import { WaitlistSlider } from "./waitlist-slider";
@@ -34,8 +34,10 @@ export function WaitlistLandingPage() {
 
   return (
     <div>
-      {/* Bloque 1: la marca la pone el Navbar del sitio; la tira trae las 4 anclas. */}
-      <WaitlistAnchorStrip anchors={content.anchors} />
+      {/* Bloque 1: el header del demo reemplaza al Navbar del sitio en esta ruta. */}
+      <WaitlistHeader anchors={content.anchors} />
+
+      <main id="top">
 
       {/* Bloque 2 + 3: hero y ventana de producto. */}
       <section className="relative overflow-hidden pt-14 pb-16 sm:pt-20 sm:pb-24">
@@ -138,6 +140,8 @@ export function WaitlistLandingPage() {
       <WaitlistContact copy={content.contact} />
 
       {/* Bloque 8, pie del demo. El pie del sitio va después, en la página. */}
+      </main>
+
       <footer className="border-t border-white/[0.04] py-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex flex-col items-center gap-1 sm:items-start">
@@ -153,7 +157,7 @@ export function WaitlistLandingPage() {
               {footer.madeWithTail}
             </span>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-6">
             {footer.links.map((link) => (
               <a
                 key={link.href}
@@ -163,6 +167,20 @@ export function WaitlistLandingPage() {
                 {link.label}
               </a>
             ))}
+            {/* Chrome del sitio, no copia del demo: los mismos destinos que
+                ponía el Footer general en esta ruta. */}
+            <a
+              href="/privacy"
+              className="rounded-lg text-xs text-white/30 transition-colors hover:text-white/60 outline-none focus-visible:ring-2 focus-visible:ring-[#fe2c55]/50"
+            >
+              Privacidad
+            </a>
+            <a
+              href="/terms"
+              className="rounded-lg text-xs text-white/30 transition-colors hover:text-white/60 outline-none focus-visible:ring-2 focus-visible:ring-[#fe2c55]/50"
+            >
+              Términos
+            </a>
           </div>
         </div>
       </footer>

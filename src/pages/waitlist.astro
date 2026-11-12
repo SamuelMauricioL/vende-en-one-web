@@ -1,8 +1,6 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { AppProviders } from "@/components/AppProviders";
-import Navbar from "@/components/landing/navbar";
-import Footer from "@/components/landing/Footer.astro";
 import { WaitlistLandingPage } from "@/components/waitlist-landing/waitlist-landing-page";
 ---
 
@@ -12,11 +10,9 @@ import { WaitlistLandingPage } from "@/components/waitlist-landing/waitlist-land
 >
   <AppProviders client:load>
     <div class="min-h-screen flex flex-col">
-      <Navbar client:load />
-      <main id="top" class="flex-1">
+      <div class="flex-1">
         <WaitlistLandingPage client:load />
-      </main>
-      <Footer />
+      </div>
     </div>
   </AppProviders>
 </Layout>
