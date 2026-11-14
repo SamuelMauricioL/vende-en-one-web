@@ -7,6 +7,10 @@ export interface Props {
 }
 
 const { title = "Live Leads — Captura leads de TikTok Live en tiempo real", description = "Monitorea transmisiones de TikTok Live, clasifica leads con IA y captura clientes potenciales en tiempo real." } = Astro.props;
+
+// Google Tag Manager container. Override via PUBLIC_GTM_ID in the environment.
+// Set it to an empty string to disable the snippet entirely (e.g. local dev).
+const gtmId = import.meta.env.PUBLIC_GTM_ID ?? "GTM-TPFJDXVZ";
 ---
 
 <!DOCTYPE html>
@@ -21,8 +25,33 @@ const { title = "Live Leads — Captura leads de TikTok Live en tiempo real", de
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <slot name="head" />
     {title && <title>{title}</title>}
+    {gtmId && (
+      <script is:inline define:vars={{ gtmId }}>
+        (function (w, d, s, l, i) {
+          w[l] = w[l] || [];
+          w[l].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+          var f = d.getElementsByTagName(s)[0],
+            j = d.createElement(s),
+            dl = l != "dataLayer" ? "&l=" + l : "";
+          j.async = true;
+          j.src = "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
+          f.parentNode.insertBefore(j, f);
+        })(window, document, "script", "dataLayer", gtmId);
+      </script>
+    )}
   </head>
   <body class="antialiased" style="background-color: #0b0f1a;">
+    {gtmId && (
+      <noscript>
+        <iframe
+          src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+          height="0"
+          width="0"
+          style="display:none;visibility:hidden"
+          title="Google Tag Manager"
+        />
+      </noscript>
+    )}
     <slot />
   </body>
 </html>
