@@ -9,13 +9,13 @@ Un usuario puede tener hasta 3 tiendas. Hay **una tienda activa** que aplica a t
 - **D3.** Se **elimina** el CTA "Cambiar" de la pantalla de Live: cambiar de tienda se hace desde el menú.
 - **D4.** Perfil gestiona las tiendas: listar, marcar la activa, **agregar** (reusando el input y las validaciones del viejo CTA "Cambiar") y **remover**.
 - **D5.** Remover una tienda **con lives queda bloqueado**: las sesiones exigen `storeId`, así que borrarla dejaría su historial inalcanzable. La UI muestra cuántos lives tiene y por qué no se puede. Sin archivado en esta versión.
-- **D6.** Si la tienda activa guardada ya no existe (o es de otro usuario), cae en el `@` del perfil y, si tampoco, en la primera.
+- **D6.** Si la tienda activa guardada ya no existe (o es de otro usuario), cae en la primera.
 
 ## Specs
 
 - **S1.** `GET /stores` devuelve `{ _id, tiktokUsername, sessions }`; `sessions` es el conteo de lives de esa tienda.
 - **S2.** `DELETE /stores/:storeId` exige token y propiedad; responde **409** si la tienda tiene lives, con el conteo en el mensaje. Si no tiene, borra y responde `{ deleted: true }`.
-- **S3.** La tienda activa se resuelve con prioridad: `localStorage` (si existe en la lista) → `@` del perfil → primera tienda.
+- **S3.** La tienda activa se resuelve con prioridad: `localStorage` (si existe en la lista) → primera tienda. El `@` del perfil dejó de participar en `perfil-sin-tiktok-username`: solo guardaba el último `@` vinculado, así que con 3 tiendas la elección quedaba inservible.
 - **S4.** Cambiar la tienda activa emite un evento para que las pantallas abiertas se actualicen sin recargar.
 - **S5.** El inicio de live usa la tienda activa (no el `@` del perfil) y sigue enviando `storeId` obligatorio.
 - **S6.** Agregar tienda reusa el formulario del `@` del onboarding (mismas validaciones y mensajes) y respeta el límite de 3 con el mensaje del backend.

@@ -4,8 +4,8 @@ const API_BASE = "https://vende-en-one-api-production.up.railway.app";
 
 const protectedPaths = ["/app", "/onboarding"];
 
-// Paths that require a linked TikTok account (subset of protectedPaths)
-const tiktokRequiredPaths = ["/app"];
+// Paths that require at least one linked store (subset of protectedPaths)
+const storeRequiredPaths = ["/app"];
 
 export const onRequest = clerkMiddleware(async (auth, context, next) => {
   const url = new URL(context.request.url);
@@ -30,11 +30,11 @@ export const onRequest = clerkMiddleware(async (auth, context, next) => {
       return context.redirect("/sign-in");
     }
 
-    // Check TikTok profile requirement for app paths
-    const needsTikTok = tiktokRequiredPaths.some(
+    // Check store requirement for app paths
+    const needsStore = storeRequiredPaths.some(
       (p) => pathname === p || pathname.startsWith(p + "/")
     );
-    if (needsTikTok && userId) {
+    if (needsStore && userId) {
       try {
         // El API ahora exige token. Si no se puede obtener, seguimos sin él:
         // el API es la frontera de seguridad y la página mostrará lo que haya.
@@ -45,7 +45,7 @@ export const onRequest = clerkMiddleware(async (auth, context, next) => {
           token = null;
         }
 
-        const profileRes = await fetch(`${API_BASE}/users/profile/${userId}`, {
+        const storesRes = await fetch(`${API_BASE}/stores`, {
           headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -53,17 +53,16 @@ export const onRequest = clerkMiddleware(async (auth, context, next) => {
           signal: AbortSignal.timeout(5000),
         });
 
-        if (profileRes.ok) {
-          const data = await profileRes.json();
-          const tiktokUsername = data?.profile?.tiktokUsername;
-          if (!tiktokUsername) {
+        // S5: se decide por tiendas, no por el `@` del perfil (que solo guarda
+        // el último vinculado y desaparece de la base: ver
+        // odd/tasks/perfil-sin-tiktok-username.md).
+        if (storesRes.ok) {
+          const data = (await storesRes.json()) as { stores?: unknown[] };
+          if (!data.stores || data.stores.length === 0) {
             return context.redirect("/onboarding");
           }
-        } else if (profileRes.status === 404) {
-          // Perfil no existe todavía → falta vincular TikTok
-          return context.redirect("/onboarding");
         }
-        // 401/403/5xx: no se puede saber si tiene TikTok. No se expulsa al
+        // 401/403/5xx: no se puede saber si tiene tiendas. No se expulsa al
         // onboarding por un fallo de autenticación; las páginas resuelven.
       } catch {
         // On error (timeout/network), allow access to avoid lockout

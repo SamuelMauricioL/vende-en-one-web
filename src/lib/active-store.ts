@@ -30,12 +30,9 @@ export function writeActiveStoreId(storeId: string): void {
   }
 }
 
-/** Resuelve la tienda activa: guardada → `@` del perfil → primera. */
-export function resolveActiveStore<T extends StoreOption>(
-  stores: T[],
-  profileHandle?: string,
-): T | null {
-  return pickActiveStore(stores, profileHandle, readActiveStoreId());
+/** Resuelve la tienda activa: guardada → primera. */
+export function resolveActiveStore<T extends StoreOption>(stores: T[]): T | null {
+  return pickActiveStore(stores, readActiveStoreId());
 }
 
 /** Lee la tienda activa y se suscribe a los cambios hechos desde otra pantalla. */

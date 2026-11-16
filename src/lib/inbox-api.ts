@@ -200,26 +200,17 @@ export interface StoreOption {
 
 /**
  * Elige la tienda activa de la bandeja.
- * Prioridad: la tienda guardada (elección explícita en el menú), luego el `@`
- * del perfil y por último la primera. Si el perfil mandara sobre la elección,
- * cambiar de tienda no tendría efecto en Live ni en Bandeja.
+ * Prioridad: la tienda guardada (elección explícita en el menú) y, si no hay o
+ * ya no existe, la primera. El `@` del perfil dejó de participar cuando el
+ * perfil pasó a tener hasta 3 tiendas: solo guardaba el último `@` vinculado.
  */
 export function pickActiveStore<T extends StoreOption>(
   stores: T[],
-  profileHandle: string | undefined,
   savedId?: string | null,
 ): T | null {
-  const norm = (v: string) => v.replace(/^@/, "").trim().toLowerCase();
-
-  // La elección explícita del menú GANA sobre el @ del perfil: si el perfil
-  // apunta a la cuenta vieja, no debe impedir trabajar con la tienda elegida.
   if (savedId) {
     const bySaved = stores.find((s) => s._id === savedId);
     if (bySaved) return bySaved;
-  }
-  if (profileHandle) {
-    const byProfile = stores.find((s) => norm(s.tiktokUsername) === norm(profileHandle));
-    if (byProfile) return byProfile;
   }
   return stores[0] ?? null;
 }

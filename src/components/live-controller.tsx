@@ -85,18 +85,18 @@ function PaywallNotice() {
   );
 }
 
-export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?: (active: boolean) => void; initialTikTokUsername?: string }>(({ onActiveChange, initialTikTokUsername = "" }, ref) => {
+export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?: (active: boolean) => void }>(({ onActiveChange }, ref) => {
   const { getToken } = useAuth();
   const [storeId, setStoreId] = useState("");
   // El @ con el que se conecta el live es el de la tienda activa, no el del perfil.
-  const [storeUsername, setStoreUsername] = useState(initialTikTokUsername);
+  const [storeUsername, setStoreUsername] = useState("");
   const activeStoreId = useActiveStoreId();
 
-  const [input, setInput] = useState(initialTikTokUsername ? `https://www.tiktok.com/@${initialTikTokUsername}` : "");
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
-  const [lastUsername, setLastUsername] = useState(initialTikTokUsername);
+  const [lastUsername, setLastUsername] = useState("");
   const [showEditInput, setShowEditInput] = useState(false);
   const [showLiveEndedDialog, setShowLiveEndedDialog] = useState(false);
   const [stageCounts, setStageCounts] = useState<Record<string, number>>({ compra: 0, negociando: 0, interesado: 0 });
@@ -258,8 +258,8 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
           stores?: Array<{ _id: string; tiktokUsername: string }>;
         };
         const list = data.stores ?? [];
-        // La tienda activa del menú manda; el @ del perfil es el respaldo.
-        const match = resolveActiveStore(list, initialTikTokUsername);
+        // La tienda activa del menú manda; sin elección, la primera.
+        const match = resolveActiveStore(list);
         if (!cancelled && match) {
           setStoreId(match._id);
           setStoreUsername(match.tiktokUsername);
@@ -271,7 +271,7 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
     return () => {
       cancelled = true;
     };
-  }, [getToken, initialTikTokUsername, activeStoreId]);
+  }, [getToken, activeStoreId]);
 
   // Al cambiar de tienda, el formulario y la conexión siguen a esa tienda.
   useEffect(() => {
