@@ -121,9 +121,11 @@ export default function StoresManager() {
 
   // La copia no promete un tope que el servidor no haya servido.
   const capNote =
-    maxStores === null
+    caps === null
       ? "Una tienda con lives no se puede eliminar."
-      : `Hasta ${maxStores} tiendas por cuenta. Una tienda con lives no se puede eliminar.`;
+      : caps.maxStores === null
+        ? "Sin límite de tiendas para administradores. Una tienda con lives no se puede eliminar."
+        : `Hasta ${caps.maxStores} tiendas por cuenta. Una tienda con lives no se puede eliminar.`;
 
   return (
     <div className="space-y-3">
