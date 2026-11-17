@@ -11,8 +11,21 @@ import {
 } from "@/components/live-controller";
 import { Toaster } from "@/components/ui/sonner";
 import { AppNav } from "@/components/app-nav";
+import VerificationDialog from "@/components/verification-dialog";
+import AppUnverifiedBanner from "@/components/app-unverified-banner";
 
 type FiltersState = "loading" | "ready" | "error";
+
+type ActiveStoreRow = {
+  _id: string;
+  tiktokUsername: string;
+  verifiedAt?: number;
+};
+
+type PendingStore = {
+  _id: string;
+  tiktokUsername: string;
+};
 
 export default function AppPageClient() {
   const controllerRef = useRef<LiveControllerHandle>(null);
@@ -24,6 +37,43 @@ export default function AppPageClient() {
   const [filtersState, setFiltersState] = useState<FiltersState>("loading");
   const [filtersError, setFiltersError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [pendingStore, setPendingStore] = useState<PendingStore | null>(null);
+  const [verificationOpen, setVerificationOpen] = useState(false);
+  const autoPrompted = useRef(false);
+
+  const readStores = useCallback(async (): Promise<ActiveStoreRow[]> => {
+    const headers = await authHeaders(getToken);
+    const res = await fetch("/api/stores", { headers });
+    if (!res.ok) throw new Error("No pudimos leer tu tienda activa.");
+    const data = (await res.json()) as { stores?: ActiveStoreRow[] };
+    return data.stores ?? [];
+  }, [getToken]);
+
+  const applyStores = useCallback((stores: ActiveStoreRow[]) => {
+    const active = resolveActiveStore(stores);
+    const unverified =
+      active && typeof active.verifiedAt !== "number" ? active : null;
+    setPendingStore(
+      unverified
+        ? { _id: unverified._id, tiktokUsername: unverified.tiktokUsername }
+        : null,
+    );
+    if (!unverified) {
+      setVerificationOpen(false);
+      return;
+    }
+    if (autoPrompted.current) return;
+    autoPrompted.current = true;
+    setVerificationOpen(true);
+  }, []);
+
+  const openVerification = useCallback(() => setVerificationOpen(true), []);
+  const closeVerification = useCallback(() => setVerificationOpen(false), []);
+
+  const handleVerified = useCallback(async () => {
+    const stores = await readStores().catch(() => null);
+    if (stores) applyStores(stores);
+  }, [applyStores, readStores]);
 
   // Precarga de los filtros de la tienda activa y recarga al cambiarla (S1, S5).
   useEffect(() => {
@@ -34,13 +84,10 @@ export default function AppPageClient() {
 
     void (async () => {
       try {
-        const headers = await authHeaders(getToken);
-        const res = await fetch("/api/stores", { headers });
-        if (!res.ok) throw new Error("No pudimos leer tu tienda activa.");
-        const data = (await res.json()) as {
-          stores?: Array<{ _id: string; tiktokUsername: string }>;
-        };
-        const store = resolveActiveStore(data.stores ?? []);
+        const stores = await readStores();
+        if (cancelled) return;
+        const store = resolveActiveStore(stores);
+        applyStores(stores);
         if (!store) throw new Error("No encontramos tu tienda activa.");
         const list = await fetchFilters(store._id, getToken);
         if (cancelled) return;
@@ -56,7 +103,7 @@ export default function AppPageClient() {
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, userId, getToken, activeStoreId, reloadKey]);
+  }, [isLoaded, userId, getToken, activeStoreId, reloadKey, readStores, applyStores]);
 
   const handleActiveChange = useCallback((active: boolean) => {
     setSessionActive(active);
@@ -86,6 +133,12 @@ export default function AppPageClient() {
           ) : undefined
         }
       />
+      {pendingStore && (
+        <AppUnverifiedBanner
+          handle={pendingStore.tiktokUsername}
+          onOpen={openVerification}
+        />
+      )}
       <main className="flex-1 flex flex-col min-h-0">
         <div className="flex-1 min-h-0 px-4 sm:px-6 pb-4 max-w-6xl w-full mx-auto">
           {filtersReady ? (
@@ -157,6 +210,14 @@ export default function AppPageClient() {
           </a>
         </div>
       </footer>
+      {pendingStore && (
+        <VerificationDialog
+          open={verificationOpen}
+          handle={pendingStore.tiktokUsername}
+          onClose={closeVerification}
+          onVerified={handleVerified}
+        />
+      )}
       <Toaster richColors position="bottom-center" />
     </div>
   );
