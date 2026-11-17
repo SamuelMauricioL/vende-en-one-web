@@ -18,8 +18,13 @@ interface StoreRow {
   sessions: number;
 }
 
-/** Tope del servidor para sellers: los admins no tienen tope (`convex/stores.ts`). */
-const MAX_STORES = 3;
+/**
+ * Capacidades que el API sirve junto al perfil (D2). El tope de tiendas es del
+ * servidor: acá solo se renderiza. `null` significa "sin tope".
+ */
+interface CallerCapabilities {
+  maxStores: number | null;
+}
 
 /** Gestión de tiendas: marcar la activa, agregar y remover. */
 export default function StoresManager() {
@@ -29,8 +34,11 @@ export default function StoresManager() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  /** El rol solo se conoce si el perfil respondió; si no, decide el servidor. */
-  const [roleKnown, setRoleKnown] = useState(false);
+  /**
+   * Capacidades del perfil. `null` mientras no lleguen o si el pedido falló:
+   * sin capacidades no se bloquea nada, decide el servidor.
+   */
+  const [caps, setCaps] = useState<CallerCapabilities | null>(null);
 
   const api = useCallback(
     async (path: string, init?: RequestInit) => {
@@ -63,21 +71,30 @@ export default function StoresManager() {
     void load();
   }, [isLoaded, userId, load]);
 
-  // El rol vive en el perfil (misma fuente que el guard del API): un admin no
-  // tiene tope de tiendas, así que el navegador no puede bloquearle el 4º alta.
+  // Rol y tope salen de la MISMA respuesta del perfil (misma fuente que el guard
+  // del API): un admin no tiene tope, así que el navegador no puede bloquearle
+  // el 4º alta.
   useEffect(() => {
     if (!isLoaded || !userId) return;
     let cancelled = false;
     void (async () => {
       const res = await api(`/api/users/profile/${encodeURIComponent(userId)}`);
+      // Sin respuesta (fallo, 404 o 403) no inventamos capacidades: el
+      // formulario queda libre y el API responde con su `message`.
       if (!res.ok) return;
       const data = (await res.json().catch(() => ({}))) as {
         profile?: { role?: string } | null;
+        capabilities?: { maxStores?: unknown } | null;
       };
-      // Sin perfil o sin respuesta no inventamos rol: el formulario queda libre.
-      if (cancelled || !data.profile) return;
-      setIsAdmin(data.profile.role === "admin");
-      setRoleKnown(true);
+      if (cancelled) return;
+      if (data.profile) setIsAdmin(data.profile.role === "admin");
+      // `null` explícito es un tope ausente, no un tope desconocido; cualquier
+      // otro valor (texto, objeto, ausente) se ignora y no bloquea nada.
+      const served = data.capabilities?.maxStores;
+      if (served === null) setCaps({ maxStores: null });
+      else if (typeof served === "number" && Number.isFinite(served)) {
+        setCaps({ maxStores: served });
+      }
     })();
     return () => {
       cancelled = true;
@@ -95,15 +112,18 @@ export default function StoresManager() {
     await load();
   };
 
-  // El tope del navegador es solo el de un seller confirmado; nunca contradice al
-  // servidor: si el rol no se pudo leer, se deja intentar y el API responde.
-  const atSellerLimit = roleKnown && !isAdmin && stores.length >= MAX_STORES;
+  // El tope se renderiza desde las capacidades servidas; no hay copia local que
+  // pueda desincronizarse del servidor. Sin capacidades no se bloquea nada.
+  const maxStores = caps === null ? null : caps.maxStores;
+  const full = maxStores !== null && stores.length >= maxStores;
+  const limitText =
+    full && maxStores !== null ? `Llegaste al límite de ${maxStores} tiendas` : null;
 
-  const capNote = isAdmin
-    ? "Sin límite de tiendas para administradores. Una tienda con lives no se puede eliminar."
-    : roleKnown
-      ? `Hasta ${MAX_STORES} tiendas por cuenta. Una tienda con lives no se puede eliminar.`
-      : "Una tienda con lives no se puede eliminar.";
+  // La copia no promete un tope que el servidor no haya servido.
+  const capNote =
+    maxStores === null
+      ? "Una tienda con lives no se puede eliminar."
+      : `Hasta ${maxStores} tiendas por cuenta. Una tienda con lives no se puede eliminar.`;
 
   return (
     <div className="space-y-3">
@@ -169,18 +189,14 @@ export default function StoresManager() {
         <button
           type="button"
           onClick={() => setDialogOpen(true)}
-          disabled={atSellerLimit}
-          title={
-            atSellerLimit ? "Llegaste al límite de 3 tiendas" : "Agregar una tienda nueva"
-          }
+          disabled={full}
+          title={limitText ?? "Agregar una tienda nueva"}
           className="h-10 px-4 rounded-xl text-xs font-semibold text-white disabled:opacity-40"
           style={{ background: "#fe2c55" }}
         >
           Agregar tienda
         </button>
-        {atSellerLimit && (
-          <p className="text-[11px] text-[#fe2c55]">Llegaste al límite de 3 tiendas</p>
-        )}
+        {limitText && <p className="text-[11px] text-[#fe2c55]">{limitText}</p>}
         <p className="text-[11px] text-white/25">{capNote}</p>
       </div>
 
