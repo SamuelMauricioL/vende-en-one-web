@@ -1,12 +1,14 @@
 "use client";
 
-import type { KitContent } from "@/lib/kit/content";
-
-/** S13: acordeón nativo, sin dependencia. El marcador `+`/`–` va a la derecha. */
-export function KitFaq({ faq }: { faq: KitContent["faq"] }) {
+/**
+ * S9 de `odd/tasks/landing-waitlist.md`: acordeón nativo, sin dependencia. El
+ * marcador `+`/`–` va a la derecha. Lo usan `/kit` y `/waitlist`: no hay un
+ * segundo acordeón en el repo.
+ */
+export function FaqList({ items }: { items: { question: string; answer: string }[] }) {
   return (
     <div className="space-y-2.5">
-      {faq.items.map((item) => (
+      {items.map((item) => (
         <details
           key={item.question}
           className="group rounded-2xl px-5"

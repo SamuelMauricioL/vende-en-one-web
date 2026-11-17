@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { FaqList } from "@/components/faq-list";
 import { useI18n } from "@/lib/i18n/context";
 import { kitContent } from "@/lib/kit/content";
 import { readKitState, writeKitState } from "@/lib/kit/storage";
 import { KitCaptureForm } from "./kit-capture-form";
 import { KitChecklist } from "./kit-checklist";
 import { KitAdvice, KitCompare } from "./kit-compare";
-import { KitFaq } from "./kit-faq";
 import { KitLeadBoard } from "./kit-lead-board";
 import { KitTemplates } from "./kit-templates";
 import { KitVideoCarousel } from "./kit-video-carousel";
@@ -297,7 +297,7 @@ export function KitPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white/90 tracking-tight">{faq.title}</h2>
           <div className="mt-6 max-w-3xl">
-            <KitFaq faq={faq} />
+            <FaqList items={faq.items} />
           </div>
         </div>
       </section>
