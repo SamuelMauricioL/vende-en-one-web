@@ -10,7 +10,7 @@ S2. Los comentarios dentro de archivos de test se conservan: son el lugar donde 
 
 ## Tasks
 
-- **T1 · S1 · R-WEB** — barrido de `src/`, conservando directivas (171 líneas de `//` y 117 de bloque).
+- [x] **T1 · S1 · R-WEB** — commit `030f6d0`: 70 archivos modificados, build verde y 124 tests pasando; ningún comentario fuera de los tests — barrido de `src/`, conservando directivas (171 líneas de `//` y 117 de bloque).
 
 ## Log
 
