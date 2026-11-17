@@ -3,7 +3,11 @@
 import { useAuth } from "@clerk/astro/react";
 import { authHeaders } from "@/lib/api-auth";
 import { useCallback, useState } from "react";
-import { FirstLiveStep, PresetsStep } from "@/components/onboarding-steps";
+import {
+  FirstLiveStep,
+  PresetsStep,
+  TikTokVerifyStep,
+} from "@/components/onboarding-steps";
 
 const TIKTOK_URL_REGEX = /^(?:https?:\/\/)?(?:www\.)?tiktok\.com\/@([a-zA-Z0-9_.-]+)/;
 const TIKTOK_HANDLE_REGEX = /^@?([a-zA-Z0-9_.-]+)$/;
@@ -20,11 +24,31 @@ function extractUsername(raw: string): string | null {
 /**
  * Onboarding de primer uso: cuenta (Clerk) → TikTok → filtros → primer live.
  * El paso de correo del prototipo no existe acá porque la sesión es de Google.
- */type Phase = "tiktok" | "presets" | "live";
+ */
+type Phase = "tiktok" | "verificar" | "presets" | "live";
 
 const STEPS = ["Tu cuenta", "Tu TikTok", "Tus filtros", "Primer live"];
 
-const PHASE_INDEX: Record<Phase, number> = { tiktok: 1, presets: 2, live: 3 };
+/** `verificar` es parte del paso "Tu TikTok": no agrega un círculo nuevo. */
+const PHASE_INDEX: Record<Phase, number> = { tiktok: 1, verificar: 1, presets: 2, live: 3 };
+
+/** El API responde estos códigos cuando no puede confirmar el código de la bio. */
+function verificationError(status: number): string {
+  switch (status) {
+    case 400:
+      return "No encontramos ese código en tu bio. Pégalo tal cual y guarda los cambios; si ya lo cambiaste, genera un código nuevo.";
+    case 404:
+      return "No hay una verificación pendiente (el código pudo vencer). Genera un código nuevo.";
+    case 409:
+      return "Esa cuenta de TikTok ya está verificada por otra cuenta.";
+    case 429:
+      return "Hicimos demasiados intentos. Espera unos minutos y genera un código nuevo.";
+    case 503:
+      return "No pudimos leer tu perfil de TikTok. No se guardó nada: vuelve a intentar en un momento.";
+    default:
+      return "No pudimos verificar tu TikTok. Intenta de nuevo.";
+  }
+}
 
 export default function OnboardingStepper() {
   const { userId, isLoaded, getToken } = useAuth();
@@ -32,9 +56,46 @@ export default function OnboardingStepper() {
   const [input, setInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  /** Handle ya vinculado: es el que se verifica en la bio. */
+  const [handle, setHandle] = useState("");
+  const [code, setCode] = useState("");
 
   const extracted = input.trim() ? extractUsername(input.trim()) : null;
   const current = PHASE_INDEX[phase];
+
+  /** Pide un código nuevo (también sirve de reintento tras un fallo). */
+  const startVerification = useCallback(
+    async (username: string) => {
+      setSaving(true);
+      setError("");
+
+      try {
+        const res = await fetch("/api/users/tiktok/verification/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
+          body: JSON.stringify({ tiktokUsername: username }),
+        });
+
+        if (!res.ok) {
+          setError(verificationError(res.status));
+          return;
+        }
+
+        const data = (await res.json().catch(() => ({}))) as { code?: string };
+        if (!data.code) {
+          setError("No pudimos generar el código. Intenta de nuevo.");
+          return;
+        }
+
+        setCode(data.code);
+      } catch {
+        setError("No pudimos conectar con el servidor. Intenta de nuevo.");
+      } finally {
+        setSaving(false);
+      }
+    },
+    [getToken],
+  );
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -59,15 +120,44 @@ export default function OnboardingStepper() {
           throw new Error(data.message || "Error al guardar");
         }
 
-        setPhase("presets");
+        // Vinculado: ahora hay que probar que la cuenta es suya con el código en la bio.
+        setHandle(extracted);
+        setPhase("verificar");
+        await startVerification(extracted);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error desconocido");
       } finally {
         setSaving(false);
       }
     },
-    [extracted, userId],
+    [extracted, userId, getToken, startVerification],
   );
+
+  const handleConfirm = useCallback(async () => {
+    if (!handle || !code) return;
+
+    setSaving(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/users/tiktok/verification/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
+        body: JSON.stringify({ tiktokUsername: handle, code }),
+      });
+
+      if (!res.ok) {
+        setError(verificationError(res.status));
+        return;
+      }
+
+      setPhase("presets");
+    } catch {
+      setError("No pudimos conectar con el servidor. Intenta de nuevo.");
+    } finally {
+      setSaving(false);
+    }
+  }, [handle, code, getToken]);
 
   if (!isLoaded) {
     return (
@@ -136,7 +226,16 @@ export default function OnboardingStepper() {
         ))}
       </div>
 
-      {phase === "presets" ? (
+      {phase === "verificar" ? (
+        <TikTokVerifyStep
+          username={handle}
+          code={code}
+          saving={saving}
+          error={error}
+          onConfirm={handleConfirm}
+          onNewCode={() => void startVerification(handle)}
+        />
+      ) : phase === "presets" ? (
         <PresetsStep onContinue={() => setPhase("live")} />
       ) : phase === "live" ? (
         <FirstLiveStep onStart={() => (window.location.href = "/app")} />
