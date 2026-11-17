@@ -51,12 +51,11 @@ function verificationError(status: number): string {
 }
 
 export default function OnboardingStepper() {
-  const { userId, isLoaded, getToken } = useAuth();
+  const { isLoaded, getToken } = useAuth();
   const [phase, setPhase] = useState<Phase>("tiktok");
   const [input, setInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  /** Handle ya vinculado: es el que se verifica en la bio. */
   const [handle, setHandle] = useState("");
   const [code, setCode] = useState("");
 
@@ -100,37 +99,13 @@ export default function OnboardingStepper() {
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!extracted || !userId) return;
+      if (!extracted) return;
 
-      setSaving(true);
-      setError("");
-
-      try {
-        const res = await fetch("/api/users/profile/tiktok", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
-          body: JSON.stringify({
-            clerkUserId: userId,
-            tiktokUsername: extracted,
-          }),
-        });
-
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.message || "Error al guardar");
-        }
-
-        // Vinculado: ahora hay que probar que la cuenta es suya con el código en la bio.
-        setHandle(extracted);
-        setPhase("verificar");
-        await startVerification(extracted);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Error desconocido");
-      } finally {
-        setSaving(false);
-      }
+      setHandle(extracted);
+      setPhase("verificar");
+      await startVerification(extracted);
     },
-    [extracted, userId, getToken, startVerification],
+    [extracted, startVerification],
   );
 
   const handleConfirm = useCallback(async () => {
@@ -280,10 +255,6 @@ export default function OnboardingStepper() {
               )}
             </div>
 
-            {error && (
-              <p className="text-xs text-[#fe2c55] text-center">{error}</p>
-            )}
-
             <button
               type="submit"
               disabled={saving || !extracted}
@@ -293,14 +264,7 @@ export default function OnboardingStepper() {
                 boxShadow: "0 8px 32px rgba(254,44,85,0.3)",
               }}
             >
-              {saving ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                  Guardando...
-                </span>
-              ) : (
-                "Continuar"
-              )}
+              Continuar
             </button>
           </form>
         </>
