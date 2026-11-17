@@ -4,6 +4,7 @@ import { useCallback, useRef, useState, useImperativeHandle, forwardRef, useEffe
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import AppUnverifiedBanner from "@/components/app-unverified-banner";
 import { TopUsers } from "./top-users";
 import { LiveChat } from "./live-chat";
 import { LeadsMobile } from "./LeadsMobile";
@@ -85,7 +86,11 @@ function PaywallNotice() {
   );
 }
 
-export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?: (active: boolean) => void }>(({ onActiveChange }, ref) => {
+export const LiveController = forwardRef<LiveControllerHandle, {
+  onActiveChange?: (active: boolean) => void;
+  unverifiedHandle?: string | null;
+  onOpenVerification?: () => void;
+}>(({ onActiveChange, unverifiedHandle, onOpenVerification }, ref) => {
   const { getToken } = useAuth();
   const [storeId, setStoreId] = useState("");
   // El @ con el que se conecta el live es el de la tienda activa, no el del perfil.
@@ -423,6 +428,11 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
         trackEvent("Live Stopped", { username: lastUsername });
       } else {
         trackEvent("Live Stop Failed", { username: lastUsername, status: res.status });
+        if (res.status === 403) {
+          toast.error(
+            data.message || "No pudimos detener el live: la cuenta no está validada.",
+          );
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error desconocido";
@@ -446,6 +456,15 @@ export const LiveController = forwardRef<LiveControllerHandle, { onActiveChange?
 
   return (
     <div className="space-y-4 h-full flex flex-col min-h-0">
+      {unverifiedHandle && onOpenVerification && (
+        <div className="shrink-0 -mx-4 sm:-mx-6">
+          <AppUnverifiedBanner
+            handle={unverifiedHandle}
+            onOpen={onOpenVerification}
+          />
+        </div>
+      )}
+
       {/* Form */}
       {!activeSessionId && storeUsername && !showEditInput ? (
         /* ── Saved account: hero card ── */

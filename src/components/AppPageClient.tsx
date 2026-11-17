@@ -2,6 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useAuth } from "@clerk/astro/react";
+import { toast } from "sonner";
 import { authHeaders } from "@/lib/api-auth";
 import { resolveActiveStore, useActiveStoreId } from "@/lib/active-store";
 import { fetchFilters } from "@/lib/filters-api";
@@ -20,6 +21,8 @@ type ActiveStoreRow = {
   _id: string;
   tiktokUsername: string;
   verifiedAt?: number;
+  verificationMethod?: "bio-code" | "admin" | "legacy";
+  verificationNoticedAt?: number;
 };
 
 type PendingStore = {
@@ -40,6 +43,7 @@ export default function AppPageClient() {
   const [pendingStore, setPendingStore] = useState<PendingStore | null>(null);
   const [verificationOpen, setVerificationOpen] = useState(false);
   const autoPrompted = useRef(false);
+  const noticedStores = useRef<Set<string>>(new Set());
 
   const readStores = useCallback(async (): Promise<ActiveStoreRow[]> => {
     const headers = await authHeaders(getToken);
@@ -67,6 +71,24 @@ export default function AppPageClient() {
     setVerificationOpen(true);
   }, []);
 
+  const announceVerified = useCallback(
+    async (store: ActiveStoreRow) => {
+      if (typeof store.verifiedAt !== "number") return;
+      if (store.verificationMethod !== "bio-code") return;
+      if (typeof store.verificationNoticedAt === "number") return;
+      if (noticedStores.current.has(store._id)) return;
+      noticedStores.current.add(store._id);
+      toast.success(
+        "Tu cuenta ya fue validada. Ya puedes monitorear live y abrir tu bandeja.",
+      );
+      await fetch(`/api/stores/${store._id}/verification-notice`, {
+        method: "POST",
+        headers: await authHeaders(getToken),
+      }).catch(() => null);
+    },
+    [getToken],
+  );
+
   const openVerification = useCallback(() => setVerificationOpen(true), []);
   const closeVerification = useCallback(() => setVerificationOpen(false), []);
 
@@ -88,6 +110,7 @@ export default function AppPageClient() {
         if (cancelled) return;
         const store = resolveActiveStore(stores);
         applyStores(stores);
+        if (store) void announceVerified(store);
         if (!store) throw new Error("No encontramos tu tienda activa.");
         const list = await fetchFilters(store._id, getToken);
         if (cancelled) return;
@@ -103,7 +126,7 @@ export default function AppPageClient() {
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, userId, getToken, activeStoreId, reloadKey, readStores, applyStores]);
+  }, [isLoaded, userId, getToken, activeStoreId, reloadKey, readStores, applyStores, announceVerified]);
 
   const handleActiveChange = useCallback((active: boolean) => {
     setSessionActive(active);
@@ -133,7 +156,7 @@ export default function AppPageClient() {
           ) : undefined
         }
       />
-      {pendingStore && (
+      {pendingStore && !filtersReady && (
         <AppUnverifiedBanner
           handle={pendingStore.tiktokUsername}
           onOpen={openVerification}
@@ -145,6 +168,8 @@ export default function AppPageClient() {
             <LiveController
               ref={controllerRef}
               onActiveChange={handleActiveChange}
+              unverifiedHandle={pendingStore?.tiktokUsername}
+              onOpenVerification={openVerification}
             />
           ) : (
             <div

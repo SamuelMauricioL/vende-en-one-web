@@ -1,8 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@clerk/astro/react";
+import { toast } from "sonner";
 import { AppNav } from "@/components/app-nav";
+import AppUnverifiedBanner from "@/components/app-unverified-banner";
+import VerificationDialog from "@/components/verification-dialog";
 import { ChatThread, type OutcomePayload } from "@/components/chat-thread";
 import { InboxLayout } from "@/components/inbox-layout";
 import { InboxList } from "@/components/inbox-list";
@@ -28,6 +31,7 @@ interface StoreSummary {
   _id: string;
   clerkUserId: string;
   tiktokUsername: string;
+  verifiedAt?: number;
 }
 
 /** Datos de una tienda ya mapeados: el mismo @ puede existir en dos tiendas. */
@@ -54,6 +58,9 @@ export default function InboxPageClient() {
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
   const [threadLoading, setThreadLoading] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const [verificationOpen, setVerificationOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const blockedNotices = useRef<Set<string>>(new Set());
   // S8/S9: el stream por tienda manda mientras hay live; `null` es "sin live".
   const live = useStoreLiveStream(store?._id ?? null);
 
@@ -65,10 +72,20 @@ export default function InboxPageClient() {
     [getToken],
   );
 
+  const reportBlocked = useCallback((message: string) => {
+    if (blockedNotices.current.has(message)) return;
+    blockedNotices.current.add(message);
+    toast.error(message);
+  }, []);
+
   const loadStore = useCallback(
     async (target: StoreSummary): Promise<ScopedData | null> => {
       const res = await api(`/api/stores/${target._id}/inbox`);
-      if (!res.ok) return null;
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { message?: string };
+        reportBlocked(body.message || "No pudimos cargar la bandeja de esa tienda.");
+        return null;
+      }
       const payload = (await res.json()) as { conversations: InboxRow[]; leads: InboxLead[] };
       return {
         storeId: target._id,
@@ -77,7 +94,7 @@ export default function InboxPageClient() {
         leads: payload.leads ?? [],
       };
     },
-    [api],
+    [api, reportBlocked],
   );
 
   const loadInbox = useCallback(
@@ -167,7 +184,7 @@ export default function InboxPageClient() {
       cancelled = true;
     };
     // activeStoreId cambia cuando se elige otra tienda en el menú
-  }, [isLoaded, userId, api, loadInbox, migrateLegacy, activeStoreId]);
+  }, [isLoaded, userId, api, loadInbox, migrateLegacy, activeStoreId, reloadKey]);
 
   const baseConversations = useMemo(
     () =>
@@ -230,6 +247,8 @@ export default function InboxPageClient() {
           `/api/stores/${conversation.storeId}/thread/${encodeURIComponent(conversation.tiktokUserId)}?${query}`,
         );
         if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as { message?: string };
+          reportBlocked(body.message || "No pudimos cargar la conversación.");
           setMessages([]);
           setHasMore(false);
           return;
@@ -243,7 +262,7 @@ export default function InboxPageClient() {
         setThreadLoading(false);
       }
     },
-    [api],
+    [api, reportBlocked],
   );
 
   const openThread = useCallback(
@@ -286,10 +305,26 @@ export default function InboxPageClient() {
   );
 
   const pending = pendingTotal(conversations);
+  const unverified =
+    store && typeof store.verifiedAt !== "number" ? store : null;
+
+  const openVerification = useCallback(() => setVerificationOpen(true), []);
+  const closeVerification = useCallback(() => setVerificationOpen(false), []);
+  const handleVerified = useCallback(() => {
+    setVerificationOpen(false);
+    setReloadKey((key) => key + 1);
+  }, []);
 
   return (
     <div className="h-dvh flex flex-col" style={{ backgroundColor: "#0b0f1a" }}>
       <AppNav current="inbox" pendingCount={pending} />
+
+      {unverified && (
+        <AppUnverifiedBanner
+          handle={unverified.tiktokUsername}
+          onOpen={openVerification}
+        />
+      )}
 
       <InboxLayout
         list={
@@ -366,6 +401,15 @@ export default function InboxPageClient() {
           ) : null
         }
       />
+
+      {unverified && (
+        <VerificationDialog
+          open={verificationOpen}
+          handle={unverified.tiktokUsername}
+          onClose={closeVerification}
+          onVerified={handleVerified}
+        />
+      )}
 
       <Toaster richColors position="bottom-center" />
     </div>
