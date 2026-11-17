@@ -17,8 +17,6 @@ import {
 
 interface AddStoreDialogProps {
   open: boolean;
-  /** Solo un admin puede saltarse la verificación por bio (`role: "admin"`). */
-  isAdmin: boolean;
   onClose: () => void;
   /** Recarga la lista de tiendas después de agregar. */
   onAdded: () => void | Promise<void>;
@@ -78,7 +76,6 @@ const SECONDARY_BUTTON =
  */
 export default function AddStoreDialog({
   open,
-  isAdmin,
   onClose,
   onAdded,
 }: AddStoreDialogProps) {
@@ -195,52 +192,9 @@ export default function AddStoreDialog({
     }
   }, [api, code, finish, handle]);
 
-  /** Atajo de admin: vincula el @ sin probar el código en la bio. */
-  const addWithoutValidation = useCallback(async () => {
-    // Doble guarda: el botón no se pinta para sellers, y acá tampoco pasa.
-    if (!isAdmin) return;
-    const target = step === "code" ? handle : normalizeHandle(input);
-    if (!target) {
-      setError("Escribe tu @ de TikTok, por ejemplo @tutienda");
-      return;
-    }
-    setSaving(true);
-    setError("");
-    try {
-      const res = await api("/api/users/profile/tiktok", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tiktokUsername: target }),
-      });
-
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { message?: string };
-        setError(data.message || "No se pudo agregar la tienda");
-        return;
-      }
-
-      await finish();
-    } catch {
-      setError("No pudimos conectar con el servidor. Intenta de nuevo.");
-    } finally {
-      setSaving(false);
-    }
-  }, [api, finish, handle, input, isAdmin, step]);
-
   const expiry = formatExpiry(expiresAt);
 
   const errorText = error ? <p className="text-[11px] text-[#fe2c55]">{error}</p> : null;
-
-  const adminAction = isAdmin ? (
-    <button
-      type="button"
-      onClick={() => void addWithoutValidation()}
-      disabled={saving}
-      className={SECONDARY_BUTTON}
-    >
-      Agregar sin validar
-    </button>
-  ) : null;
 
   return (
     <Dialog
@@ -297,7 +251,6 @@ export default function AddStoreDialog({
               >
                 {saving ? "Generando código…" : "Continuar"}
               </button>
-              {adminAction}
             </DialogFooter>
           </form>
         ) : (
@@ -344,7 +297,6 @@ export default function AddStoreDialog({
               >
                 Generar un código nuevo
               </button>
-              {adminAction}
             </DialogFooter>
           </div>
         )}

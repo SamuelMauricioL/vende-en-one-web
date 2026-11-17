@@ -33,7 +33,6 @@ export default function StoresManager() {
   const [stores, setStores] = useState<StoreRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   /**
    * Capacidades del perfil. `null` mientras no lleguen o si el pedido falló:
    * sin capacidades no se bloquea nada, decide el servidor.
@@ -71,9 +70,8 @@ export default function StoresManager() {
     void load();
   }, [isLoaded, userId, load]);
 
-  // Rol y tope salen de la MISMA respuesta del perfil (misma fuente que el guard
-  // del API): un admin no tiene tope, así que el navegador no puede bloquearle
-  // el 4º alta.
+  // El tope sale de la respuesta del perfil (misma fuente que el guard del API),
+  // así que el navegador no puede bloquear una alta que el servidor permita.
   useEffect(() => {
     if (!isLoaded || !userId) return;
     let cancelled = false;
@@ -83,11 +81,9 @@ export default function StoresManager() {
       // formulario queda libre y el API responde con su `message`.
       if (!res.ok) return;
       const data = (await res.json().catch(() => ({}))) as {
-        profile?: { role?: string } | null;
         capabilities?: { maxStores?: unknown } | null;
       };
       if (cancelled) return;
-      if (data.profile) setIsAdmin(data.profile.role === "admin");
       // `null` explícito es un tope ausente, no un tope desconocido; cualquier
       // otro valor (texto, objeto, ausente) se ignora y no bloquea nada.
       const served = data.capabilities?.maxStores;
@@ -204,7 +200,6 @@ export default function StoresManager() {
 
       <AddStoreDialog
         open={dialogOpen}
-        isAdmin={isAdmin}
         onClose={() => setDialogOpen(false)}
         onAdded={load}
       />

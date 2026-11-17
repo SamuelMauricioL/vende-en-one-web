@@ -8,6 +8,31 @@ const protectedPaths = ["/app", "/onboarding"];
 // Paths that require at least one linked store (subset of protectedPaths)
 const storeRequiredPaths = ["/app"];
 
+async function callerIsAdmin(
+  userId: string,
+  token: string | null
+): Promise<boolean | null> {
+  try {
+    const res = await fetch(
+      `${API_BASE}/users/profile/${encodeURIComponent(userId)}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        signal: AbortSignal.timeout(5000),
+      }
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      profile?: { role?: unknown } | null;
+    };
+    return data.profile?.role === "admin";
+  } catch {
+    return null;
+  }
+}
+
 export const onRequest = clerkMiddleware(async (auth, context, next) => {
   const url = new URL(context.request.url);
   const pathname = url.pathname;
@@ -62,7 +87,10 @@ export const onRequest = clerkMiddleware(async (auth, context, next) => {
         if (storesRes.ok) {
           const data = (await storesRes.json()) as { stores?: unknown[] };
           if (!data.stores || data.stores.length === 0) {
-            return context.redirect("/onboarding");
+            const admin = await callerIsAdmin(userId, token);
+            if (admin === false) {
+              return context.redirect("/onboarding");
+            }
           }
         }
         // 401/403/5xx: no se puede saber si tiene tiendas. No se expulsa al
