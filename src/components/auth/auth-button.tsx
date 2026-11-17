@@ -33,7 +33,6 @@ export function AuthButton({ variant = "navbar" }: { variant?: "navbar" | "app" 
       );
     }
 
-    // Navbar variant
     return (
       <div className="flex items-center gap-2">
         <UserAvatar />

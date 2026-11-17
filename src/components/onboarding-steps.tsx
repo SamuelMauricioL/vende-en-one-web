@@ -1,20 +1,18 @@
 import { STAGE_CONFIG, type LeadStage } from "@/lib/stages";
 
-/** Un solo color distingue que algo es un filtro (S6). */
 const FILTER_COLOR = "#fe2c55";
-/** Azul del ejemplo: la palabra que atrapa el comentario. */
+
 const KEYWORD_COLOR = "#60a5fa";
 
 interface FilterExample {
   id: string;
-  /** Lo que escribe un cliente en el chat. */
+
   text: string;
-  /** La palabra que el filtro atrapa dentro de esa frase. */
+
   keyword: string;
   stage: LeadStage;
 }
 
-/** Ejemplos por categoría: el usuario ve qué atrapa cada filtro y a qué embudo va. */
 const FILTER_EXAMPLES: FilterExample[] = [
   { id: "ps5", text: "¿tienes la PS5?", keyword: "PS5", stage: "compra" },
   { id: "cartera", text: "cuánto cuesta la cartera", keyword: "cartera", stage: "negociando" },
@@ -27,7 +25,6 @@ const primaryButton = {
   boxShadow: "0 8px 32px rgba(254,44,85,0.3)",
 } as const;
 
-/** Parte la frase en tres tramos para subrayar la palabra clave. */
 function splitExample(example: FilterExample): { before: string; keyword: string; after: string } {
   const index = example.text.toLowerCase().indexOf(example.keyword.toLowerCase());
   if (index < 0) return { before: example.text, keyword: "", after: "" };
@@ -38,7 +35,6 @@ function splitExample(example: FilterExample): { before: string; keyword: string
   };
 }
 
-/** Paso 3: qué categorías de filtros hay y qué atrapa cada uno. No escribe nada. */
 export function PresetsStep({ onContinue }: { onContinue: () => void }) {
   return (
     <div className="w-full">
@@ -50,7 +46,7 @@ export function PresetsStep({ onContinue }: { onContinue: () => void }) {
         </p>
       </div>
 
-      {/* Categorías del embudo: dónde cae cada comentario que coincide. */}
+      {}
       <section className="mb-6" aria-labelledby="onb-stages">
         <header className="flex items-center gap-2 mb-2">
           <span className="text-xs font-semibold tracking-wider uppercase text-white/35" id="onb-stages">
@@ -71,7 +67,7 @@ export function PresetsStep({ onContinue }: { onContinue: () => void }) {
         </ul>
       </section>
 
-      {/* Ejemplos: la palabra que atrapa, subrayada, y la categoría a la derecha. */}
+      {}
       <section aria-labelledby="onb-examples">
         <header className="flex items-center gap-2 mb-2">
           <span className="text-xs font-semibold tracking-wider uppercase text-white/35" id="onb-examples">
@@ -137,7 +133,6 @@ const FIRST_LIVE_STEPS = [
   "Al terminar, abre la Bandeja de rescate y escribe primero a quienes insistieron.",
 ];
 
-/** Paso 4: qué va a pasar en su primer live, y salida a la app. */
 export function FirstLiveStep({ onStart }: { onStart: () => void }) {
   return (
     <div className="w-full">
@@ -186,7 +181,7 @@ export function FirstLiveStep({ onStart }: { onStart: () => void }) {
         ))}
       </ol>
 
-      {/* Prueba gratis: mismo mensaje que el prototipo */}
+      {}
       <div
         className="flex items-center gap-3 rounded-xl px-4 py-3 mb-6"
         style={{

@@ -36,7 +36,6 @@ export default function AppPageClient() {
   const [sessionActive, setSessionActive] = useState(false);
   const { userId, isLoaded, getToken } = useAuth();
 
-  // S5: sin filtros cargados no se puede empezar el live.
   const activeStoreId = useActiveStoreId();
   const [filtersState, setFiltersState] = useState<FiltersState>("loading");
   const [filtersError, setFiltersError] = useState("");
@@ -98,7 +97,6 @@ export default function AppPageClient() {
     if (stores) applyStores(stores);
   }, [applyStores, readStores]);
 
-  // Precarga de los filtros de la tienda activa y recarga al cambiarla (S1, S5).
   useEffect(() => {
     if (!isLoaded || !userId) return;
     let cancelled = false;

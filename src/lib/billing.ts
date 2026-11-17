@@ -1,15 +1,11 @@
-/**
- * Cobro por Yape (web): estado de acceso, precio y validación del código.
- * Las fechas del API son epoch en ms; `toMs` tolera ISO por si cambia el transporte.
- */
+
 
 import { authHeaders, type GetToken } from "./api-auth.ts";
 
 export type AccessStatus = "active" | "trial" | "expired";
 
-/** Plan único: S/ 29.00. */
 export const PRICE_CENTS = 2900;
-/** Yape al que se paga y al que se manda la captura (sin `+`). */
+
 export const YAPE_NUMBER = "51923873749";
 
 const MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -24,7 +20,7 @@ export interface PendingPayment {
 
 export interface BillingState {
   access: AccessStatus;
-  /** Solo un admin ve /app/admin; el API lo expone en GET /billing. */
+
   role: "admin" | "seller";
   trialEndsAt: number | null;
   paidUntil: number | null;
@@ -36,7 +32,7 @@ export interface BillingState {
 export interface AccessSummary {
   label: string;
   detail: string;
-  /** Color del tema: ok, warning o marca. */
+
   tone: string;
 }
 
@@ -49,7 +45,6 @@ function toMs(value: unknown): number | null {
   return null;
 }
 
-/** S1: `active` si `paidUntil > now`; `trial` si `trialEndsAt > now`; si no, `expired`. */
 export function deriveAccess(
   dates: { paidUntil?: number | null; trialEndsAt?: number | null },
   now = Date.now(),
@@ -59,20 +54,17 @@ export function deriveAccess(
   return "expired";
 }
 
-/** "S/ 29" para 2900, "S/ 29.50" para 2950. */
 export function formatSoles(cents: number): string {
   const soles = cents / 100;
   return `S/ ${Number.isInteger(soles) ? soles : soles.toFixed(2)}`;
 }
 
-/** "7 dic 2025"; cadena vacía si no hay fecha. */
 export function formatDay(ts: number | null | undefined): string {
   if (!ts) return "";
   const d = new Date(ts);
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-/** `null` si el código sirve; si no, el mensaje que se muestra al usuario. */
 export function validateReference(raw: string): string | null {
   const value = raw.trim();
   if (!value) return "Ingresa el código de operación";
@@ -81,7 +73,6 @@ export function validateReference(raw: string): string | null {
   return null;
 }
 
-/** Resume el estado de acceso en la etiqueta, el detalle y el color. */
 export function accessSummary(state: BillingState): AccessSummary {
   if (state.access === "active") {
     return {
@@ -104,7 +95,6 @@ export function accessSummary(state: BillingState): AccessSummary {
   };
 }
 
-/** Normaliza la respuesta de `GET /billing` y deriva el acceso si el API no lo manda. */
 export function normalizeBilling(raw: unknown, now = Date.now()): BillingState {
   const data = (raw ?? {}) as Record<string, unknown>;
   const trialEndsAt = toMs(data.trialEndsAt);
@@ -133,7 +123,6 @@ export function normalizeBilling(raw: unknown, now = Date.now()): BillingState {
   };
 }
 
-/** Estado de acceso del usuario; `null` si el API no responde (la UI no bloquea por eso). */
 export async function fetchBillingState(
   getToken: GetToken,
   signal?: AbortSignal,

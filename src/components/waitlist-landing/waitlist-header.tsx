@@ -4,16 +4,6 @@ import LanguageSwitcher from "@/components/landing/language-switcher";
 import type { WaitlistLandingContent } from "@/lib/waitlist-landing/content";
 import { primaryStyle } from "./landing-ui";
 
-/**
- * S11 de `odd/tasks/landing-waitlist.md`: el header del demo (marca, sus cuatro
- * anclas y el CTA) reemplaza al `Navbar` del sitio en `/waitlist`. El selector
- * ES/EN se queda dentro: sin él, el inglés de la página sería inalcanzable.
- *
- * Responsive: en móvil el CTA baja a una segunda línea a todo el ancho
- * (`basis-full`) y las tres anclas se ocultan; la marca y el selector quedan
- * arriba. Desde `sm` todo vuelve a una sola fila de 64 px. Un solo CTA en el
- * DOM, no dos copias.
- */
 export function WaitlistHeader({ anchors }: { anchors: WaitlistLandingContent["anchors"] }) {
   const primary = anchors[anchors.length - 1];
   const links = anchors.slice(0, -1);

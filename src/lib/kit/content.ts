@@ -1,20 +1,7 @@
 import type { Locale } from "../i18n/translations";
 
-/**
- * S2/S3 de `odd/tasks/kit-live-sin-improvisar.md`: la copia del kit.
- *
- * El español es **verbatim** de `kit-live-sin-improvisar/index.html` (commit
- * `4f5d28f` del demo) y `content.test.ts` lo compara contra `demo-copy.ts`, que
- * guarda el texto visible de esa página. Escribir acá una frase distinta, más
- * corta o "mejorada" rompe el test: la copia no se reescribe.
- *
- * Las únicas cadenas que no vienen del demo son las de `form.status`, que
- * existen porque el formulario ahora guarda de verdad (S6) y necesita decir
- * qué pasó cuando el envío falla.
- */
-
 export interface ChecklistItem {
-  /** Parte en negrita que el demo muestra con `<b>`, sin los dos puntos. */
+
   label?: string;
   text: string;
 }

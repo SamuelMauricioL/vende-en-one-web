@@ -18,13 +18,12 @@ import {
 interface AddStoreDialogProps {
   open: boolean;
   onClose: () => void;
-  /** Recarga la lista de tiendas después de agregar. */
+
   onAdded: () => void | Promise<void>;
 }
 
 type Step = "handle" | "code";
 
-/** Acepta "@cuenta", "cuenta" o el enlace del perfil, igual que el CTA del Live. */
 function normalizeHandle(raw: string): string | null {
   const value = raw.trim();
   if (!value) return null;
@@ -33,12 +32,6 @@ function normalizeHandle(raw: string): string | null {
   return /^[A-Za-z0-9._]{2,}$/.test(candidate) ? candidate.toLowerCase() : null;
 }
 
-/**
- * Los mismos mensajes que el paso de verificación del onboarding: el API
- * responde estos códigos cuando no puede confirmar el código de la bio.
- * El 409 tiene más de una causa (cuenta ya verificada por otra cuenta, tope de
- * tiendas), así que ahí manda el mensaje del servidor.
- */
 function verificationError(status: number, serverMessage?: string): string {
   switch (status) {
     case 400:
@@ -56,7 +49,6 @@ function verificationError(status: number, serverMessage?: string): string {
   }
 }
 
-/** "21:34" si la fecha del API es válida; cadena vacía si no. */
 function formatExpiry(expiresAt: number | null): string {
   if (!expiresAt || !Number.isFinite(expiresAt)) return "";
   return new Date(expiresAt).toLocaleTimeString("es-PE", {
@@ -70,10 +62,6 @@ const PRIMARY_BUTTON =
 const SECONDARY_BUTTON =
   "h-10 rounded-xl text-xs font-semibold text-white/60 transition-colors outline-none hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-white/20 disabled:opacity-40";
 
-/**
- * Agregar tienda: @ + código en la bio (`verification/start` → `verification/confirm`).
- * El diálogo no se cierra con el fondo ni con Escape: la única salida es la X.
- */
 export default function AddStoreDialog({
   open,
   onClose,
@@ -96,7 +84,6 @@ export default function AddStoreDialog({
     [getToken],
   );
 
-  // Cada apertura arranca limpia: no se arrastra el código de la vez anterior.
   useEffect(() => {
     if (open) return;
     setStep("handle");
@@ -114,7 +101,6 @@ export default function AddStoreDialog({
     await onAdded();
   }, [onClose, onAdded]);
 
-  /** Pide un código nuevo (también sirve de reintento tras un fallo). */
   const startCode = useCallback(
     async (username: string) => {
       setSaving(true);
@@ -199,7 +185,7 @@ export default function AddStoreDialog({
   return (
     <Dialog
       open={open}
-      // Sin salida por fondo ni por Escape: la única salida es la X del diálogo.
+
       disablePointerDismissal
       onOpenChange={(next, details) => {
         if (

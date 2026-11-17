@@ -29,11 +29,6 @@ interface TopUsersProps {
   onCompraLeads?: (leads: CompraLead[]) => void;
 }
 
-/**
- * S4: el servidor ya filtró, clasificó, segmentó y ordenó.
- * Esta pantalla solo pinta `stage`, `stageLabel`, `spans` y, desde S10, el
- * `outcome` que produce el resolutor: el vendedor no marca atendido.
- */
 export function TopUsers({ sessionId, selectedUserIds, onToggleUser, maxMobileItems, onConnectionError, onStageCountsReport, onCompraLeads }: TopUsersProps) {
   const { data: users, totals, connected, status, connectionError } = useSSE<LeadRow>(
     `/lives/${sessionId}/stats/stream`,
@@ -50,16 +45,13 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, maxMobileIt
 
   const rows = users ?? [];
 
-  // `totals` manda en los contadores: el crudo son todos los que comentaron.
   const counts = totals?.byStage ?? NO_STAGE_COUNTS;
 
-  // Report stage counts to parent
   useEffect(() => {
     if (!onStageCountsReport || rows.length === 0) return;
     onStageCountsReport(counts);
   }, [counts, rows.length, onStageCountsReport]);
 
-  // Report purchase leads so the parent can raise floating alerts
   useEffect(() => {
     if (!onCompraLeads) return;
     onCompraLeads(
@@ -76,7 +68,6 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, maxMobileIt
   const [tick, setTick] = useState(0);
   const [activeStage, setActiveStage] = useState<"all" | LeadStage>("all");
 
-  // Auto-select best stage once on first load, never override manual tab
   const hasAutoSelected = useRef(false);
   useEffect(() => {
     if (hasAutoSelected.current || rows.length === 0) return;
@@ -94,7 +85,6 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, maxMobileIt
     return () => clearInterval(iv);
   }, []);
 
-  // El orden es del servidor: no se reordena acá.
   const visibleRows = rows.filter((row) => activeStage === "all" || row.stage === activeStage);
 
   const totalUsers = totals?.commented ?? 0;
@@ -138,13 +128,13 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, maxMobileIt
         }}
       >
         <div className="flex items-start gap-2.5 px-2.5 py-2">
-          {/* Stage dot */}
+          {}
           <span
             className="w-2 h-2 rounded-full mt-1.5 shrink-0"
             style={{ backgroundColor: cfg.color }}
           />
 
-          {/* Content */}
+          {}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span
@@ -163,7 +153,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, maxMobileIt
                   {user.stageLabel}
                 </span>
               )}
-              {/* S10: el estado lo marca el resolutor, no el vendedor. */}
+              {}
               {outcome && (
                 <span
                   className="text-[9px] font-bold px-1.5 py-0.5 rounded leading-none shrink-0"
@@ -207,7 +197,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, maxMobileIt
         </div>
       </div>
 
-      {/* Stage filter tabs */}
+      {}
       <div className="flex items-center gap-1 mb-3 shrink-0 overflow-x-auto no-scrollbar">
         <button
           type="button"
@@ -235,7 +225,7 @@ export function TopUsers({ sessionId, selectedUserIds, onToggleUser, maxMobileIt
                 color: isActive ? cfg.color : `${cfg.color}99`,
               }}
             >
-              {/* Colored dot — always visible so stage-color association is clear */}
+              {}
               <span
                 className="w-1.5 h-1.5 rounded-full shrink-0"
                 style={{ backgroundColor: cfg.color }}

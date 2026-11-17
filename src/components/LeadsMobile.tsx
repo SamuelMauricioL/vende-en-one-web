@@ -24,11 +24,6 @@ interface LeadsMobileProps {
   onCompraLeads?: (leads: CompraLead[]) => void;
 }
 
-/**
- * S4: el servidor ya filtró, clasificó, segmentó y ordenó.
- * Esta pantalla solo pinta `stage`, `stageLabel`, `spans` y, desde S10, el
- * `outcome` que produce el resolutor: el vendedor no marca atendido.
- */
 export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, onConnectionError, onStageCountsReport, onCompraLeads }: LeadsMobileProps) {
   const { data: users, totals, connected, status, connectionError } = useSSE<LeadRow>(
     `/lives/${sessionId}/stats/stream`,
@@ -45,16 +40,13 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, onConnec
 
   const rows = users ?? [];
 
-  // `totals` manda en los contadores: el crudo son todos los que comentaron.
   const counts = totals?.byStage ?? NO_STAGE_COUNTS;
 
-  // Report stage counts to parent
   useEffect(() => {
     if (!onStageCountsReport || rows.length === 0) return;
     onStageCountsReport(counts);
   }, [counts, rows.length, onStageCountsReport]);
 
-  // Report purchase leads so the parent can raise floating alerts
   useEffect(() => {
     if (!onCompraLeads) return;
     onCompraLeads(
@@ -72,7 +64,6 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, onConnec
 
   const [activeTab, setActiveTab] = useState<LeadStage>("compra");
 
-  // El orden es del servidor: no se reordena acá.
   const filtered = useMemo(() => rows.filter((row) => row.stage === activeTab), [rows, activeTab]);
 
   const [tick, setTick] = useState(0);
@@ -174,7 +165,7 @@ export function LeadsMobile({ sessionId, selectedUserIds, onToggleUser, onConnec
                 <span className="text-[10px] text-white/20 shrink-0 font-mono tabular-nums">
                   {formatElapsed(user.firstSeen)}
                 </span>
-                {/* S10: el estado lo marca el resolutor, no el vendedor. */}
+                {}
                 {outcome && (
                   <span
                     className="text-[9px] font-bold px-1.5 py-0.5 rounded leading-none shrink-0"

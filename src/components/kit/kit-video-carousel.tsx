@@ -5,17 +5,11 @@ import type { KitContent } from "@/lib/kit/content";
 
 type Videos = KitContent["videos"];
 
-/** Los dos mp4 del demo, en el orden de `videos.items` (S12). */
 const SOURCES = ["/video/kit-live-controller.mp4", "/video/kit-bandeja-rescate.mp4"];
 
 const arrowClass =
   "w-11 h-11 rounded-full text-xl text-white/80 transition-colors hover:text-white disabled:opacity-30 disabled:cursor-default outline-none focus-visible:ring-2 focus-visible:ring-[#fe2c55]/60";
 
-/**
- * S12: carrusel con scroll-snap, flechas y puntos; al reproducir un video se
- * pausa el otro. Desde 900 px los dos se ven lado a lado y la navegación
- * desaparece, así que ahí se comporta como una fila estática.
- */
 export function KitVideoCarousel({ videos }: { videos: Videos }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<(HTMLElement | null)[]>([]);
@@ -29,8 +23,6 @@ export function KitVideoCarousel({ videos }: { videos: Videos }) {
     setActive(next);
   };
 
-  // El índice se lee del scroll real: con snap el usuario también puede
-  // deslizar sin tocar las flechas.
   const onScroll = () => {
     const track = trackRef.current;
     if (!track) return;

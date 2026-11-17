@@ -17,11 +17,6 @@ const compactGhost =
 const rowClass =
   "flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-[15px]";
 
-/**
- * S8 de `odd/tasks/landing-waitlist.md`: tres filas con su etiqueta en mono.
- * «Copiar» escribe el valor completo y avisa «Copiado» (o «Selecciona y copia»
- * si el portapapeles está bloqueado) durante 1,8 s.
- */
 export function WaitlistContact({ copy }: { copy: Copy }) {
   const [labels, setLabels] = useState<Record<string, string>>({});
   const timers = useRef<Record<string, number>>({});

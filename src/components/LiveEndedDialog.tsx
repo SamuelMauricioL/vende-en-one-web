@@ -19,7 +19,6 @@ export function LiveEndedDialog({ stageCounts, onClose, onGoToInbox }: LiveEnded
   const dialogRef = useRef<HTMLDivElement>(null);
   const hasLeads = Object.values(stageCounts).some((c) => c > 0);
 
-  // Close on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -28,7 +27,6 @@ export function LiveEndedDialog({ stageCounts, onClose, onGoToInbox }: LiveEnded
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  // Close on backdrop click
   const handleBackdrop = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) onClose();
   };
@@ -49,7 +47,7 @@ export function LiveEndedDialog({ stageCounts, onClose, onGoToInbox }: LiveEnded
           padding: "32px 28px",
         }}
       >
-        {/* Icon — checkmark circle: "data safely saved" */}
+        {}
         <div
           className="w-11 h-11 rounded-xl flex items-center justify-center mx-auto mb-4"
           style={{ background: "rgba(34,197,94,0.12)" }}
@@ -59,7 +57,7 @@ export function LiveEndedDialog({ stageCounts, onClose, onGoToInbox }: LiveEnded
           </svg>
         </div>
 
-        {/* Title */}
+        {}
         <h2
           className="text-center text-base font-semibold mb-1"
           style={{ color: "rgba(255,255,255,0.9)" }}
@@ -67,7 +65,7 @@ export function LiveEndedDialog({ stageCounts, onClose, onGoToInbox }: LiveEnded
           Live finalizado
         </h2>
 
-        {/* Body — one line, confident */}
+        {}
         <p
           className="text-center text-sm mb-5"
           style={{ color: "rgba(255,255,255,0.45)" }}
@@ -75,7 +73,7 @@ export function LiveEndedDialog({ stageCounts, onClose, onGoToInbox }: LiveEnded
           Tus leads están guardados
         </p>
 
-        {/* Stage count pills — scannable, colored, consistent with app chips */}
+        {}
         {hasLeads && (
           <div className="flex items-center justify-center gap-2 mb-6">
             {STAGE_ORDER.filter((s) => stageCounts[s] > 0).map((stage) => {
@@ -117,7 +115,7 @@ export function LiveEndedDialog({ stageCounts, onClose, onGoToInbox }: LiveEnded
           </p>
         )}
 
-        {/* Primary CTA — full-width, prominent */}
+        {}
         <button
           type="button"
           onClick={onGoToInbox}
@@ -133,7 +131,7 @@ export function LiveEndedDialog({ stageCounts, onClose, onGoToInbox }: LiveEnded
           Rescatar mis ventas →
         </button>
 
-        {/* Secondary — text link, de-emphasized */}
+        {}
         <button
           type="button"
           onClick={onClose}

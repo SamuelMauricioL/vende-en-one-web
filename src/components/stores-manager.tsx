@@ -18,25 +18,17 @@ interface StoreRow {
   sessions: number;
 }
 
-/**
- * Capacidades que el API sirve junto al perfil (D2). El tope de tiendas es del
- * servidor: acá solo se renderiza. `null` significa "sin tope".
- */
 interface CallerCapabilities {
   maxStores: number | null;
 }
 
-/** Gestión de tiendas: marcar la activa, agregar y remover. */
 export default function StoresManager() {
   const { userId, isLoaded, getToken } = useAuth();
   const activeStoreId = useActiveStoreId();
   const [stores, setStores] = useState<StoreRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  /**
-   * Capacidades del perfil. `null` mientras no lleguen o si el pedido falló:
-   * sin capacidades no se bloquea nada, decide el servidor.
-   */
+
   const [caps, setCaps] = useState<CallerCapabilities | null>(null);
 
   const api = useCallback(
@@ -58,7 +50,7 @@ export default function StoresManager() {
     const list = data.stores ?? [];
     setStores(list);
     setLoading(false);
-    // Si no hay activa (o ya no existe), se fija la resuelta.
+
     if (list.length && !list.some((s) => s._id === readActiveStoreId())) {
       const resolved = resolveActiveStore(list);
       if (resolved) writeActiveStoreId(resolved._id);
@@ -70,22 +62,18 @@ export default function StoresManager() {
     void load();
   }, [isLoaded, userId, load]);
 
-  // El tope sale de la respuesta del perfil (misma fuente que el guard del API),
-  // así que el navegador no puede bloquear una alta que el servidor permita.
   useEffect(() => {
     if (!isLoaded || !userId) return;
     let cancelled = false;
     void (async () => {
       const res = await api(`/api/users/profile/${encodeURIComponent(userId)}`);
-      // Sin respuesta (fallo, 404 o 403) no inventamos capacidades: el
-      // formulario queda libre y el API responde con su `message`.
+
       if (!res.ok) return;
       const data = (await res.json().catch(() => ({}))) as {
         capabilities?: { maxStores?: unknown } | null;
       };
       if (cancelled) return;
-      // `null` explícito es un tope ausente, no un tope desconocido; cualquier
-      // otro valor (texto, objeto, ausente) se ignora y no bloquea nada.
+
       const served = data.capabilities?.maxStores;
       if (served === null) setCaps({ maxStores: null });
       else if (typeof served === "number" && Number.isFinite(served)) {
@@ -108,14 +96,11 @@ export default function StoresManager() {
     await load();
   };
 
-  // El tope se renderiza desde las capacidades servidas; no hay copia local que
-  // pueda desincronizarse del servidor. Sin capacidades no se bloquea nada.
   const maxStores = caps === null ? null : caps.maxStores;
   const full = maxStores !== null && stores.length >= maxStores;
   const limitText =
     full && maxStores !== null ? `Llegaste al límite de ${maxStores} tiendas` : null;
 
-  // La copia no promete un tope que el servidor no haya servido.
   const capNote =
     caps === null
       ? "Una tienda con lives no se puede eliminar."

@@ -1,9 +1,4 @@
-/**
- * S4 de `odd/tasks/landing-waitlist.md`: la landing no inventa diseño propio,
- * usa los tokens del sitio (`--bg #0b0f1a`, `--brand #fe2c55`,
- * `--brand-2 #25f4ee`, Inter + JetBrains Mono). Lo que se repite entre bloques
- * vive acá para no repetirlo en cada componente.
- */
+
 
 export const card = {
   background: "rgba(255,255,255,0.02)",
@@ -20,7 +15,6 @@ export const ghostButton =
 
 export const ghostStyle = { border: "1px solid rgba(255,255,255,0.10)" };
 
-/** La etiqueta mono del sitio (`De la transmisión a la venta`, `Demo`, …). */
 export const monoLabel = "font-mono text-[11px] uppercase tracking-[0.14em] text-white/40";
 
 export const accentText = {

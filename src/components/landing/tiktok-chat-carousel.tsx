@@ -46,8 +46,8 @@ function formatRelativeTime(createdAt: number): string {
 
 function createMessage(index: number) {
   const msgIndex = index % messages.length;
-  // Each message gets a random past timestamp within the last 5 minutes
-  const ageOffset = Math.floor(Math.random() * 300) * 1000; // 0-300s ago
+
+  const ageOffset = Math.floor(Math.random() * 300) * 1000;
   return {
     avatar: avatars[msgIndex % avatars.length],
     username: usernames[msgIndex % usernames.length],
@@ -66,11 +66,10 @@ export default function TikTokChatCarousel() {
   );
   const [activeIndex, setActiveIndex] = useState(0);
   const [leaving, setLeaving] = useState(false);
-  const [tick, setTick] = useState(0); // forces re-render to update relative times
+  const [tick, setTick] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const leavingRef = useRef(false);
 
-  // Update times every 10 seconds
   useEffect(() => {
     const iv = setInterval(() => setTick((t) => t + 1), 10000);
     return () => clearInterval(iv);
@@ -131,7 +130,6 @@ export default function TikTokChatCarousel() {
   );
 }
 
-// Separate component that uses tick to recompute relative time
 function TikTokMessage({ data, tick: _tick }: { data: MessageData; tick: number }) {
   return (
     <div

@@ -1,10 +1,5 @@
-/**
- * Waitlist pública (`odd/tasks/waitlist.md`, S2-S4). La regla vive acá y no en la
- * UI para que se pruebe sin navegador. El destino es el Apps Script del demo, que
- * escribe en su Google Sheet: este repo no guarda los registros.
- */
 
-/** Nuestro API (Vercel reescribe `/api/*` a Railway). Antes era un Apps Script. */
+
 export const WAITLIST_ENDPOINT = "/api/waitlist";
 
 export const CATEGORIES = [
@@ -25,7 +20,7 @@ export type WaitlistInput = {
   tiktok: string;
   category: string;
   frequency: string;
-  /** Honeypot: una persona nunca lo llena. */
+
   website?: string;
 };
 
@@ -41,12 +36,10 @@ export type WaitlistPayload = {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TIKTOK_RE = /^@?[A-Za-z0-9._]{2,24}$/;
 
-/** `nick` y `@nick` salen siempre como `@nick`. */
 export function normalizeTiktok(raw: string): string {
   return `@${raw.trim().replace(/^@+/, "")}`;
 }
 
-/** Arma el body tal cual lo espera el Apps Script. */
 export function buildPayload(input: WaitlistInput): WaitlistPayload {
   return {
     email: input.email.trim(),
@@ -58,10 +51,6 @@ export function buildPayload(input: WaitlistInput): WaitlistPayload {
   };
 }
 
-/**
- * `null` si se puede enviar; `"invalid"` si falta algo o el correo/@ no tienen
- * forma válida. Un solo código porque el demo muestra un único mensaje (S4).
- */
 export function validateWaitlist(input: WaitlistInput): "invalid" | null {
   const payload = buildPayload(input);
   const valid =
@@ -73,11 +62,6 @@ export function validateWaitlist(input: WaitlistInput): "invalid" | null {
   return valid ? null : "invalid";
 }
 
-/**
- * S3: JSON normal contra nuestro API, sin `no-cors`, para que un 400 o un 429 se
- * vean como error en pantalla en vez de un éxito falso (eso pasaba con el Apps
- * Script, que no permitía leer la respuesta).
- */
 export async function submitWaitlist(
   payload: WaitlistPayload,
   doFetch: typeof fetch = fetch,

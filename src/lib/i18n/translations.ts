@@ -3,12 +3,11 @@ export type TranslationKey = keyof typeof es;
 export type Locale = "es" | "en";
 
 export const es = {
-  // Nav
+
   "nav.demo": "Demo",
   "nav.features": "Features",
   "nav.live": "Live Controller",
 
-  // Hero
   "hero.badge": "Captura leads de tu TikTok Live",
   "hero.headline.start": "Deja de perder",
   "hero.headline.end": "en tu TikTok Live",
@@ -24,7 +23,6 @@ export const es = {
   "hero.social": "+50 vendedores ya no pierden ventas en vivo",
   "hero.scroll": "Descubre",
 
-  // Funnel
   "funnel.badge": "De la transmisión a la venta",
   "funnel.title": "La realidad de vender en TikTok Live",
   "funnel.subtitle":
@@ -42,7 +40,6 @@ export const es = {
   "funnel.bottom":
     "Solo unos cuantos te compran. Los demás se pierden entre mensajes. Pero con Live Leads, los recuperas después del live.",
 
-  // Video
   "video.title": "Así funciona en vivo",
   "video.subtitle":
     "Conecta tu TikTok Live, y nosotros nos encargamos del resto.",
@@ -52,7 +49,6 @@ export const es = {
     "Demo automática — mira cómo los leads fluyen del Live a tu Dashboard en tiempo real",
   "chat.watching": "viendo",
 
-  // Features
   "features.title": "Todo lo que necesitas",
   "features.subtitle": "De la transmisión a la venta, en un solo lugar.",
   "features.0.title": "Conexión directa al Live",
@@ -74,7 +70,6 @@ export const es = {
   "features.6.desc":
     "Lo que no vendiste en el live, véndelo después. Captura sus datos, escríbeles y cierra la venta cuando termine la transmisión.",
 
-  // CTA
   "cta.title": "No pierdas ventas. Ni en el live, ni después.",
   "cta.subtitle":
     "Captura leads durante la transmisión. Cuando termine el live, te quedas con los datos de los que querían comprar. Lo que no vendiste hoy, lo vendes mañana.",
@@ -84,19 +79,15 @@ export const es = {
   "cta.stat.precision": "Precisión IA",
   "cta.stat.setup": "En configurar",
 
-  // Waitlist
-
-  // Footer
   "footer.tagline": "Hecho para creadores que venden en vivo — Live Leads",
 } as const;
 
 export const en: Record<TranslationKey, string> = {
-  // Nav
+
   "nav.demo": "Demo",
   "nav.features": "Features",
   "nav.live": "Live Controller",
 
-  // Hero
   "hero.badge": "Capture leads from your TikTok Live",
   "hero.headline.start": "Stop losing",
   "hero.headline.end": "in your TikTok Live",
@@ -112,7 +103,6 @@ export const en: Record<TranslationKey, string> = {
   "hero.social": "+50 sellers no longer lose live sales",
   "hero.scroll": "Discover",
 
-  // Funnel
   "funnel.badge": "From stream to sale",
   "funnel.title": "The reality of selling on TikTok Live",
   "funnel.subtitle":
@@ -130,7 +120,6 @@ export const en: Record<TranslationKey, string> = {
   "funnel.bottom":
     "Only a few will buy. The rest get buried in the chat. But with Live Leads, you recover them after the live.",
 
-  // Video
   "video.title": "How it works live",
   "video.subtitle":
     "Connect your TikTok Live, and we take care of the rest.",
@@ -140,7 +129,6 @@ export const en: Record<TranslationKey, string> = {
     "Auto demo — watch leads flow from Live to your Dashboard in real time",
   "chat.watching": "watching",
 
-  // Features
   "features.title": "Everything you need",
   "features.subtitle": "From stream to sale, all in one place.",
   "features.0.title": "One-click live connection",
@@ -162,7 +150,6 @@ export const en: Record<TranslationKey, string> = {
   "features.6.desc":
     "What you didn't sell during the live, sell it after. Capture their data, message them, and close the sale after the stream ends.",
 
-  // CTA
   "cta.title": "Don't lose sales. Not during the live, not after.",
   "cta.subtitle":
     "Capture leads during the stream. When the live ends, you keep the data of everyone who wanted to buy. What you don't sell today, you sell tomorrow.",
@@ -172,8 +159,5 @@ export const en: Record<TranslationKey, string> = {
   "cta.stat.precision": "AI Precision",
   "cta.stat.setup": "To set up",
 
-  // Waitlist
-
-  // Footer
   "footer.tagline": "Made for creators who sell live — Live Leads",
 };

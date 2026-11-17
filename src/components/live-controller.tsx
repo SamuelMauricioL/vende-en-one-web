@@ -29,11 +29,9 @@ const TIKTOK_HANDLE_REGEX = /^@?([a-zA-Z0-9_.-]+)$/;
 function extractUsername(raw: string): string | null {
   const trimmed = raw.trim();
 
-  // Try full URL first
   const urlMatch = trimmed.match(TIKTOK_URL_REGEX);
   if (urlMatch) return urlMatch[1];
 
-  // Try bare handle (@username or username)
   const handleMatch = trimmed.match(TIKTOK_HANDLE_REGEX);
   if (handleMatch) return handleMatch[1];
 
@@ -93,7 +91,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
 }>(({ onActiveChange, unverifiedHandle, onOpenVerification }, ref) => {
   const { getToken } = useAuth();
   const [storeId, setStoreId] = useState("");
-  // El @ con el que se conecta el live es el de la tienda activa, no el del perfil.
+
   const [storeUsername, setStoreUsername] = useState("");
   const activeStoreId = useActiveStoreId();
 
@@ -110,7 +108,6 @@ export const LiveController = forwardRef<LiveControllerHandle, {
   const [expired, setExpired] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
 
-  // Acceso vencido: el botón de iniciar live queda bloqueado con enlace al cobro.
   useEffect(() => {
     let cancelled = false;
     void fetchBillingState(getToken).then((state) => {
@@ -133,8 +130,6 @@ export const LiveController = forwardRef<LiveControllerHandle, {
     [activeSessionId],
   );
 
-  // ── Arranque y reenganche ──
-  // Único camino de `POST /lives/start`: hero, formulario y reenganche lo reusan.
   const startLive = useCallback(
     async (username: string, options: { auto?: boolean } = {}): Promise<boolean> => {
       setLastUsername(username);
@@ -150,7 +145,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
 
         if (!res.ok) {
           trackEvent("Live Start Failed", { username, status: res.status });
-          // 402: acceso vencido, se ofrece el cobro en lugar del mensaje del API
+
           if (res.status === 402) {
             setExpired(true);
             toast.error("Tu acceso venció. Registra tu pago para volver a iniciar lives.");
@@ -163,7 +158,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
 
         const sessionId: string | null = data.live?.sessionId ?? null;
         if (sessionId) setActiveSessionId(sessionId);
-        // S7: se guarda el sessionId junto al @ para que el reenganche no adivine.
+
         localStorage.setItem(
           LIVE_RECONNECT_KEY,
           formatSavedLive({ username, sessionId }),
@@ -183,11 +178,6 @@ export const LiveController = forwardRef<LiveControllerHandle, {
     [getToken, storeId],
   );
 
-  /**
-   * S7: al recargar, el live sigue corriendo en el servidor. Se pregunta por su
-   * estado y se reusa la sesión viva; solo se arranca una nueva cuando no hay
-   * ninguna y el monitor de la tienda confirma que el live existe.
-   */
   const resumeLive = useCallback(
     async (username: string, monitorSaysLive: boolean): Promise<void> => {
       setLoading(true);
@@ -217,12 +207,10 @@ export const LiveController = forwardRef<LiveControllerHandle, {
         }
 
         if (decision.kind === "forbidden") {
-          // El @ de la tienda activa no es el del perfil: se avisa y el arranque
-          // manual queda disponible, la pantalla no se rompe.
+
           toast.error(decision.message);
         }
 
-        // Sin sesión viva: se suelta el sessionId viejo y se espera al usuario.
         const saved = parseSavedLive(localStorage.getItem(LIVE_RECONNECT_KEY));
         if (saved?.sessionId) {
           localStorage.setItem(
@@ -231,7 +219,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
           );
         }
       } catch {
-        // Sin red la pantalla queda en modo manual: el botón sigue ahí.
+
       } finally {
         setLoading(false);
       }
@@ -239,8 +227,6 @@ export const LiveController = forwardRef<LiveControllerHandle, {
     [getToken, startLive],
   );
 
-  // Una pasada apenas se conoce la tienda; otra solo si el monitor confirma un
-  // live que el servidor ya no tiene en memoria.
   const resumeProbe = useRef<"none" | "quiet" | "live">("none");
 
   useEffect(() => {
@@ -252,7 +238,6 @@ export const LiveController = forwardRef<LiveControllerHandle, {
     void resumeLive(storeUsername, monitorSaysLive);
   }, [storeId, storeUsername, monitorStatus, activeSessionId, resumeLive]);
 
-  // Tienda del usuario: el API exige storeId para arrancar un live.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -263,14 +248,14 @@ export const LiveController = forwardRef<LiveControllerHandle, {
           stores?: Array<{ _id: string; tiktokUsername: string }>;
         };
         const list = data.stores ?? [];
-        // La tienda activa del menú manda; sin elección, la primera.
+
         const match = resolveActiveStore(list);
         if (!cancelled && match) {
           setStoreId(match._id);
           setStoreUsername(match.tiktokUsername);
         }
       } catch {
-        // sin tienda, el arranque del live responderá con un error claro
+
       }
     })();
     return () => {
@@ -278,17 +263,15 @@ export const LiveController = forwardRef<LiveControllerHandle, {
     };
   }, [getToken, activeStoreId]);
 
-  // Al cambiar de tienda, el formulario y la conexión siguen a esa tienda.
   useEffect(() => {
     if (activeSessionId) return;
     setInput(storeUsername ? `https://www.tiktok.com/@${storeUsername}` : "");
     setLastUsername(storeUsername);
   }, [storeUsername, activeSessionId]);
 
-  // ── Live monitor WebSocket ──
   useEffect(() => {
     if (activeSessionId || !storeUsername) {
-      // Close WS when session starts or no username
+
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
@@ -298,7 +281,6 @@ export const LiveController = forwardRef<LiveControllerHandle, {
 
     setMonitorStatus("connecting");
 
-    // WebSocket no acepta headers: se pide un ticket de corta vida.
     let cancelled = false;
     let ws: WebSocket | null = null;
 
@@ -314,7 +296,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
           ticket = body.ticket ?? "";
         }
       } catch {
-        // sin ticket el servidor cierra la conexión; se refleja como error
+
       }
       if (cancelled) return;
 
@@ -330,7 +312,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
             setMonitorStatus(data.live ? "live" : "waiting");
           }
         } catch {
-          // ignore malformed messages
+
         }
       };
 
@@ -356,18 +338,18 @@ export const LiveController = forwardRef<LiveControllerHandle, {
     if (error === "El live ha finalizado") {
       if (liveEndedHandled.current) return;
       liveEndedHandled.current = true;
-      // Un live terminado no se reengancha solo si el monitor llega tarde.
+
       resumeProbe.current = "live";
       setActiveSessionId(null);
       setShowLiveEndedDialog(true);
-      // Keep the UI data + state visible so the user can review leads
+
       return;
     }
     toast.error(`Error al conectar: ${error}`);
     localStorage.removeItem(LIVE_RECONNECT_KEY);
     setActiveSessionId(null);
     setSelectedUserIds(new Set());
-    // Keep localStorage so data survives page reloads
+
     setLastUsername("");
     setShowEditInput(false);
   }, []);
@@ -385,10 +367,10 @@ export const LiveController = forwardRef<LiveControllerHandle, {
   const toggleUser = useCallback((userId: string) => {
     setSelectedUserIds((prev) => {
       if (prev.has(userId)) {
-        // Tap mismo usuario → deseleccionar (mostrar todos)
+
         return new Set();
       }
-      // Seleccionar solo este usuario
+
       return new Set([userId]);
     });
   }, []);
@@ -438,18 +420,17 @@ export const LiveController = forwardRef<LiveControllerHandle, {
       const msg = err instanceof Error ? err.message : "Error desconocido";
       trackEvent("Live Stop Failed", { username: lastUsername, status: msg });
     } finally {
-      // Always clean up locally — even if the API fails, the user just wants to stop
+
       localStorage.removeItem(LIVE_RECONNECT_KEY);
       setActiveSessionId(null);
       setShowLiveEndedDialog(true);
       setLoading(false);
-      // Keep selectedUserIds and lastUsername — data stays visible
+
     }
   };
 
   const extracted = input.trim() ? extractUsername(input.trim()) : null;
 
-  // Después del live se trabaja la bandeja: es donde se cierra el bucle.
   const goToInbox = useCallback(() => {
     window.location.href = "/app/inbox";
   }, []);
@@ -465,9 +446,9 @@ export const LiveController = forwardRef<LiveControllerHandle, {
         </div>
       )}
 
-      {/* Form */}
+      {}
       {!activeSessionId && storeUsername && !showEditInput ? (
-        /* ── Saved account: hero card ── */
+
         <div className="max-w-lg mx-auto w-full shrink-0 pt-8 md:pt-12">
           <div
             className="rounded-3xl overflow-hidden"
@@ -476,11 +457,11 @@ export const LiveController = forwardRef<LiveControllerHandle, {
               border: "1px solid rgba(255,255,255,0.06)",
             }}
           >
-            {/* Accent bar */}
+            {}
             <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #fe2c55, #25f4ee)" }} />
 
             <div className="p-6 sm:p-8">
-              {/* Icon */}
+              {}
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
                 style={{
                   background: "linear-gradient(135deg, #fe2c55, #e8254a)",
@@ -499,7 +480,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
                 Captura leads de tu TikTok Live en tiempo real con <span className="text-[#25f4ee] font-semibold">97% de precisión</span>
               </p>
 
-              {/* Account info */}
+              {}
               <div className="flex items-center justify-between gap-3 p-4 rounded-2xl mb-5"
                 style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
               >
@@ -528,7 +509,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
               <Button
                 type="button"
                 onClick={async () => {
-                  // Close monitor WS, will auto-reconnect later if needed
+
                   if (wsRef.current) {
                     wsRef.current.close();
                     wsRef.current = null;
@@ -572,7 +553,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
           </p>
         </div>
       ) : !activeSessionId ? (
-        /* ── Manual input ── */
+
         <div className="max-w-lg mx-auto w-full shrink-0 pt-8 md:pt-12">
           <div
             className="rounded-3xl overflow-hidden"
@@ -582,7 +563,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
             }}
           >
             <div className="p-6 sm:p-8">
-              {/* Icon */}
+              {}
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
                 style={{
                   background: "linear-gradient(135deg, #fe2c55, #e8254a)",
@@ -667,10 +648,10 @@ export const LiveController = forwardRef<LiveControllerHandle, {
         </div>
       ) : null}
 
-      {/* Live panels */}
+      {}
       {activeSessionId && (
         <>
-          {/* Desktop stop button (mobile has it in AppNav) */}
+          {}
           <div className="max-md:hidden flex justify-end shrink-0">
             <Button
               type="button"
@@ -696,7 +677,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 flex-1 min-h-0">
-          {/* Desktop leads card */}
+          {}
           <div className="max-md:hidden lg:col-span-2 rounded-2xl p-4 flex flex-col min-h-0 overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
             <TopUsers
               sessionId={activeSessionId}
@@ -708,7 +689,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
               onCompraLeads={onCompraLeadsReport}
             />
           </div>
-          {/* Mobile leads card */}
+          {}
           <div className="md:hidden rounded-2xl p-4 flex flex-col min-h-0 overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
             <LeadsMobile
               sessionId={activeSessionId}

@@ -10,11 +10,6 @@ const card = {
   border: "1px solid rgba(255,255,255,0.06)",
 };
 
-/**
- * S9/S11: los 4 rubros con sus 3 mensajes, el botón «Copiar» y el candado.
- * El texto que se copia es el crudo (con las llaves): el vendedor reemplaza
- * las variables al enviarlo.
- */
 export function KitTemplates({ unlocked }: { unlocked: boolean }) {
   const { locale } = useI18n();
   const content = kitContent[locale].templates;
@@ -60,8 +55,7 @@ export function KitTemplates({ unlocked }: { unlocked: boolean }) {
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => setCopied(null), 1400);
     } catch {
-      // Sin portapapeles (o sin permiso) se deja el texto seleccionado para
-      // que el usuario lo copie a mano, como hacía el demo.
+
       setCopied(null);
       setFallback(index);
       const paragraph = paragraphRefs.current[index];

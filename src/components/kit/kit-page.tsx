@@ -12,10 +12,8 @@ import { KitLeadBoard } from "./kit-lead-board";
 import { KitTemplates } from "./kit-templates";
 import { KitVideoCarousel } from "./kit-video-carousel";
 
-/** Único destino externo de la página (S2.10 y S2.13). */
 const DEMO_URL = "https://www.tiktoklive.me/app";
 
-/** Los 6 anclajes del índice, en el mismo orden que `content.toc.items`. */
 const TOC_ANCHORS = ["#antes", "#gancho", "#oferta", "#durante", "#despues", "#plantillas"];
 
 const card = {
@@ -23,7 +21,6 @@ const card = {
   border: "1px solid rgba(255,255,255,0.06)",
 };
 
-/** El degradado de marca del sitio (`#fe2c55` → `#25f4ee`) para los acentos. */
 const accentText = {
   backgroundImage: "linear-gradient(135deg, #fe2c55, #25f4ee)",
   WebkitBackgroundClip: "text",
@@ -49,16 +46,11 @@ function SectionHead({ eyebrow, title, intro }: { eyebrow: string; title: string
   );
 }
 
-/**
- * S1/S2/S4/S9/S14 de `odd/tasks/kit-live-sin-improvisar.md`: toda la página del
- * kit en una sola isla, para que el idioma del navbar (S17) la alcance.
- */
 export function KitPage() {
   const { locale } = useI18n();
   const content = kitContent[locale];
   const [unlocked, setUnlocked] = useState(false);
 
-  // El desbloqueo se lee después de montar: el servidor no conoce este navegador.
   useEffect(() => {
     setUnlocked(readKitState().unlocked);
   }, []);

@@ -3,7 +3,6 @@
 import type { WaitlistLandingContent } from "@/lib/waitlist-landing/content";
 import { card, monoLabel, sectionClass } from "./landing-ui";
 
-/** S4 de `odd/tasks/landing-waitlist.md`: pasos con su etiqueta por momento. */
 export function WaitlistSteps({ copy }: { copy: WaitlistLandingContent["steps"] }) {
   return (
     <section id="como" className={sectionClass}>

@@ -4,18 +4,12 @@ import type { KitContent } from "@/lib/kit/content";
 
 type Board = KitContent["liveLeads"]["board"];
 
-/**
- * El color sigue el orden de las filas del demo: Compra rosa, Negociando
- * ámbar, Interesado verde. Es decorativo, así que `role="img"` con el
- * `aria-label` alcanza y el texto de adentro no se anuncia dos veces.
- */
 const TAG_TONE = [
   "bg-[#fe2c55]/15 text-[#fe2c55]",
   "bg-amber-400/15 text-amber-300",
   "bg-emerald-400/15 text-emerald-300",
 ];
 
-/** S2.9-10: tablero de ejemplo con el punto «En vivo», sus 3 filas y la nota. */
 export function KitLeadBoard({ board }: { board: Board }) {
   return (
     <div

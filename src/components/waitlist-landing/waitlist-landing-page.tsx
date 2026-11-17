@@ -19,14 +19,8 @@ import {
   sectionClass,
 } from "./landing-ui";
 
-/** El único destino externo de la página (S7). */
 const DEMO_URL = "https://www.tiktoklive.me/app";
 
-/**
- * S1/S2 de `odd/tasks/landing-waitlist.md`: la landing completa de `/waitlist`,
- * con los 8 bloques del demo en su orden. Toda la copia sale de
- * `lib/waitlist-landing/content.ts`; acá solo se compone.
- */
 export function WaitlistLandingPage() {
   const { locale } = useI18n();
   const content = waitlistContent[locale];
@@ -34,12 +28,12 @@ export function WaitlistLandingPage() {
 
   return (
     <div>
-      {/* Bloque 1: el header del demo reemplaza al Navbar del sitio en esta ruta. */}
+      {}
       <WaitlistHeader anchors={content.anchors} />
 
       <main id="top">
 
-      {/* Bloque 2 + 3: hero y ventana de producto. */}
+      {}
       <section className="relative overflow-hidden pt-14 pb-16 sm:pt-20 sm:pb-24">
         <div
           className="absolute inset-0 pointer-events-none"
@@ -75,7 +69,7 @@ export function WaitlistLandingPage() {
         </div>
       </section>
 
-      {/* Bloque 4: demo, con la captura del producto de fondo y un degradado encima. */}
+      {}
       <section id="demo" className="relative overflow-hidden scroll-mt-24">
         <img
           src="/landing/demo-bg.jpg"
@@ -110,10 +104,10 @@ export function WaitlistLandingPage() {
         </div>
       </section>
 
-      {/* Bloque 5. */}
+      {}
       <WaitlistSteps copy={content.steps} />
 
-      {/* Bloque 6 + 7: waitlist y demo con TikTok, lado a lado. */}
+      {}
       <section className={sectionClass}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-1 gap-5 lg:grid-cols-2 lg:items-start">
           <WaitlistForm copy={content.waitlist} />
@@ -121,7 +115,7 @@ export function WaitlistLandingPage() {
         </div>
       </section>
 
-      {/* Bloque 8, primera parte. */}
+      {}
       <section id="faq" className={sectionClass}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="max-w-3xl">
@@ -136,10 +130,10 @@ export function WaitlistLandingPage() {
         </div>
       </section>
 
-      {/* Bloque 8, segunda parte. */}
+      {}
       <WaitlistContact copy={content.contact} />
 
-      {/* Bloque 8, pie del demo. El pie del sitio va después, en la página. */}
+      {}
       </main>
 
       <footer className="border-t border-white/[0.04] py-10">
@@ -167,8 +161,8 @@ export function WaitlistLandingPage() {
                 {link.label}
               </a>
             ))}
-            {/* Chrome del sitio, no copia del demo: los mismos destinos que
-                ponía el Footer general en esta ruta. */}
+            {
+}
             <a
               href="/privacy"
               className="rounded-lg text-xs text-white/30 transition-colors hover:text-white/60 outline-none focus-visible:ring-2 focus-visible:ring-[#fe2c55]/50"

@@ -5,7 +5,6 @@ import { card, ghostButton, ghostStyle, monoLabel, primaryButton, primaryStyle }
 
 type Copy = WaitlistLandingContent["tiktok"];
 
-/** El destino de la prueba: se abre aparte (S7). */
 const DEMO_URL = "https://www.tiktoklive.me/app";
 
 const tick = (
@@ -32,10 +31,6 @@ const cross = (
   </span>
 );
 
-/**
- * S4/S7 de `odd/tasks/landing-waitlist.md`: la lista de permisos sí/no, que el
- * sitio no tenía, y los dos botones de la prueba.
- */
 export function WaitlistPerms({ copy }: { copy: Copy }) {
   return (
     <div className="rounded-3xl p-6 sm:p-8" style={card}>

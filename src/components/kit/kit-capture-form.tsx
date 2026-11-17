@@ -20,11 +20,10 @@ const labelClass = "block text-sm font-semibold text-white/80 mb-1.5";
 
 interface KitCaptureFormProps {
   form: Form;
-  /** Lo llama un 201: la página guarda el desbloqueo y refresca las plantillas. */
+
   onUnlocked: () => void;
 }
 
-/** S5/S6: captura del kit. Valida y envía con `lib/kit/lead-magnet`, nada más. */
 export function KitCaptureForm({ form, onUnlocked }: KitCaptureFormProps) {
   const [values, setValues] = useState<LeadMagnetInput>(() => ({
     email: "",
@@ -65,8 +64,7 @@ export function KitCaptureForm({ form, onUnlocked }: KitCaptureFormProps) {
   );
 
   const sending = status === "sending";
-  // La regla del correo se aísla con el mismo validador: repetir la regex acá
-  // sería una segunda fuente de verdad.
+
   const emailRejected =
     validateLeadMagnet({ email: values.email, tiktok: "", category: CATEGORIES[0] }) !== null;
   const tiktokRejected =
@@ -134,7 +132,7 @@ export function KitCaptureForm({ form, onUnlocked }: KitCaptureFormProps) {
             onChange={update("category")}
             className={fieldClass}
           >
-            {/* Se muestra el rubro traducido y se envía el canónico del API. */}
+            {}
             {form.categories.map((label, index) => (
               <option key={label} value={CATEGORIES[index] ?? label} style={{ color: "#0b0f1a" }}>
                 {label}
@@ -143,7 +141,7 @@ export function KitCaptureForm({ form, onUnlocked }: KitCaptureFormProps) {
           </select>
         </div>
 
-        {/* Honeypot: fuera de pantalla y sin foco; una persona nunca lo llena. */}
+        {}
         <input
           type="text"
           name="website"

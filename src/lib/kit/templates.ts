@@ -1,13 +1,5 @@
 import type { Locale } from "../i18n/translations";
 
-/**
- * S2/S3 de `odd/tasks/kit-live-sin-improvisar.md`: los 12 mensajes de
- * seguimiento del demo, 4 rubros por 3 momentos. El español es verbatim del
- * bloque `T` de `kit-live-sin-improvisar/index.html` (commit `4f5d28f`) y del
- * `plantillas-seguimiento.md` del mismo repo. Las variables entre llaves se
- * conservan tal cual: son lo que el vendedor reemplaza antes de enviar.
- */
-
 export type Rubric = "ropa" | "joyeria" | "tec" | "info";
 
 export interface TemplateMessage {
@@ -142,7 +134,6 @@ export interface TextSegment {
   isVariable: boolean;
 }
 
-/** Corta el mensaje en texto plano y variables para pintar `{nombre}` en color. */
 export function splitVariables(text: string): TextSegment[] {
   const segments: TextSegment[] = [];
   const pattern = /\{[^}]+\}/g;

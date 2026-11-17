@@ -9,14 +9,11 @@ const STAGE_PCTS = ["funnel.pct.0", "funnel.pct.1", "funnel.pct.2", "funnel.pct.
 const STAGE_COLORS = ["#25f4ee", "#4ade80", "#facc15", "#fb923c", "#fe2c55"];
 const FUNNEL_WIDTHS = [85, 68, 50, 34, 18];
 
-// Funnel SVG edges at each stage (percentage of container width)
-// SVG polygon: 30,0 370,0 310,480 90,480 → left edge: 7.5 + y*0.15, right: 92.5 - y*0.15
 const FUNNEL_LEFTS = STAGES_Y.map((y) => 7.5 + y * 0.15);
 const FUNNEL_RIGHTS = STAGES_Y.map((y) => 92.5 - y * 0.15);
 
-// Hot zone at the bottom: only this narrow band yields survivors
 const HOT_ZONE_CENTER = 50;
-const HOT_ZONE_HALF = 9; // 18% total width → ±9% around center
+const HOT_ZONE_HALF = 9;
 
 const ELIMINATION_RATES = [0, 0.55, 0.55, 0.55, 0.7];
 
@@ -86,7 +83,6 @@ export default function FunnelAnimation() {
     setBalls(initial);
   }, [makeBall]);
 
-  // Pause animation when not visible
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -111,7 +107,7 @@ export default function FunnelAnimation() {
           .map((b) => {
             if (b.eliminated) {
               if (Date.now() - b.eliminatedAt > 1500) return null;
-              // Float the eliminated ball text upward
+
               return { ...b, y: b.y - 0.08 };
             }
 
@@ -119,7 +115,6 @@ export default function FunnelAnimation() {
             let newStage = b.stage;
             let eliminated = false;
 
-            // Check stage transitions
             for (let s = b.stage + 1; s < STAGES_Y.length; s++) {
               if (newY >= STAGES_Y[s] && b.stage < s) {
                 newStage = s;
@@ -130,7 +125,6 @@ export default function FunnelAnimation() {
               }
             }
 
-            // In the final stage, keep rolling for elimination
             if (!eliminated && newStage >= 4 && newY > STAGES_Y[4] && newY < 82) {
               if (Math.random() < 0.03) {
                 eliminated = true;
@@ -149,7 +143,6 @@ export default function FunnelAnimation() {
               };
             }
 
-            // Reached bottom — check if within hot zone
             if (newY > 82) {
               const inHotZone =
                 b.x >= HOT_ZONE_CENTER - HOT_ZONE_HALF &&
@@ -167,7 +160,6 @@ export default function FunnelAnimation() {
                 };
               }
 
-              // SURVIVOR — within the hot zone
               return {
                 ...b,
                 y: 82 + (b.id % 3),
@@ -180,7 +172,7 @@ export default function FunnelAnimation() {
               ...b,
               y: newY,
               stage: newStage,
-              // Pull toward center more aggressively near the bottom
+
               x: b.x + (50 - b.x) * (0.002 + Math.max(0, newY - 50) * 0.0003),
             };
           })
@@ -193,18 +185,15 @@ export default function FunnelAnimation() {
         return next;
       });
 
-      // Clean old lost texts
       setLostTexts((prev) => prev.filter((lt) => Date.now() - lt.createdAt < 2500));
 
       animRef.current = requestAnimationFrame(tick);
     };
 
-    // Start the loop
     const startLoop = () => {
       animRef.current = requestAnimationFrame(tick);
     };
 
-    // If already visible, start immediately
     startLoop();
 
     return () => cancelAnimationFrame(animRef.current);
@@ -275,7 +264,7 @@ export default function FunnelAnimation() {
         </svg>
 
         <div className="relative w-full" style={{ height: 500 }}>
-          {/* Balls */}
+          {}
           {balls.map((b) => {
             const stageIdx = Math.min(b.stage, STAGE_COLORS.length - 1);
             const isSurvivor = !b.eliminated && b.stage === 4 && b.speed === 0;
@@ -284,7 +273,6 @@ export default function FunnelAnimation() {
               ? Math.max(0, 1 - (Date.now() - b.eliminatedAt) / 1500)
               : isSurvivor ? 1 : 0.7;
 
-            // Show elimination text when fading
             if (b.eliminated && b.eliminatedText) {
               const textOpacity = Math.max(0, 1 - (Date.now() - b.eliminatedAt) / 1500);
               return (
@@ -328,7 +316,7 @@ export default function FunnelAnimation() {
             );
           })}
 
-          {/* Floating lost client texts */}
+          {}
           {lostTexts.map((lt) => {
             const age = Date.now() - lt.createdAt;
             const opacity = Math.max(0, 1 - age / 2500);
@@ -355,7 +343,7 @@ export default function FunnelAnimation() {
             );
           })}
 
-          {/* Stage labels */}
+          {}
           {STAGE_NAMES.map((key, i) => {
             return (
               <div

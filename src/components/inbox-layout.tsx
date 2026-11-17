@@ -3,22 +3,18 @@
 import type { ReactNode } from "react";
 
 interface InboxLayoutProps {
-  /** Columna izquierda: chips, buscador y lista de conversaciones. */
+
   list: ReactNode;
-  /** Columna derecha. `null` deja la pantalla de "selecciona una conversación". */
+
   detail: ReactNode | null;
 }
 
-/**
- * Layout tipo WhatsApp: dos columnas en desktop, lista -> hilo en móvil.
- * Presentacional a propósito, para poder verificarlo sin sesión.
- */
 export function InboxLayout({ list, detail }: InboxLayoutProps) {
   const hasSelection = detail !== null;
 
   return (
     <main className="flex-1 min-h-0 w-full max-w-6xl mx-auto flex">
-      {/* Columna izquierda */}
+      {}
       <aside
         className={`${
           hasSelection ? "hidden md:block" : "block"
@@ -28,7 +24,7 @@ export function InboxLayout({ list, detail }: InboxLayoutProps) {
         {list}
       </aside>
 
-      {/* Columna derecha */}
+      {}
       <section
         className={`${
           hasSelection ? "fixed inset-0 z-50 md:static md:z-auto md:flex-1" : "hidden md:flex md:flex-1"

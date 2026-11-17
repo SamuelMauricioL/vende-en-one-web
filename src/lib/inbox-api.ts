@@ -1,8 +1,4 @@
-/**
- * Bandeja de rescate servida por el API (paso 6).
- * El estado del bucle vive en Convex (`leadStatus`), no en el navegador: acá
- * solo se mapea y se derivan las reglas de lectura.
- */
+
 
 export type LeadState = "contactado" | "whatsapp" | "ignorado";
 export type IgnoreReason = "no_cliente" | "spam" | "ya_compro";
@@ -13,7 +9,6 @@ export const OUTCOME_LABEL: Record<LeadState, string> = {
   ignorado: "Atendido",
 };
 
-/** Color de la marca de estado en las filas. */
 export const OUTCOME_COLOR: Record<LeadState, string> = {
   contactado: "#25f4ee",
   whatsapp: "#4ade80",
@@ -26,7 +21,6 @@ export const IGNORE_REASONS: { key: IgnoreReason; label: string }[] = [
   { key: "ya_compro", label: "Ya compró" },
 ];
 
-/** Fila del agregado que devuelve `GET /stores/:storeId/inbox`. */
 export interface InboxRow {
   tiktokUserId: string;
   displayId?: string;
@@ -37,12 +31,11 @@ export interface InboxRow {
   sessions: Record<string, { count: number; endedAt: number }>;
 }
 
-/** Desenlace guardado en `leadStatus`. */
 export interface InboxLead {
   tiktokUserId: string;
   state: LeadState;
   closedAt: number;
-  /** Último mensaje que el vendedor tenía delante al cerrar. */
+
   closedThrough?: number;
   reason?: IgnoreReason;
   waNumber?: string;
@@ -57,12 +50,12 @@ export interface LiveTag {
 }
 
 export interface Conversation {
-  /** Clave única: la persona dentro de una tienda (el mismo @ puede estar en dos). */
+
   key: string;
   tiktokUserId: string;
-  /** Tienda a la que pertenece la conversación (clave para los desenlaces). */
+
   storeId: string;
-  /** "@tienda" para etiquetar la fila cuando se ven varias a la vez. */
+
   storeLabel: string;
   name: string;
   totalMessages: number;
@@ -71,7 +64,7 @@ export interface Conversation {
   liveTags: LiveTag[];
   closed: InboxLead | null;
   unread: boolean;
-  /** S10: estado que produjo el resolutor (null si todavía no hay desenlace). */
+
   outcome?: LeadState | null;
 }
 
@@ -83,7 +76,6 @@ export interface ThreadMessage {
 
 const MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
-/** "7 nov" — etiqueta del live y separador de fecha del hilo. */
 export function liveLabel(ts: number): string {
   const d = new Date(ts);
   return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
@@ -99,10 +91,6 @@ export function timeOf(ts: number): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-/**
- * Reabre si llegó un mensaje posterior al que se cubrió al cerrar.
- * No se compara con `closedAt`: el reloj del live puede venir adelantado.
- */
 export function isClosed(lead: InboxLead | null | undefined, lastAt: number): boolean {
   if (!lead) return false;
   return (lead.closedThrough ?? lead.closedAt) >= lastAt;
@@ -112,7 +100,6 @@ export function isUnread(lastAt: number, lead: InboxLead | null | undefined): bo
   return (lead?.lastSeenAt ?? 0) < lastAt;
 }
 
-/** Une el agregado del API con los desenlaces en una lista lista para pintar. */
 export function mapConversations(
   rows: InboxRow[],
   leads: InboxLead[],
@@ -149,14 +136,12 @@ export function mapConversations(
     };
   });
 
-  // Pendientes primero; dentro de cada grupo, la conversación más reciente arriba.
   return list.sort((a, b) => {
     if (!!a.closed !== !!b.closed) return a.closed ? 1 : -1;
     return b.lastAt - a.lastAt;
   });
 }
 
-/** Lives presentes en la bandeja, con cuántas conversaciones siguen pendientes. */
 export function liveFilters(conversations: Conversation[]): {
   sessionId: string;
   label: string;
@@ -175,7 +160,6 @@ export function liveFilters(conversations: Conversation[]): {
     .map(([sessionId, v]) => ({ sessionId, label: v.label, pending: v.pending }));
 }
 
-/** Agrupa el hilo por día con su separador, como WhatsApp. */
 export function groupThread(
   messages: ThreadMessage[],
 ): { key: string; label: string; items: ThreadMessage[] }[] {
@@ -198,12 +182,6 @@ export interface StoreOption {
   tiktokUsername: string;
 }
 
-/**
- * Elige la tienda activa de la bandeja.
- * Prioridad: la tienda guardada (elección explícita en el menú) y, si no hay o
- * ya no existe, la primera. El `@` del perfil dejó de participar cuando el
- * perfil pasó a tener hasta 3 tiendas: solo guardaba el último `@` vinculado.
- */
 export function pickActiveStore<T extends StoreOption>(
   stores: T[],
   savedId?: string | null,

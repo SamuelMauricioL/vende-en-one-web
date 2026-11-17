@@ -6,11 +6,11 @@ import type { LiveBand } from "@/lib/inbox-live";
 
 interface InboxListProps {
   conversations: Conversation[];
-  /** Cuando se ven varias tiendas, cada fila dice de cuál es. */
+
   showStore?: boolean;
-  /** S9: bloque pinneado; ausente o invisible = bandeja como siempre. */
+
   band?: LiveBand;
-  /** Claves que entraron por el stream: solo esas destellan. */
+
   freshKeys?: string[];
   onOpen: (conversation: Conversation) => void;
 }
@@ -51,7 +51,7 @@ export function InboxList({
 
   return (
     <div>
-      {/* S9: el bloque solo existe mientras hay live; las filas no anuncian nada. */}
+      {}
       {band?.visible && (
         <div
           className="sticky top-0 z-10 mb-2 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold backdrop-blur"
@@ -70,7 +70,7 @@ export function InboxList({
         </div>
       )}
 
-      {/* Chips por live */}
+      {}
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
         <button
           type="button"
@@ -163,7 +163,7 @@ export function InboxList({
                     <span className="text-sm font-semibold text-white/85 truncate">
                       {conv.name}
                     </span>
-                    {/* S10: el estado lo produce el resolutor; acá solo se muestra. */}
+                    {}
                     {conv.outcome && (
                       <span
                         className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded leading-none"
@@ -203,7 +203,7 @@ export function InboxList({
         </ul>
       )}
 
-      {/* Destello de fila nueva: breve, decorativo y sin anuncio. */}
+      {}
       <style>{`
         @keyframes inboxRowFlash {
           from { background-color: rgba(254,44,85,0.18); }

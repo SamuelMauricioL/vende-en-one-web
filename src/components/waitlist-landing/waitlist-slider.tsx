@@ -7,20 +7,12 @@ import { card } from "./landing-ui";
 
 type Copy = WaitlistLandingContent["product"];
 
-/** El encuadre de cada captura en el demo (`object-position`), en orden. */
 const OBJECT_POSITION = ["50% 0%", "50% 100%", "50% 35%"];
 
 const arrowClass =
   "absolute top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full text-lg text-white/80 transition-colors hover:text-white outline-none focus-visible:ring-2 focus-visible:ring-[#25f4ee]/60";
 const arrowStyle = { background: "rgba(11,15,26,0.75)", border: "1px solid rgba(255,255,255,0.10)" };
 
-/**
- * S5/S12 de `odd/tasks/landing-waitlist.md`: la ventana de producto del hero.
- * Tres capturas que cambian el título de la barra y el pie; flechas, puntos,
- * avance cada 5,5 s que se detiene con el mouse encima o el foco dentro, swipe
- * en táctil y nada de movimiento con `prefers-reduced-motion`. La lógica de
- * índice y pausa vive en `lib/waitlist-landing/carousel.ts`.
- */
 export function WaitlistSlider({ copy }: { copy: Copy }) {
   const slides = copy.slides;
   const [index, setIndex] = useState(0);
@@ -36,8 +28,6 @@ export function WaitlistSlider({ copy }: { copy: Copy }) {
     return () => query.removeEventListener("change", sync);
   }, []);
 
-  // `index` reinicia el intervalo: si la persona toca una flecha, el conteo
-  // vuelve a empezar en vez de saltar a los pocos segundos (S5).
   useEffect(() => {
     if (!shouldAutoplay(reducedMotion, paused)) return;
     const timer = window.setInterval(() => setIndex((current) => next(current, slides.length)), AUTOPLAY_MS);
@@ -119,8 +109,8 @@ export function WaitlistSlider({ copy }: { copy: Copy }) {
       </div>
 
       <div className="mt-3 flex items-start justify-between gap-4">
-        {/* Las 3 frases viven en el HTML (S2 no pierde copia) y se muestra la de
-            la captura activa, como el demo. */}
+        {
+}
         <div>
           {slides.map((item, position) => (
             <p

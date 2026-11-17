@@ -5,22 +5,15 @@ import type { Checklist } from "@/lib/kit/content";
 import { countChecked, readKitState, writeKitState } from "@/lib/kit/storage";
 
 interface KitChecklistProps {
-  /** `a`, `b`, `c`, `d`: la llave con la que el demo guardaba el avance. */
+
   group: string;
   checklist: Checklist;
 }
 
-/**
- * S10 de `odd/tasks/kit-live-sin-improvisar.md`: checklist con contador y barra.
- * El avance se guarda con la misma llave que el demo, así que quien ya lo había
- * empezado lo recupera.
- */
 export function KitChecklist({ group, checklist }: KitChecklistProps) {
   const total = checklist.items.length;
   const [checked, setChecked] = useState<boolean[]>(() => new Array(total).fill(false));
 
-  // Se lee después de montar: el HTML del servidor no puede saber qué marcó
-  // este navegador y leerlo antes rompería la hidratación.
   useEffect(() => {
     const saved = readKitState().checks[group];
     if (!saved) return;

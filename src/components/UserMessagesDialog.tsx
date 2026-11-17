@@ -38,7 +38,6 @@ export function UserMessagesDialog({ nickname, commentTexts, onClose }: UserMess
     if (e.target === e.currentTarget) onClose();
   };
 
-  // Group consecutive duplicate messages: [{text, count}, ...]
   const grouped = useMemo(() => {
     const result: { text: string; count: number }[] = [];
     for (const msg of commentTexts) {
@@ -66,7 +65,7 @@ export function UserMessagesDialog({ nickname, commentTexts, onClose }: UserMess
           maxHeight: "70vh",
         }}
       >
-        {/* Header */}
+        {}
         <div
           className="flex items-center justify-between px-4 py-3 shrink-0"
           style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
@@ -94,7 +93,7 @@ export function UserMessagesDialog({ nickname, commentTexts, onClose }: UserMess
           </button>
         </div>
 
-        {/* Messages */}
+        {}
         <div className="overflow-y-auto px-4 py-3 space-y-2">
           {grouped.length === 0 ? (
             <p className="text-sm text-white/30 text-center py-8">Sin mensajes guardados</p>

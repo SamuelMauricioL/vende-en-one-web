@@ -17,7 +17,6 @@ import {
   type BillingState,
 } from "@/lib/billing";
 
-/** Cobro por Yape: estado de acceso, datos de pago, los 3 pasos y el registro del código. */
 export default function BillingPage() {
   const { userId, isLoaded, getToken } = useAuth();
   const [state, setState] = useState<BillingState | null>(null);
@@ -91,7 +90,7 @@ export default function BillingPage() {
           <p className="text-sm text-white/40 text-center py-10">Cargando tu estado…</p>
         ) : (
           <>
-            {/* Estado de acceso */}
+            {}
             <section
               className="rounded-3xl p-6"
               style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
@@ -123,7 +122,7 @@ export default function BillingPage() {
               )}
             </section>
 
-            {/* Número de Yape */}
+            {}
             <section
               className="rounded-3xl p-6"
               style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
@@ -141,7 +140,7 @@ export default function BillingPage() {
                 </button>
               </div>
 
-              {/* Los 3 pasos */}
+              {}
               <ol className="mt-5 space-y-3">
                 {[
                   `Yapea ${formatSoles(price)} al +${yape}`,
@@ -170,7 +169,7 @@ export default function BillingPage() {
               </a>
             </section>
 
-            {/* Pago pendiente o formulario */}
+            {}
             {state?.pendingPayment ? (
               <section
                 className="rounded-3xl p-6"

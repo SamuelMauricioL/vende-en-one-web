@@ -15,7 +15,7 @@ export default function VideoSection() {
       ([entry]) => {
         if (entry.isIntersecting) {
           setVisible(true);
-          // Start playing when visible
+
           videoRef.current?.play().catch(() => {});
         }
       },
@@ -52,7 +52,7 @@ export default function VideoSection() {
             boxShadow: "0 0 80px rgba(254,44,85,0.06)",
           }}
         >
-          {/* Video */}
+          {}
           <video
             ref={videoRef}
             className="w-full h-full object-cover"
@@ -67,7 +67,7 @@ export default function VideoSection() {
             <source src="/video/demo.mp4" type="video/mp4" />
           </video>
 
-          {/* Loading overlay (shown until video is ready) */}
+          {}
           {!videoReady && (
             <div className="absolute inset-0 flex items-center justify-center bg-[#0b0f1a]">
               <div className="flex flex-col items-center gap-4">

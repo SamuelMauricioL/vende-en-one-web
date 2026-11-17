@@ -47,12 +47,6 @@ const card = {
   border: "1px solid rgba(255,255,255,0.06)",
 };
 
-/**
- * S15 de `odd/tasks/kit-live-sin-improvisar.md`: el panel pasa a dos tabs.
- * «Pagos pendientes» es lo que ya existía, sin cambios de comportamiento;
- * «Leads» junta las dos capturas: la waitlist de `/waitlist` y los registros del
- * kit de `/kit`.
- */
 export default function AdminPage() {
   const { userId, isLoaded, getToken } = useAuth();
   const [tab, setTab] = useState<"payments" | "leads" | "accounts">("payments");

@@ -1,7 +1,5 @@
-/**
- * Formato compacto de tiempo transcurrido.
- * Ej: "15s", "2m 12s", "1h 3m", "2h 15m"
- */
+
+
 export function formatElapsed(timestamp: number): string {
   const diff = Date.now() - timestamp;
   const totalSec = Math.floor(diff / 1000);

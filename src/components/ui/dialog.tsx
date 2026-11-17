@@ -6,12 +6,6 @@ import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-/**
- * Diálogo modal sobre Base UI (`@base-ui/react/dialog`), el mismo primitivo que
- * el resto del kit. El foco queda atrapado mientras está abierto, así que toda
- * pantalla que use `DialogContent` debe dejar siempre un botón de cierre visible:
- * cuando no alcanza el Escape ni el fondo, el botón X es la única salida.
- */
 function Dialog(props: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
 }
@@ -48,7 +42,7 @@ function DialogContent({
   closeLabel = "Cerrar",
   ...props
 }: DialogPrimitive.Popup.Props & {
-  /** El botón X es la salida del diálogo: nunca se apaga en modales no descartables. */
+
   showCloseButton?: boolean
   closeLabel?: string
 }) {

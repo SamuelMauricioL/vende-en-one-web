@@ -3,10 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
-/** How long a purchase alert stays on screen before it dismisses itself. */
 const ALERT_LIFETIME_MS = 6000;
 
-/** Newest alerts win: older ones are dropped so the stack never grows. */
 const MAX_ALERTS = 3;
 
 export interface CompraLead {
@@ -21,11 +19,6 @@ interface CompraAlert extends CompraLead {
 
 let alertSeq = 0;
 
-/**
- * Turns the current "compra" leads into one-shot alerts.
- * `null` means "not loaded yet"; the first loaded snapshot only seeds the seen
- * set, so leads already classified before the panel mounted never alert.
- */
 function useCompraAlerts(leads: CompraLead[] | null) {
   const [alerts, setAlerts] = useState<CompraAlert[]>([]);
   const seen = useRef<Set<string> | null>(null);
@@ -55,16 +48,11 @@ function useCompraAlerts(leads: CompraLead[] | null) {
 }
 
 interface PurchaseAlertsProps {
-  /** Compra leads of the running live, or null before the first snapshot. */
+
   leads: CompraLead[] | null;
   onOpenLead: (tiktokUserId: string) => void;
 }
 
-/**
- * WhatsApp-style floating alert for purchase leads.
- * Web: top-right stack that pauses while hovered or focused.
- * Mobile: full-width stack under the top edge, tap opens the lead.
- */
 export function PurchaseAlerts({ leads, onOpenLead }: PurchaseAlertsProps) {
   const { alerts, dismiss } = useCompraAlerts(leads);
 
@@ -176,7 +164,7 @@ function AlertCard({ alert, onDismiss, onOpen }: AlertCardProps) {
         <X className="h-3.5 w-3.5" aria-hidden />
       </button>
 
-      {/* Time left: exactly matches the dismissal timer. */}
+      {}
       <div aria-hidden className="absolute inset-x-0 bottom-0 h-[3px] bg-white/10">
         <div
           ref={barRef}

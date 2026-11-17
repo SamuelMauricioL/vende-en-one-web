@@ -13,9 +13,9 @@ import {
 
 interface AppNavProps {
   current: "live" | "inbox" | "filters" | "profile" | "billing" | "admin";
-  /** Optional stop button for live page (mobile) */
+
   stopButton?: React.ReactNode;
-  /** Conversaciones sin desenlace: badge de la bandeja de rescate */
+
   pendingCount?: number;
 }
 
@@ -27,7 +27,6 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
   const [stores, setStores] = useState<Array<{ _id: string; tiktokUsername: string }>>([]);
   const activeStoreId = useActiveStoreId();
 
-  // Aviso de vencimiento: solo consulta, nunca bloquea otras pantallas.
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
     let cancelled = false;
@@ -48,13 +47,13 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
         const list = data.stores ?? [];
         if (cancelled) return;
         setStores(list);
-        // Primera visita: deja fijada una tienda activa para todos los módulos.
+
         if (list.length && !readActiveStoreId()) {
           const resolved = resolveActiveStore(list);
           if (resolved) writeActiveStoreId(resolved._id);
         }
       } catch {
-        // sin tiendas el selector no se muestra
+
       }
     })();
     return () => {
@@ -76,14 +75,14 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
 
   return (
     <>
-      {/* Header */}
+      {}
       <header
         className="sticky top-0 z-40 border-b border-white/[0.04]"
         style={{ backgroundColor: "#0b0f1a" }}
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Hamburger */}
+            {}
             <button
               type="button"
               onClick={() => setOpen((p) => !p)}
@@ -143,7 +142,7 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
         </div>
       </header>
 
-      {/* Drawer overlay */}
+      {}
       {open && (
         <div
           className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm"
@@ -151,7 +150,7 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
         />
       )}
 
-      {/* Drawer */}
+      {}
       <div
         className={`fixed top-14 left-0 bottom-0 z-40 w-64 p-4 transition-transform duration-200 ${
           open ? "translate-x-0" : "-translate-x-full"
@@ -198,7 +197,7 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
                 : "text-white/50 hover:text-white hover:bg-white/5"
             }`}
           >
-            {/* Live icon */}
+            {}
             <svg
               className={`w-4 h-4 ${isActive("live") ? "text-[#fe2c55]" : "text-current"}`}
               fill="none"
@@ -224,7 +223,7 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
                 : "text-white/50 hover:text-white hover:bg-white/5"
             }`}
           >
-            {/* Inbox icon */}
+            {}
             <svg
               className={`w-4 h-4 ${isActive("inbox") ? "text-[#fe2c55]" : "text-current"}`}
               fill="none"
@@ -249,7 +248,6 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
             ) : null}
           </a>
 
-
           <a
             href="/app/filters"
             onClick={() => setOpen(false)}
@@ -259,7 +257,7 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
                 : "text-white/50 hover:text-white hover:bg-white/5"
             }`}
           >
-            {/* Filter icon */}
+            {}
             <svg
               className={`w-4 h-4 ${isActive("filters") ? "text-[#facc15]" : "text-current"}`}
               fill="none"
@@ -285,7 +283,7 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
                 : "text-white/50 hover:text-white hover:bg-white/5"
             }`}
           >
-            {/* Billing icon */}
+            {}
             <svg
               className={`w-4 h-4 ${isActive("billing") ? "text-[#25f4ee]" : "text-current"}`}
               fill="none"
@@ -346,7 +344,7 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
                 : "text-white/50 hover:text-white hover:bg-white/5"
             }`}
           >
-            {/* Profile icon */}
+            {}
             <svg
               className={`w-4 h-4 ${isActive("profile") ? "text-[#fe2c55]" : "text-current"}`}
               fill="none"
@@ -364,7 +362,7 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
           </a>
         </nav>
 
-        {/* Sign out at bottom */}
+        {}
         {isSignedIn && (
           <div className="absolute bottom-4 left-4 right-4">
             <button

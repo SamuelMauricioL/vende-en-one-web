@@ -17,10 +17,6 @@ function extractUsername(raw: string): string | null {
   return null;
 }
 
-/**
- * Onboarding de primer uso: cuenta (Clerk) → TikTok → filtros → primer live.
- * El paso de correo del prototipo no existe acá porque la sesión es de Google.
- */
 type Phase = "tiktok" | "presets" | "live";
 
 const STEPS = ["Tu cuenta", "Tu TikTok", "Tus filtros", "Primer live"];
@@ -80,11 +76,11 @@ export default function OnboardingStepper() {
 
   return (
     <div className="w-full max-w-md mx-auto px-0">
-      {/* Stepper */}
+      {}
       <div className="flex items-center justify-center gap-0 mb-8 sm:mb-12">
         {STEPS.map((label, i) => (
           <div key={label} className="flex items-center">
-            {/* Step circle */}
+            {}
             <div className="flex flex-col items-center gap-2">
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
@@ -125,7 +121,7 @@ export default function OnboardingStepper() {
                 {label}
               </span>
             </div>
-            {/* Connector line */}
+            {}
             {i < STEPS.length - 1 && (
               <div
                 className={`w-8 sm:w-14 h-0.5 mx-2 mb-7 rounded-full ${
@@ -143,7 +139,7 @@ export default function OnboardingStepper() {
         <FirstLiveStep onStart={() => (window.location.href = "/app")} />
       ) : (
         <>
-          {/* Title */}
+          {}
           <div className="text-center mb-8">
             <h2 className="text-xl font-extrabold text-white/90 tracking-tight">
               Conecta el TikTok de tu tienda
@@ -158,7 +154,7 @@ export default function OnboardingStepper() {
             </p>
           </div>
 
-          {/* Form */}
+          {}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <input

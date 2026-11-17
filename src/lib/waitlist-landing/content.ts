@@ -1,19 +1,6 @@
 import type { Locale } from "../i18n/translations";
 import type { ContactRow } from "./contact";
 
-/**
- * S2/S3 de `odd/tasks/landing-waitlist.md`: la copia de la landing de `/waitlist`.
- *
- * El español es **verbatim** de `landing/index.html` del demo (commit `d0320d8`)
- * y `content.test.ts` lo compara contra `demo-copy.ts`, que guarda el texto
- * visible de esa página y sus atributos (`alt`, `placeholder`, `aria-label`,
- * `data-title`, `data-cap`). Escribir acá una frase distinta, más corta o
- * "mejorada" rompe el test: la copia no se reescribe.
- *
- * Los títulos que el demo pinta con degradado van partidos en `title` +
- * `titleAccent` para que la palabra acentuada no se pierda.
- */
-
 export interface WaitlistAnchor {
   label: string;
   href: string;
@@ -22,7 +9,7 @@ export interface WaitlistAnchor {
 export interface WaitlistSlide {
   title: string;
   caption: string;
-  /** `alt` de la captura: es copia, no decoración. */
+
   alt: string;
   src: string;
   width: number;
@@ -35,11 +22,10 @@ export interface WaitlistStep {
   text: string;
 }
 
-/** Fila de la lista de permisos: la parte en negrita y lo que la sigue. */
 export interface WaitlistPerm {
   positive: boolean;
   lead: string;
-  /** Lo que sigue a la parte en negrita; la última fila no lo tiene. */
+
   text?: string;
 }
 
@@ -49,9 +35,9 @@ export interface WaitlistField {
 }
 
 export interface WaitlistLandingContent {
-  /** Bloque 1: las 4 anclas del demo. La marca la pone el `Navbar` del sitio. */
+
   anchors: WaitlistAnchor[];
-  /** Bloque 2. */
+
   hero: {
     eyebrow: string;
     title: string;
@@ -61,7 +47,7 @@ export interface WaitlistLandingContent {
     secondary: string;
     note: string;
   };
-  /** Bloque 3: ventana de producto con las 3 capturas. */
+
   product: {
     label: string;
     pill: string;
@@ -70,7 +56,7 @@ export interface WaitlistLandingContent {
     dots: string;
     slides: WaitlistSlide[];
   };
-  /** Bloque 4. */
+
   demo: {
     eyebrow: string;
     title: string;
@@ -79,15 +65,14 @@ export interface WaitlistLandingContent {
     secondary: string;
     note: string;
   };
-  /** Bloque 5. */
+
   steps: {
     eyebrow: string;
     title: string;
     lead: string;
     items: WaitlistStep[];
   };
-  /** Bloque 6. Las opciones de los selects viven en `lib/waitlist.ts`: son los
-   * valores que viajan al API y no se traducen. */
+
   waitlist: {
     eyebrow: string;
     title: string;
@@ -106,7 +91,7 @@ export interface WaitlistLandingContent {
     disclaimer: string;
     ok: { title: string; body: string };
   };
-  /** Bloque 7. */
+
   tiktok: {
     eyebrow: string;
     title: string;
@@ -115,13 +100,13 @@ export interface WaitlistLandingContent {
     primary: string;
     exit: string;
   };
-  /** Bloque 8, primera parte. */
+
   faq: {
     eyebrow: string;
     title: string;
     items: { question: string; answer: string }[];
   };
-  /** Bloque 8, segunda parte. */
+
   contact: {
     eyebrow: string;
     title: string;
@@ -132,7 +117,7 @@ export interface WaitlistLandingContent {
     chat: string;
     rows: ContactRow[];
   };
-  /** Bloque 8, pie. El corazón es un `<svg>` con `aria-label`, como en el demo. */
+
   footer: {
     brand: string;
     madeWithLead: string;

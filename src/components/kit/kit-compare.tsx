@@ -7,7 +7,6 @@ const card = {
   border: "1px solid rgba(255,255,255,0.06)",
 };
 
-/** Las dos tarjetas «Evita / Haz esto» del demo, con los colores del sitio. */
 export function KitCompare({ compare }: { compare: KitContent["sections"]["hook"]["compare"] }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
@@ -27,7 +26,6 @@ export function KitCompare({ compare }: { compare: KitContent["sections"]["hook"
   );
 }
 
-/** El consejo con la barra lateral, tal como el demo lo marca. */
 export function KitAdvice({ advice }: { advice: Advice }) {
   return (
     <p className="my-5 border-l-2 border-[#25f4ee] pl-4 text-[15px] text-white/70">

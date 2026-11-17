@@ -59,7 +59,7 @@ export default function HeroSection() {
 
   return (
     <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-      {/* Background gradients */}
+      {}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[#fe2c55]/5 blur-[120px]" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#25f4ee]/5 blur-[100px]" />
@@ -67,9 +67,9 @@ export default function HeroSection() {
 
       <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Left: Copy */}
+          {}
           <div className="max-w-xl">
-            {/* Badge */}
+            {}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8">
               <div className="w-1.5 h-1.5 rounded-full bg-[#25f4ee] animate-pulse" />
               <span className="text-xs text-white/50 font-medium tracking-wide">
@@ -77,7 +77,7 @@ export default function HeroSection() {
               </span>
             </div>
 
-            {/* Main headline */}
+            {}
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05]">
               <span className="text-white/90">{t("hero.headline.start")} </span>
               <span
@@ -94,12 +94,12 @@ export default function HeroSection() {
               </span>
             </h1>
 
-            {/* Subtitle */}
+            {}
             <p className="mt-6 text-lg sm:text-xl text-white/40 max-w-lg leading-relaxed">
               {t("hero.subtitle")}
             </p>
 
-            {/* CTA Buttons */}
+            {}
             <div className="mt-10 flex flex-col sm:flex-row gap-4">
               <a
                 href="/app"
@@ -139,7 +139,7 @@ export default function HeroSection() {
               </a>
             </div>
 
-            {/* Social proof */}
+            {}
             <div className="mt-16 flex items-center gap-6 text-xs text-white/20">
               <div className="flex -space-x-2">
                 {[1, 2, 3, 4].map((n) => (
@@ -156,10 +156,10 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* Right: TikTok Chat Carousel */}
+          {}
           <div className="hidden lg:block relative">
             <div className="relative">
-              {/* Decorative glow behind the carousel */}
+              {}
               <div
                 className="absolute -top-10 -right-10 w-72 h-72 rounded-full blur-[100px] pointer-events-none"
                 style={{ background: "radial-gradient(circle, rgba(254,44,85,0.12), transparent)" }}
@@ -169,7 +169,7 @@ export default function HeroSection() {
                 style={{ background: "radial-gradient(circle, rgba(37,244,238,0.08), transparent)" }}
               />
 
-              {/* Chat header */}
+              {}
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-[#fe2c55] animate-pulse" />
@@ -184,11 +184,11 @@ export default function HeroSection() {
                 </span>
               </div>
 
-              {/* Carousel */}
+              {}
               {carouselMounted && <TikTokChatCarousel />}
             </div>
 
-            {/* Caption */}
+            {}
             <p className="mt-4 text-[11px] text-white/15 text-center">
               Así llegan los leads mientras vendes en vivo
             </p>
@@ -196,7 +196,7 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* Scroll indicator */}
+      {}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/10">
         <span className="text-xs tracking-widest uppercase">{t("hero.scroll")}</span>
         <div className="w-4 h-7 rounded-full border border-white/10 flex items-start justify-center p-1">

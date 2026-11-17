@@ -19,12 +19,10 @@ import {
 } from "@/lib/filters-api";
 import { STAGE_CONFIG, STAGE_ORDER, type LeadStage } from "@/lib/stages";
 
-/** S6: un solo color distingue que algo es un filtro. */
 const FILTER_COLOR = "#fe2c55";
 
 type LoadState = "loading" | "ready" | "error";
 
-/** Mismas etiquetas que el onboarding: una sola fuente para las etapas. */
 const STAGE_LABELS = Object.fromEntries(
   Object.entries(STAGE_CONFIG).map(([stage, config]) => [stage, config.label]),
 ) as Record<LeadStage, string>;
@@ -42,7 +40,6 @@ export default function FiltersClient() {
   const inputRef = useRef<HTMLInputElement>(null);
   const loadSeq = useRef(0);
 
-  /** S1: los filtros son de la tienda activa; se recargan al cambiarla. */
   const load = useCallback(async () => {
     if (!storeId) return;
     const seq = ++loadSeq.current;
@@ -127,7 +124,7 @@ export default function FiltersClient() {
 
   const canSubmit = state === "ready" && !!newKeyword.trim() && !creating;
   const groups = groupFiltersByStage(filters);
-  /** S11: el filtro de descarte no tiene etapa ni acciones; se muestra aparte. */
+
   const discarded = discardFilters(filters);
 
   return (
@@ -135,10 +132,10 @@ export default function FiltersClient() {
       <AppNav current="filters" />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-6">
-        {/* Carousel */}
+        {}
         <FilterCarousel />
 
-        {/* Hero copy */}
+        {}
         <div className="text-center mb-8 mt-6">
           <h1 className="text-lg font-extrabold text-white/90 tracking-tight mb-3">
             Filtros personalizados
@@ -152,7 +149,7 @@ export default function FiltersClient() {
           </p>
         </div>
 
-        {/* Add filter input */}
+        {}
         <div className="flex items-center gap-2 mb-8">
           <input
             ref={inputRef}
@@ -199,7 +196,7 @@ export default function FiltersClient() {
           </button>
         </div>
 
-        {/* Filter list */}
+        {}
         {state === "loading" ? (
           <div
             role="status"
@@ -248,7 +245,7 @@ export default function FiltersClient() {
               const grpColor = STAGE_CONFIG[stage].color;
               return (
                 <div key={stage}>
-                  {/* Group header */}
+                  {}
                   <div className="flex items-center gap-2 mb-2">
                     <span
                       className="w-2 h-2 rounded-full shrink-0"
@@ -268,7 +265,7 @@ export default function FiltersClient() {
                     </span>
                   </div>
 
-                  {/* Group items */}
+                  {}
                   <div className="space-y-1">
                     {group.map((filter) => (
                       <div
@@ -331,7 +328,7 @@ export default function FiltersClient() {
               );
             })}
 
-            {/* Filtros del sistema que descartan: sin etapa y sin acciones. */}
+            {}
             {discarded.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -409,8 +406,6 @@ export default function FiltersClient() {
   );
 }
 
-/* ── Filter preview carousel ── */
-
 const DEMO_MESSAGES = [
   { text: "Apartame el PS5 porfa 🙏", stage: "compra" as LeadStage },
   { text: "Me interesa el PS5, mándame fotos 🤩", stage: "interesado" as LeadStage },
@@ -424,7 +419,6 @@ const DEMO_MESSAGES = [
   { text: "Ya te transferí por la PS5!", stage: "compra" as LeadStage },
 ];
 
-/** Demo fijo: no depende de los filtros guardados (el resaltado real es del servidor). */
 const DEMO_KEYWORDS = ["PS5", "PlayStation", "PlayStation 5"];
 
 function FilterCarousel() {

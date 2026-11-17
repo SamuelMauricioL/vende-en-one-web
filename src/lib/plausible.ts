@@ -6,6 +6,6 @@ export function trackEvent(event: string, data?: EventData): void {
   try {
     track(event, data);
   } catch {
-    // silently fail
+
   }
 }

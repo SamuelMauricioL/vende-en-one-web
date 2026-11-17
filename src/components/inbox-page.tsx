@@ -34,7 +34,6 @@ interface StoreSummary {
   verifiedAt?: number;
 }
 
-/** Datos de una tienda ya mapeados: el mismo @ puede existir en dos tiendas. */
 interface ScopedData {
   storeId: string;
   storeLabel: string;
@@ -44,7 +43,6 @@ interface ScopedData {
 
 type Scope = "store" | "all";
 
-/** Bandeja servida por el API: agregado por persona, hilo paginado y desenlaces. */
 export default function InboxPageClient() {
   const { userId, isLoaded, getToken } = useAuth();
   const activeStoreId = useActiveStoreId();
@@ -61,7 +59,7 @@ export default function InboxPageClient() {
   const [verificationOpen, setVerificationOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const blockedNotices = useRef<Set<string>>(new Set());
-  // S8/S9: el stream por tienda manda mientras hay live; `null` es "sin live".
+
   const live = useStoreLiveStream(store?._id ?? null);
 
   const api = useCallback(
@@ -106,10 +104,6 @@ export default function InboxPageClient() {
     [loadStore],
   );
 
-  /**
-   * Una sola vez: el estado que vivía en el navegador se sube al servidor.
-   * Así nadie pierde los desenlaces que ya había marcado.
-   */
   const migrateLegacy = useCallback(
     async (storeId: string) => {
       let raw: string | null = null;
@@ -127,7 +121,7 @@ export default function InboxPageClient() {
         >;
         for (const [key, entry] of Object.entries(parsed)) {
           if (!entry?.state) continue;
-          // La clave vieja era "tienda:tiktokUserId".
+
           const tiktokUserId = key.includes(":") ? key.slice(key.indexOf(":") + 1) : key;
           await api(`/api/stores/${storeId}/leads/${encodeURIComponent(tiktokUserId)}`, {
             method: "PATCH",
@@ -143,7 +137,7 @@ export default function InboxPageClient() {
         }
         localStorage.removeItem(LEGACY_KEY);
       } catch {
-        // si falla, se reintenta en la próxima visita: la clave sigue ahí
+
       }
     },
     [api],
@@ -162,7 +156,7 @@ export default function InboxPageClient() {
         }
         const payload = (await storesRes.json()) as { stores: StoreSummary[] };
         const list = payload.stores ?? [];
-        // La tienda activa del menú manda; sin elección, la primera.
+
         const saved = activeStoreId ?? readActiveStoreId();
         const active = pickActiveStore(list, saved);
         if (cancelled) return;
@@ -183,7 +177,7 @@ export default function InboxPageClient() {
     return () => {
       cancelled = true;
     };
-    // activeStoreId cambia cuando se elige otra tienda en el menú
+
   }, [isLoaded, userId, api, loadInbox, migrateLegacy, activeStoreId, reloadKey]);
 
   const baseConversations = useMemo(
@@ -197,10 +191,6 @@ export default function InboxPageClient() {
     [data],
   );
 
-  // El servidor ya entregó el mismo conjunto filtrado que ve el vendedor:
-  // acá solo se suma a la lista, sin filtrar nada. Mientras hay `live`, `stats`
-  // es la foto completa y `outcome` ya viene aplicado fila por fila. Al terminar
-  // el live la bandeja vuelve a su comportamiento normal (S9).
   const { conversations, freshKeys } = useMemo(() => {
     if (scope !== "store" || !store || !live.rows || live.phase !== "live") {
       return { conversations: baseConversations, freshKeys: [] as string[] };
@@ -254,7 +244,7 @@ export default function InboxPageClient() {
           return;
         }
         const payload = (await res.json()) as { messages: ThreadMessage[]; hasMore: boolean };
-        // El API devuelve del más nuevo al más viejo; se pinta cronológico.
+
         const page = [...(payload.messages ?? [])].reverse();
         setMessages((prev) => (before ? [...page, ...prev] : page));
         setHasMore(Boolean(payload.hasMore));
@@ -271,7 +261,7 @@ export default function InboxPageClient() {
       setMessages([]);
       setHasMore(false);
       await loadThread(conversation);
-      // Abrir marca visto; no cierra el bucle.
+
       await api(
         `/api/stores/${conversation.storeId}/leads/${encodeURIComponent(conversation.tiktokUserId)}`,
         {
@@ -349,7 +339,7 @@ export default function InboxPageClient() {
             </div>
           ) : (
             <>
-              {/* Alcance de tienda: distinto del filtro por live que va abajo */}
+              {}
               {stores.length > 1 && (
                 <div className="flex items-center gap-1 mb-3">
                   {(

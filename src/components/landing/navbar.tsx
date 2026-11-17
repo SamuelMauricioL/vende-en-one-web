@@ -24,7 +24,7 @@ export default function Navbar() {
       }`}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        {/* Logo */}
+        {}
         <a href="/" className="flex items-center gap-2">
           <img
             src="/favicon.png"
@@ -36,7 +36,7 @@ export default function Navbar() {
           </span>
         </a>
 
-        {/* Nav links */}
+        {}
         <nav className="hidden sm:flex items-center gap-4">
           <a
             href="#demo"
@@ -54,7 +54,7 @@ export default function Navbar() {
           <AuthButton />
         </nav>
 
-        {/* Mobile */}
+        {}
         <div className="sm:hidden flex items-center gap-2">
           <LanguageSwitcher />
           <AuthButton />

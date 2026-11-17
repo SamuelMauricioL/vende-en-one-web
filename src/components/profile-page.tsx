@@ -12,7 +12,6 @@ export default function ProfilePage() {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
 
-  // Get Clerk user info from global client
   useEffect(() => {
     if (!authLoaded || !userId) return;
     const clerkUser = (window as any).Clerk?.user;
@@ -22,14 +21,12 @@ export default function ProfilePage() {
     }
   }, [authLoaded, userId]);
 
-
-
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0b0f1a" }}>
       <AppNav current="profile" />
 
       <main className="flex-1 max-w-lg mx-auto w-full px-4 sm:px-6 pt-8 pb-12">
-        {/* Avatar icon */}
+        {}
         <div
           className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
           style={{ background: "rgba(254,44,85,0.1)" }}
@@ -54,7 +51,7 @@ export default function ProfilePage() {
               border: "1px solid rgba(255,255,255,0.06)",
             }}
           >
-            {/* Name — read-only */}
+            {}
             <div>
               <label
                 className="block text-xs font-medium mb-1.5"
@@ -74,7 +71,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Email — read-only */}
+            {}
             <div>
               <label
                 className="block text-xs font-medium mb-1.5"
@@ -97,7 +94,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Mis tiendas: desde acá se agrega, se elige la activa y se elimina */}
+        {}
         <section id="tiendas" className="mt-8">
           <h2 className="text-sm font-bold text-white/80 mb-1">Mis tiendas</h2>
           <p className="text-[11px] text-white/30 mb-3">

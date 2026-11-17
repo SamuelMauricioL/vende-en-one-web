@@ -1,14 +1,9 @@
-/**
- * S9/S10 de `odd/tasks/kit-live-sin-improvisar.md`: el avance de los checklists
- * y el desbloqueo de las plantillas viven en `localStorage`, con la misma clave
- * que usaba el demo (`ll-kit-v1`) para no volver a pedirle el correo a quien ya
- * lo dejó allá.
- */
+
 
 export const KIT_STORAGE_KEY = "ll-kit-v1";
 
 export interface KitState {
-  /** Una lista de booleanos por grupo de checklist (`a`, `b`, `c`, `d`). */
+
   checks: Record<string, boolean[]>;
   unlocked: boolean;
 }
@@ -46,12 +41,10 @@ export function writeKitState(state: KitState, storage?: StorageLike | null): vo
   try {
     target?.setItem(KIT_STORAGE_KEY, JSON.stringify(state));
   } catch {
-    // Sin almacenamiento el avance se pierde al recargar, pero la página sigue
-    // funcionando: leer y marcar nunca depende de que se pueda persistir.
+
   }
 }
 
-/** Cuántos puntos van marcados de un grupo, y el total que muestra el contador. */
 export function countChecked(values: boolean[]): number {
   return values.filter(Boolean).length;
 }

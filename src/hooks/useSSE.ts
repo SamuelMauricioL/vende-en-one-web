@@ -18,12 +18,6 @@ import {
   type StoreFrame,
 } from "@/lib/inbox-live";
 
-/**
- * Frames del stream de una sesión.
- * Stats: el servidor manda siempre la lista completa y ya ordenada en
- * `initial`/`update`, con sus `totals`; no hay `delta` para stats.
- * Chat: `initial` con el historial y `delta` con el lote nuevo.
- */
 type StatsFrame<T> = { type: "initial" | "update"; stats: T[]; totals: Totals };
 type ChatFrame<T> = { type: "initial" | "delta"; chat: T[] };
 type StreamFrame<T> =
@@ -31,18 +25,10 @@ type StreamFrame<T> =
   | ChatFrame<T>
   | { type: "status"; status: string; error?: string };
 
-/** `session` es el stream de una sesión; `store` el de la bandeja (S8). */
 export type StreamKind = "session" | "store";
 
-/** Fase del live tal como la emite el stream por tienda. */
 export type StoreLivePhase = LivePhase;
 
-/**
- * Stream de stats o chat de una sesión.
- * EventSource no acepta headers: se pide un ticket de corta vida y viaja en la
- * query. Al reconectar se pide uno nuevo, porque el anterior caduca a los 60s.
- * `T` es la fila del stream: `LeadRow` para stats, el mensaje de chat para chat.
- */
 export function useSSE<T>(
   path: string,
   target: string,
@@ -53,7 +39,7 @@ export function useSSE<T>(
   connected: boolean;
   status: string | null;
   connectionError: string | null;
-  /** Solo se llena con `kind: "store"`: fase, foto y error del live. */
+
   live: LiveStreamState;
 } {
   const { getToken } = useAuth();
@@ -78,10 +64,6 @@ export function useSSE<T>(
     setTotals(null);
     if (kind === "store") setLive(EMPTY_LIVE_STREAM);
 
-    /**
-     * Ticket de corta vida; `status` es el HTTP del pedido (0 si la red falló).
-     * El stream por tienda tiene su propia ruta (S8): no es la de sesión.
-     */
     const fetchTicket = async (): Promise<{ ticket: string; status: number }> => {
       const endpoint =
         kind === "store"
@@ -97,17 +79,12 @@ export function useSSE<T>(
       }
     };
 
-    /** La sesión ya no existe: el live terminó. No se reintenta más. */
     const reportDeadSession = () => {
       setConnected(false);
       setStatus("error");
       setConnectionError("El live ha finalizado");
     };
 
-    /**
-     * Sin el ticket la conexión no arranca. Sesión muerta corta el reintento;
-     * el stream por tienda sobrevive a las sesiones, así que siempre reintenta.
-     */
     const scheduleRetry = (
       retries: number,
       ticketStatus: number,
@@ -146,7 +123,7 @@ export function useSSE<T>(
       eventSource.onmessage = (event) => {
         try {
           if (kind === "store") {
-            // Fase en `state`, foto completa en `stats`, desenlace en `outcome`.
+
             setLive((prev) => applyStoreFrame(prev, JSON.parse(event.data) as StoreFrame));
             return;
           }
@@ -162,11 +139,11 @@ export function useSSE<T>(
             if (parsed.type === "initial") {
               setData(parsed.chat);
             } else {
-              // El tope lo pone el servidor: acá no se recorta nada.
+
               setData((prev) => [...(prev ?? []), ...parsed.chat]);
             }
           } else {
-            // Lista completa y ordenada por el servidor: se reemplaza tal cual.
+
             if ("stats" in parsed && parsed.stats) {
               setData(parsed.stats);
               setTotals(parsed.totals ?? null);
@@ -178,12 +155,12 @@ export function useSSE<T>(
       };
 
       eventSource.onerror = () => {
-        // Se lee antes de cerrar: CLOSED significa que el servidor rechazó.
+
         const readyStateBefore = eventSource.readyState;
         setConnected(false);
         eventSource.close();
         if (cancelled) return;
-        // Reintento con ticket nuevo: el anterior puede haber caducado.
+
         scheduleRetry(retries, ticketStatus, readyStateBefore);
       };
     };
@@ -201,10 +178,6 @@ export function useSSE<T>(
   return { data, totals, connected, status, connectionError, live };
 }
 
-/**
- * S8/S9: stream de la tienda para la bandeja. Se mantiene abierto entre
- * sesiones y emite `status` con `state` `idle` | `live` | `ended`.
- */
 export function useStoreLiveStream(storeId: string | null): {
   rows: LeadRow[] | null;
   totals: Totals | null;

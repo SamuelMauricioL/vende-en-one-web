@@ -31,11 +31,6 @@ const fieldStyle = { border: "1px solid rgba(255,255,255,0.10)" };
 const labelClass = "block text-xs font-medium text-white/40 mb-1.5";
 const errorClass = "text-xs leading-relaxed";
 
-/**
- * S6 de `odd/tasks/landing-waitlist.md`: el formulario de `waitlist.md` S2-S4,
- * ahora como sección de la landing y no como página. La regla sigue en
- * `src/lib/waitlist.ts` sin cambios; acá solo se pinta y se envían los estados.
- */
 export function WaitlistForm({ copy }: { copy: Copy }) {
   const [form, setForm] = useState<WaitlistInput>(EMPTY);
   const [status, setStatus] = useState<Status>("idle");
@@ -153,7 +148,7 @@ export function WaitlistForm({ copy }: { copy: Copy }) {
                 <option value="" disabled style={{ color: "#0b0f1a" }}>
                   {copy.fields.category.placeholder}
                 </option>
-                {/* Los valores viajan al API tal cual: no se traducen. */}
+                {}
                 {CATEGORIES.map((category) => (
                   <option key={category} value={category} style={{ color: "#0b0f1a" }}>
                     {category}
@@ -186,7 +181,7 @@ export function WaitlistForm({ copy }: { copy: Copy }) {
             </div>
           </div>
 
-          {/* Honeypot: fuera de pantalla y sin foco; una persona nunca lo llena. */}
+          {}
           <input
             type="text"
             name="website"

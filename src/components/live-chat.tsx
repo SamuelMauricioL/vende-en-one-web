@@ -43,7 +43,6 @@ export function LiveChat({ sessionId, selectedUserIds, onConnectionError }: Live
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [, setTick] = useState(0);
 
-  // React to connection errors
   useEffect(() => {
     if (status === "ended" && onConnectionError) {
       onConnectionError("El live ha finalizado");
@@ -62,7 +61,6 @@ export function LiveChat({ sessionId, selectedUserIds, onConnectionError }: Live
     (m) => !isFiltered || (m.tiktokUserId && selectedUserIds.has(m.tiktokUserId)),
   );
 
-  // Get the selected user's name from their messages
   const selectedName = useMemo(() => {
     if (!isFiltered || !filtered) return null;
     const first = filtered.find((m) => m.nickname || m.displayId);
