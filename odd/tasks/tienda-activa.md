@@ -1,6 +1,6 @@
 # Tienda activa y gestión de tiendas (D3 · UX)
 
-Un usuario puede tener hasta 3 tiendas. Hay **una tienda activa** que aplica a todos los módulos, se elige desde el **menú hamburguesa** y se guarda en el navegador. La gestión (agregar, remover) vive en **Perfil**.
+Un usuario puede tener hasta 3 tiendas; **los administradores no tienen tope**. Hay **una tienda activa** que aplica a todos los módulos, se elige desde el **menú hamburguesa** y se guarda en el navegador. La gestión (agregar, remover) vive en **Perfil**.
 
 ## Decisiones
 
@@ -18,7 +18,7 @@ Un usuario puede tener hasta 3 tiendas. Hay **una tienda activa** que aplica a t
 - **S3.** La tienda activa se resuelve con prioridad: `localStorage` (si existe en la lista) → primera tienda. El `@` del perfil dejó de participar en `perfil-sin-tiktok-username`: solo guardaba el último `@` vinculado, así que con 3 tiendas la elección quedaba inservible.
 - **S4.** Cambiar la tienda activa emite un evento para que las pantallas abiertas se actualicen sin recargar.
 - **S5.** El inicio de live usa la tienda activa (no el `@` del perfil) y sigue enviando `storeId` obligatorio.
-- **S6.** Agregar tienda reusa el formulario del `@` del onboarding (mismas validaciones y mensajes) y respeta el límite de 3 con el mensaje del backend.
+- **S6.** Agregar tienda abre un diálogo que no se cierra con clic fuera ni con Escape: la única salida es la X. El diálogo pide el `@` y verifica la cuenta con el código de la bio (`verificacion-tiktok`). El tope es de 3 para sellers y **no existe para administradores**; el cliente nunca puede contradecir al backend, y cuando el rol no se puede leer deja decidir al servidor.
 
 ## Tasks
 
