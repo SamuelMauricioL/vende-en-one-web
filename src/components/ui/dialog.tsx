@@ -1,0 +1,132 @@
+"use client"
+
+import * as React from "react"
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
+import { X } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+/**
+ * Diálogo modal sobre Base UI (`@base-ui/react/dialog`), el mismo primitivo que
+ * el resto del kit. El foco queda atrapado mientras está abierto, así que toda
+ * pantalla que use `DialogContent` debe dejar siempre un botón de cierre visible:
+ * cuando no alcanza el Escape ni el fondo, el botón X es la única salida.
+ */
+function Dialog(props: DialogPrimitive.Root.Props) {
+  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+}
+
+function DialogTrigger(props: DialogPrimitive.Trigger.Props) {
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+}
+
+function DialogPortal(props: DialogPrimitive.Portal.Props) {
+  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+}
+
+function DialogClose(props: DialogPrimitive.Close.Props) {
+  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+}
+
+function DialogBackdrop({ className, ...props }: DialogPrimitive.Backdrop.Props) {
+  return (
+    <DialogPrimitive.Backdrop
+      data-slot="dialog-backdrop"
+      className={cn(
+        "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm transition-opacity duration-150 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DialogContent({
+  className,
+  children,
+  showCloseButton = true,
+  closeLabel = "Cerrar",
+  ...props
+}: DialogPrimitive.Popup.Props & {
+  /** El botón X es la salida del diálogo: nunca se apaga en modales no descartables. */
+  showCloseButton?: boolean
+  closeLabel?: string
+}) {
+  return (
+    <DialogPortal>
+      <DialogBackdrop />
+      <DialogPrimitive.Popup
+        data-slot="dialog-content"
+        className={cn(
+          "fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-popover p-5 text-popover-foreground shadow-2xl outline-none transition-all duration-150 data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:scale-95 data-[starting-style]:opacity-0",
+          className
+        )}
+        {...props}
+      >
+        {children}
+        {showCloseButton && (
+          <DialogPrimitive.Close
+            data-slot="dialog-close-button"
+            aria-label={closeLabel}
+            className="absolute top-3 right-3 flex size-8 items-center justify-center rounded-lg text-white/40 transition-colors outline-none hover:bg-white/5 hover:text-white/80 focus-visible:ring-3 focus-visible:ring-white/20"
+          >
+            <X className="size-4" />
+          </DialogPrimitive.Close>
+        )}
+      </DialogPrimitive.Popup>
+    </DialogPortal>
+  )
+}
+
+function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-header"
+      className={cn("flex flex-col gap-1 pr-8", className)}
+      {...props}
+    />
+  )
+}
+
+function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-footer"
+      className={cn("mt-5 flex flex-col gap-2", className)}
+      {...props}
+    />
+  )
+}
+
+function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
+  return (
+    <DialogPrimitive.Title
+      data-slot="dialog-title"
+      className={cn("text-sm font-bold text-white/90", className)}
+      {...props}
+    />
+  )
+}
+
+function DialogDescription({ className, ...props }: DialogPrimitive.Description.Props) {
+  return (
+    <DialogPrimitive.Description
+      data-slot="dialog-description"
+      className={cn("text-[11px] leading-relaxed text-white/40", className)}
+      {...props}
+    />
+  )
+}
+
+export {
+  Dialog,
+  DialogBackdrop,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+}

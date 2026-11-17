@@ -10,6 +10,7 @@ import {
   useActiveStoreId,
   writeActiveStoreId,
 } from "@/lib/active-store";
+import AddStoreDialog from "@/components/add-store-dialog";
 
 interface StoreRow {
   _id: string;
@@ -17,16 +18,8 @@ interface StoreRow {
   sessions: number;
 }
 
+/** Tope del servidor para sellers: los admins no tienen tope (`convex/stores.ts`). */
 const MAX_STORES = 3;
-
-/** Acepta "@cuenta", "cuenta" o el enlace del perfil, igual que el viejo CTA de Live. */
-function normalizeHandle(raw: string): string | null {
-  const value = raw.trim();
-  if (!value) return null;
-  const fromUrl = /(?:tiktok\.com\/)@?([A-Za-z0-9._]+)/i.exec(value);
-  const candidate = fromUrl ? fromUrl[1] : value.replace(/^@/, "");
-  return /^[A-Za-z0-9._]{2,}$/.test(candidate) ? candidate.toLowerCase() : null;
-}
 
 /** Gestión de tiendas: marcar la activa, agregar y remover. */
 export default function StoresManager() {
@@ -34,9 +27,10 @@ export default function StoresManager() {
   const activeStoreId = useActiveStoreId();
   const [stores, setStores] = useState<StoreRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [input, setInput] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  /** El rol solo se conoce si el perfil respondió; si no, decide el servidor. */
+  const [roleKnown, setRoleKnown] = useState(false);
 
   const api = useCallback(
     async (path: string, init?: RequestInit) => {
@@ -69,32 +63,26 @@ export default function StoresManager() {
     void load();
   }, [isLoaded, userId, load]);
 
-  const add = async () => {
-    const handle = normalizeHandle(input);
-    if (!handle) {
-      setError("Escribe tu @ de TikTok, por ejemplo @tutienda");
-      return;
-    }
-    setSaving(true);
-    setError("");
-    try {
-      const res = await api("/api/users/profile/tiktok", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tiktokUsername: handle }),
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { message?: string };
-        setError(data.message || "No se pudo agregar la tienda");
-        return;
-      }
-      setInput("");
-      toast.success("Tienda agregada");
-      await load();
-    } finally {
-      setSaving(false);
-    }
-  };
+  // El rol vive en el perfil (misma fuente que el guard del API): un admin no
+  // tiene tope de tiendas, así que el navegador no puede bloquearle el 4º alta.
+  useEffect(() => {
+    if (!isLoaded || !userId) return;
+    let cancelled = false;
+    void (async () => {
+      const res = await api(`/api/users/profile/${encodeURIComponent(userId)}`);
+      if (!res.ok) return;
+      const data = (await res.json().catch(() => ({}))) as {
+        profile?: { role?: string } | null;
+      };
+      // Sin perfil o sin respuesta no inventamos rol: el formulario queda libre.
+      if (cancelled || !data.profile) return;
+      setIsAdmin(data.profile.role === "admin");
+      setRoleKnown(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, userId, api]);
 
   const remove = async (store: StoreRow) => {
     const res = await api(`/api/stores/${store._id}`, { method: "DELETE" });
@@ -107,7 +95,15 @@ export default function StoresManager() {
     await load();
   };
 
-  const full = stores.length >= MAX_STORES;
+  // El tope del navegador es solo el de un seller confirmado; nunca contradice al
+  // servidor: si el rol no se pudo leer, se deja intentar y el API responde.
+  const atSellerLimit = roleKnown && !isAdmin && stores.length >= MAX_STORES;
+
+  const capNote = isAdmin
+    ? "Sin límite de tiendas para administradores. Una tienda con lives no se puede eliminar."
+    : roleKnown
+      ? `Hasta ${MAX_STORES} tiendas por cuenta. Una tienda con lives no se puede eliminar.`
+      : "Una tienda con lives no se puede eliminar.";
 
   return (
     <div className="space-y-3">
@@ -170,32 +166,30 @@ export default function StoresManager() {
       )}
 
       <div className="space-y-2">
-        <div className="flex gap-2">
-          <input
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              setError("");
-            }}
-            placeholder={full ? "Llegaste al límite de 3 tiendas" : "@tutienda"}
-            disabled={full || saving}
-            className="flex-1 h-10 px-3 rounded-xl text-sm bg-white/5 border border-white/10 text-white/85 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-[#fe2c55]/40 disabled:opacity-50"
-          />
-          <button
-            type="button"
-            onClick={() => void add()}
-            disabled={full || saving || !input.trim()}
-            className="h-10 px-4 rounded-xl text-xs font-semibold text-white disabled:opacity-40"
-            style={{ background: "#fe2c55" }}
-          >
-            {saving ? "Agregando…" : "Agregar"}
-          </button>
-        </div>
-        {error && <p className="text-[11px] text-[#fe2c55]">{error}</p>}
-        <p className="text-[11px] text-white/25">
-          Hasta {MAX_STORES} tiendas por cuenta. Una tienda con lives no se puede eliminar.
-        </p>
+        <button
+          type="button"
+          onClick={() => setDialogOpen(true)}
+          disabled={atSellerLimit}
+          title={
+            atSellerLimit ? "Llegaste al límite de 3 tiendas" : "Agregar una tienda nueva"
+          }
+          className="h-10 px-4 rounded-xl text-xs font-semibold text-white disabled:opacity-40"
+          style={{ background: "#fe2c55" }}
+        >
+          Agregar tienda
+        </button>
+        {atSellerLimit && (
+          <p className="text-[11px] text-[#fe2c55]">Llegaste al límite de 3 tiendas</p>
+        )}
+        <p className="text-[11px] text-white/25">{capNote}</p>
       </div>
+
+      <AddStoreDialog
+        open={dialogOpen}
+        isAdmin={isAdmin}
+        onClose={() => setDialogOpen(false)}
+        onAdded={load}
+      />
     </div>
   );
 }
