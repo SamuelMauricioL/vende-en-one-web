@@ -1,4 +1,5 @@
 import { clerkMiddleware } from "@clerk/astro/server";
+import { ACTING_COOKIE, ACTING_COOKIE_VALUE } from "./lib/acting.ts";
 
 const API_BASE = "https://vende-en-one-api-production.up.railway.app";
 
@@ -34,7 +35,9 @@ export const onRequest = clerkMiddleware(async (auth, context, next) => {
     const needsStore = storeRequiredPaths.some(
       (p) => pathname === p || pathname.startsWith(p + "/")
     );
-    if (needsStore && userId) {
+    const actingRequested =
+      context.cookies.get(ACTING_COOKIE)?.value === ACTING_COOKIE_VALUE;
+    if (needsStore && userId && !actingRequested) {
       try {
         // El API ahora exige token. Si no se puede obtener, seguimos sin él:
         // el API es la frontera de seguridad y la página mostrará lo que haya.

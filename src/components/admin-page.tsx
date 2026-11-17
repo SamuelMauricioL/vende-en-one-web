@@ -5,7 +5,9 @@ import { useAuth } from "@clerk/astro/react";
 import { toast } from "sonner";
 import { AppNav } from "@/components/app-nav";
 import { Toaster } from "@/components/ui/sonner";
+import ActingAsBanner from "@/components/acting-as-banner";
 import { authHeaders } from "@/lib/api-auth";
+import { writeActing } from "@/lib/acting";
 import { formatDay, formatSoles } from "@/lib/billing";
 
 interface WaitlistEntry {
@@ -35,6 +37,11 @@ interface PendingPayment {
   createdAt: number;
 }
 
+interface ActingSubject {
+  clerkUserId: string;
+  handles: string[];
+}
+
 const card = {
   background: "rgba(255,255,255,0.02)",
   border: "1px solid rgba(255,255,255,0.06)",
@@ -48,30 +55,41 @@ const card = {
  */
 export default function AdminPage() {
   const { userId, isLoaded, getToken } = useAuth();
-  const [tab, setTab] = useState<"payments" | "leads">("payments");
+  const [tab, setTab] = useState<"payments" | "leads" | "accounts">("payments");
   const [payments, setPayments] = useState<PendingPayment[]>([]);
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
   const [leadMagnets, setLeadMagnets] = useState<LeadMagnetEntry[]>([]);
+  const [subjects, setSubjects] = useState<ActingSubject[]>([]);
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [actingId, setActingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
       const headers = await authHeaders(getToken);
 
-      const [paymentsRes, waitlistRes, leadMagnetsRes] = await Promise.all([
+      const [paymentsRes, waitlistRes, leadMagnetsRes, usersRes] = await Promise.all([
         fetch("/api/admin/payments?status=pending", { headers }),
         fetch("/api/admin/waitlist", { headers }),
         fetch("/api/admin/lead-magnets", { headers }),
+        fetch("/api/admin/users", { headers }),
       ]);
 
-      if ([paymentsRes, waitlistRes, leadMagnetsRes].some((res) => res.status === 403)) {
+      if ([paymentsRes, waitlistRes, leadMagnetsRes, usersRes].some((res) => res.status === 403)) {
         setDenied(true);
         setPayments([]);
         setWaitlist([]);
         setLeadMagnets([]);
+        setSubjects([]);
         return;
+      }
+
+      if (usersRes.ok) {
+        const data = (await usersRes.json()) as { users?: ActingSubject[] };
+        setSubjects(data.users ?? []);
+      } else {
+        toast.error(`No se pudieron cargar las cuentas (${usersRes.status})`);
       }
 
       if (paymentsRes.ok) {
@@ -134,14 +152,61 @@ export default function AdminPage() {
     [getToken],
   );
 
+  const actAs = useCallback(
+    async (clerkUserId: string, fallbackHandle: string) => {
+      setActingId(clerkUserId);
+      try {
+        const res = await fetch("/api/admin/act-as", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...(await authHeaders(getToken)) },
+          body: JSON.stringify({ clerkUserId }),
+        });
+        const data = (await res.json().catch(() => ({}))) as {
+          token?: string;
+          expiresAt?: number;
+          subject?: { handles?: string[] };
+          message?: string;
+        };
+
+        if (res.status === 403) {
+          setDenied(true);
+          setPayments([]);
+          setWaitlist([]);
+          setLeadMagnets([]);
+          setSubjects([]);
+          return;
+        }
+        if (!res.ok) {
+          toast.error(data.message || `No se pudo actuar como esa cuenta (${res.status})`);
+          return;
+        }
+        if (typeof data.token !== "string" || typeof data.expiresAt !== "number") {
+          toast.error("El API no devolvió un token de actuación válido");
+          return;
+        }
+
+        const handle = data.subject?.handles?.[0] || fallbackHandle;
+        writeActing({ token: data.token, expiresAt: data.expiresAt, handle });
+        window.location.href = "/app";
+      } catch {
+        toast.error("Error de red al actuar como esa cuenta");
+      } finally {
+        setActingId(null);
+      }
+    },
+    [getToken],
+  );
+
   const tabs = [
     { id: "payments" as const, label: "Pagos pendientes", count: payments.length },
     { id: "leads" as const, label: "Leads", count: waitlist.length + leadMagnets.length },
+    { id: "accounts" as const, label: "Cuentas", count: subjects.length },
   ];
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0b0f1a" }}>
       <AppNav current="admin" />
+      <ActingAsBanner />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 pt-8 pb-12 space-y-4">
         <div
@@ -231,7 +296,7 @@ export default function AdminPage() {
               </ul>
             )}
           </>
-        ) : (
+        ) : tab === "leads" ? (
           <>
             <div>
               <h2 className="text-xl font-extrabold text-white/90 tracking-tight">Leads</h2>
@@ -298,6 +363,51 @@ export default function AdminPage() {
                 </ul>
               )}
             </section>
+          </>
+        ) : (
+          <>
+            <div>
+              <h2 className="text-xl font-extrabold text-white/90 tracking-tight">Cuentas</h2>
+              <p className="text-sm text-white/40 mt-1">
+                Entra como un cliente para ver su panel y operar sobre sus datos. Sales con
+                el botón del banner.
+              </p>
+            </div>
+
+            {subjects.length === 0 ? (
+              <section className="rounded-3xl p-6 text-center" style={card}>
+                <p className="text-sm text-white/50">Todavía no hay cuentas de clientes.</p>
+              </section>
+            ) : (
+              <ul className="space-y-3">
+                {subjects.map((subject) => {
+                  const handle = subject.handles[0] || subject.clerkUserId;
+                  return (
+                    <li key={subject.clerkUserId} className="rounded-3xl p-5" style={card}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-mono text-[#25f4ee] break-all">@{handle}</p>
+                          <p className="mt-1 text-[11px] text-white/35 break-all">
+                            {subject.handles.length > 1
+                              ? subject.handles.map((item) => `@${item}`).join(" · ")
+                              : subject.clerkUserId}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={actingId === subject.clerkUserId}
+                          onClick={() => void actAs(subject.clerkUserId, handle)}
+                          className="h-9 px-3 shrink-0 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 disabled:opacity-40"
+                          style={{ background: "rgba(37,244,238,0.12)", color: "#25f4ee" }}
+                        >
+                          Actuar como
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </>
         )}
       </main>

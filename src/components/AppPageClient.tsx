@@ -14,6 +14,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AppNav } from "@/components/app-nav";
 import VerificationDialog from "@/components/verification-dialog";
 import AppUnverifiedBanner from "@/components/app-unverified-banner";
+import ActingAsBanner from "@/components/acting-as-banner";
 
 type FiltersState = "loading" | "ready" | "error";
 
@@ -162,6 +163,7 @@ export default function AppPageClient() {
           onOpen={openVerification}
         />
       )}
+      <ActingAsBanner />
       <main className="flex-1 flex flex-col min-h-0">
         <div className="flex-1 min-h-0 px-4 sm:px-6 pb-4 max-w-6xl w-full mx-auto">
           {filtersReady ? (
