@@ -47,9 +47,10 @@ const card = {
   border: "1px solid rgba(255,255,255,0.06)",
 };
 
-export default function AdminPage() {
+export type AdminArea = "payments" | "leads" | "accounts";
+
+export default function AdminPage({ area }: { area: AdminArea }) {
   const { userId, isLoaded, getToken } = useAuth();
-  const [tab, setTab] = useState<"payments" | "leads" | "accounts">("payments");
   const [payments, setPayments] = useState<PendingPayment[]>([]);
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
   const [leadMagnets, setLeadMagnets] = useState<LeadMagnetEntry[]>([]);
@@ -191,41 +192,12 @@ export default function AdminPage() {
     [getToken],
   );
 
-  const tabs = [
-    { id: "payments" as const, label: "Pagos pendientes", count: payments.length },
-    { id: "leads" as const, label: "Leads", count: waitlist.length + leadMagnets.length },
-    { id: "accounts" as const, label: "Cuentas", count: subjects.length },
-  ];
-
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0b0f1a" }}>
       <AppNav current="admin" />
       <ActingAsBanner />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 pt-8 pb-12 space-y-4">
-        <div
-          role="tablist"
-          aria-label="Secciones del panel"
-          className="flex gap-1 p-1 rounded-2xl"
-          style={card}
-        >
-          {tabs.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={tab === item.id}
-              onClick={() => setTab(item.id)}
-              className={`flex-1 h-10 rounded-xl text-xs font-bold transition-all duration-200 ${
-                tab === item.id ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"
-              }`}
-            >
-              {item.label}
-              <span className="ml-1.5 text-white/30 tabular-nums">{item.count}</span>
-            </button>
-          ))}
-        </div>
-
         {loading ? (
           <p className="text-sm text-white/40 text-center py-10">Cargando…</p>
         ) : denied ? (
@@ -238,7 +210,7 @@ export default function AdminPage() {
             </p>
             <p className="text-xs text-white/35 mt-1">Esta sección es solo para administradores.</p>
           </section>
-        ) : tab === "payments" ? (
+        ) : area === "payments" ? (
           <>
             <div>
               <h2 className="text-xl font-extrabold text-white/90 tracking-tight">Pagos pendientes</h2>
@@ -290,7 +262,7 @@ export default function AdminPage() {
               </ul>
             )}
           </>
-        ) : tab === "leads" ? (
+        ) : area === "leads" ? (
           <>
             <div>
               <h2 className="text-xl font-extrabold text-white/90 tracking-tight">Leads</h2>
