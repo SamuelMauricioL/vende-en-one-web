@@ -5,7 +5,6 @@ import { useAuth } from "@clerk/astro/react";
 import { toast } from "sonner";
 import { AppNav } from "@/components/app-nav";
 import { Toaster } from "@/components/ui/sonner";
-import ActingAsBanner from "@/components/acting-as-banner";
 import { authHeaders } from "@/lib/api-auth";
 import { writeActing } from "@/lib/acting";
 import { formatDay, formatSoles } from "@/lib/billing";
@@ -195,7 +194,6 @@ export default function AdminPage({ area }: { area: AdminArea }) {
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0b0f1a" }}>
       <AppNav current="admin" />
-      <ActingAsBanner />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 pt-8 pb-12 space-y-4">
         {loading ? (

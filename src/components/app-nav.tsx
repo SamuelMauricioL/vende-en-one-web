@@ -6,6 +6,7 @@ import { authHeaders } from "@/lib/api-auth";
 import { fetchBillingState } from "@/lib/billing";
 import { menuItems } from "@/lib/menu";
 import { isActing } from "@/lib/acting";
+import ActingAsBanner from "@/components/acting-as-banner";
 import {
   readActiveStoreId,
   resolveActiveStore,
@@ -229,6 +230,8 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
         </div>
 
         )}
+
+        <ActingAsBanner />
 
         <nav className="space-y-1 pt-2">
           {items.map((item) => {
