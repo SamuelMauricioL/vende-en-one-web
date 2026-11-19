@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { useAuth } from "@clerk/astro/react";
 import { authHeaders } from "@/lib/api-auth";
 import { fetchBillingState } from "@/lib/billing";
@@ -15,7 +15,7 @@ import {
 } from "@/lib/active-store";
 
 interface AppNavProps {
-  current: "live" | "inbox" | "filters" | "profile" | "billing" | "admin";
+  current: "admin" | "admin.payments" | "admin.leads" | "admin.accounts" | "live" | "inbox" | "filters" | "billing" | "profile";
 
   stopButton?: React.ReactNode;
 
@@ -112,6 +112,9 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
     profile: "Perfil",
     billing: "Cobro y acceso",
     admin: "Admin",
+    "admin.payments": "Pagos pendientes",
+    "admin.leads": "Leads",
+    "admin.accounts": "Cuentas",
   };
   const title = labels[current] ?? "Live Leads";
 
@@ -234,12 +237,14 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
         <ActingAsBanner />
 
         <nav className="space-y-1 pt-2">
-          {items.map((item) => {
-            const active = isActive(item.kind === "admin" ? "admin" : item.id);
+          {items.map((item, index) => {
+            const active = isActive(item.id);
+            const separator = item.kind === "account" && index > 0;
             const accent = item.kind === "admin" ? "#facc15" : "#fe2c55";
             return (
+              <Fragment key={item.id}>
+              {separator ? <hr className="my-2 border-white/[0.06]" /> : null}
               <a
-                key={item.id}
                 href={item.href}
                 onClick={() => setOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
@@ -294,6 +299,7 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
                   </span>
                 ) : null}
               </a>
+              </Fragment>
             );
           })}
 
@@ -301,7 +307,7 @@ export function AppNav({ current, stopButton, pendingCount }: AppNavProps) {
 
         {}
         {isSignedIn && (
-          <div className="absolute bottom-4 left-4 right-4">
+          <div className="mt-1">
             <button
               type="button"
               onClick={() => signOut()}
