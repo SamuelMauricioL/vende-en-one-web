@@ -531,9 +531,6 @@ export const LiveController = forwardRef<LiveControllerHandle, {
               ) : (
                 <p className="mt-3 text-xs text-white/40">Esperando la conexión del live...</p>
               )}
-              <p className="mt-4 text-[11px] text-white/25">
-                Nada de este live se guarda en la base de datos.
-              </p>
             </div>
           </div>
         </div>
