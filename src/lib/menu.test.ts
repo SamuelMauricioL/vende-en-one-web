@@ -5,7 +5,7 @@ import { menuItems } from "./menu.ts";
 
 const ids = (input: Parameters<typeof menuItems>[0]) => menuItems(input).map((item) => item.id);
 
-test("un admin sin tienda ve las tres areas y ninguna entrada de vendedor", () => {
+test("un admin sin tienda ve las tres areas, la entrada temporal de perfil y ninguna entrada de vendedor", () => {
   const items = menuItems({
     isAdmin: true,
     hasStore: false,
@@ -13,7 +13,13 @@ test("un admin sin tienda ve las tres areas y ninguna entrada de vendedor", () =
     counts: { payments: 0, leads: 9, accounts: 13 },
   });
 
-  assert.deepEqual(items.map((item) => item.id), ["admin.payments", "admin.leads", "admin.accounts", "profile"]);
+  assert.deepEqual(items.map((item) => item.id), [
+    "admin.payments",
+    "admin.leads",
+    "admin.accounts",
+    "admin.perfil",
+    "profile",
+  ]);
   assert.deepEqual(items.filter((item) => item.kind === "seller"), []);
 });
 
@@ -75,12 +81,22 @@ test("perfil cierra la lista en todos los casos", () => {
 test("quien tiene tienda y ademas es admin ve primero su trabajo y luego la administracion", () => {
   const items = ids({ isAdmin: true, hasStore: true, acting: false, counts: { payments: 1, leads: 2, accounts: 3 } });
 
-  assert.deepEqual(items, ["live", "inbox", "filters", "billing", "admin.payments", "admin.leads", "admin.accounts", "profile"]);
+  assert.deepEqual(items, [
+    "live",
+    "inbox",
+    "filters",
+    "billing",
+    "admin.payments",
+    "admin.leads",
+    "admin.accounts",
+    "admin.perfil",
+    "profile",
+  ]);
 });
 
 test("las areas del admin apuntan a rutas propias y enlazables", () => {
   const items = menuItems({ isAdmin: true, hasStore: false, acting: false, counts: null });
   const hrefs = items.filter((item) => item.kind === "admin").map((item) => item.href);
 
-  assert.deepEqual(hrefs, ["/app/admin/pagos", "/app/admin/leads", "/app/admin/cuentas"]);
+  assert.deepEqual(hrefs, ["/app/admin/pagos", "/app/admin/leads", "/app/admin/cuentas", "/perfil"]);
 });

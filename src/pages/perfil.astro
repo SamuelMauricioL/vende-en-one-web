@@ -1,0 +1,10 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import AdminPerfilPage from "@/components/admin-perfil-page";
+
+const title = "Perfil admin — Live Leads";
+---
+
+<Layout title={title}>
+  <AdminPerfilPage client:load />
+</Layout>

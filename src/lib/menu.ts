@@ -43,6 +43,13 @@ const ADMIN_AREAS: AdminArea[] = [
 
 const PROFILE: MenuItem = { id: "profile", href: "/app/profile", label: "Perfil", kind: "account" };
 
+const ADMIN_PERFIL_DEMO: MenuItem = {
+  id: "admin.perfil",
+  href: "/perfil",
+  label: "Cuentas TikTok (demo)",
+  kind: "admin",
+};
+
 export function menuItems({ isAdmin, hasStore, acting, counts }: MenuInput): MenuItem[] {
   const items: MenuItem[] = [];
 
@@ -61,6 +68,7 @@ export function menuItems({ isAdmin, hasStore, acting, counts }: MenuInput): Men
         ...(count === undefined ? {} : { count }),
       });
     }
+    items.push(ADMIN_PERFIL_DEMO);
   }
 
   items.push(PROFILE);

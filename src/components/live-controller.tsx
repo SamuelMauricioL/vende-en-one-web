@@ -21,6 +21,7 @@ import {
 } from "@/lib/live-reconnect";
 import { resolveActiveStore, useActiveStoreId } from "@/lib/active-store";
 import { fetchBillingState } from "@/lib/billing";
+import { startDemoLive, stopDemoLive } from "@/lib/demo-live";
 import { useAuth } from "@clerk/astro/react";
 
 const TIKTOK_URL_REGEX = /^(?:https?:\/\/)?(?:www\.)?tiktok\.com\/@([a-zA-Z0-9_.-]+)/;
@@ -88,7 +89,8 @@ export const LiveController = forwardRef<LiveControllerHandle, {
   onActiveChange?: (active: boolean) => void;
   unverifiedHandle?: string | null;
   onOpenVerification?: () => void;
-}>(({ onActiveChange, unverifiedHandle, onOpenVerification }, ref) => {
+  demoUsername?: string | null;
+}>(({ onActiveChange, unverifiedHandle, onOpenVerification, demoUsername = null }, ref) => {
   const { getToken } = useAuth();
   const [storeId, setStoreId] = useState("");
 
@@ -106,9 +108,13 @@ export const LiveController = forwardRef<LiveControllerHandle, {
   const [compraReport, setCompraReport] = useState<{ sessionId: string; leads: CompraLead[] } | null>(null);
   const [monitorStatus, setMonitorStatus] = useState<"idle" | "connecting" | "waiting" | "live" | "error">("idle");
   const [expired, setExpired] = useState(false);
+  const [demoStarting, setDemoStarting] = useState(false);
+  const [demoStopped, setDemoStopped] = useState(false);
+  const [demoError, setDemoError] = useState("");
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
+    if (demoUsername) return;
     let cancelled = false;
     void fetchBillingState(getToken).then((state) => {
       if (!cancelled && state) setExpired(state.access === "expired");
@@ -116,7 +122,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
     return () => {
       cancelled = true;
     };
-  }, [getToken]);
+  }, [getToken, demoUsername]);
 
   const onStageCountsReport = useCallback((counts: Record<string, number>) => {
     setStageCounts(counts);
@@ -229,6 +235,32 @@ export const LiveController = forwardRef<LiveControllerHandle, {
 
   const resumeProbe = useRef<"none" | "quiet" | "live">("none");
 
+  const demoStartRequested = useRef(false);
+
+  const startDemo = useCallback(async () => {
+    if (!demoUsername) return;
+    setDemoStarting(true);
+    setDemoStopped(false);
+    setDemoError("");
+    const result = await startDemoLive(demoUsername, await authHeaders(getToken));
+    setDemoStarting(false);
+    if (!result.ok) {
+      setDemoError(result.message);
+      toast.error(result.message);
+      return;
+    }
+    setLastUsername(demoUsername);
+    setActiveSessionId(result.sessionId);
+    trackEvent("Live Demo Started", { username: demoUsername });
+  }, [demoUsername, getToken]);
+
+  useEffect(() => {
+    if (!demoUsername) return;
+    if (demoStartRequested.current || activeSessionId) return;
+    demoStartRequested.current = true;
+    void startDemo();
+  }, [demoUsername, activeSessionId, startDemo]);
+
   useEffect(() => {
     if (!storeId || !storeUsername || activeSessionId) return;
     const monitorSaysLive = monitorStatus === "live";
@@ -241,6 +273,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      if (demoUsername) return;
       try {
         const res = await fetch("/api/stores", { headers: await authHeaders(getToken) });
         if (!res.ok) return;
@@ -261,7 +294,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
     return () => {
       cancelled = true;
     };
-  }, [getToken, activeStoreId]);
+  }, [getToken, activeStoreId, demoUsername]);
 
   useEffect(() => {
     if (activeSessionId) return;
@@ -270,6 +303,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
   }, [storeUsername, activeSessionId]);
 
   useEffect(() => {
+    if (demoUsername) return;
     if (activeSessionId || !storeUsername) {
 
       if (wsRef.current) {
@@ -330,7 +364,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
       ws?.close();
       if (wsRef.current === ws) wsRef.current = null;
     };
-  }, [activeSessionId, storeUsername]);
+  }, [activeSessionId, storeUsername, demoUsername]);
 
   const liveEndedHandled = useRef(false);
 
@@ -391,6 +425,17 @@ export const LiveController = forwardRef<LiveControllerHandle, {
   };
 
   const handleStop = async () => {
+    if (demoUsername) {
+      setLoading(true);
+      const result = await stopDemoLive(demoUsername, await authHeaders(getToken));
+      setLoading(false);
+      setDemoStopped(true);
+      if (!result.ok) toast.error(result.message);
+      setActiveSessionId(null);
+      setShowLiveEndedDialog(true);
+      return;
+    }
+
     if (!lastUsername) {
       toast.error("No hay un live activo");
       return;
@@ -447,7 +492,52 @@ export const LiveController = forwardRef<LiveControllerHandle, {
       )}
 
       {}
-      {!activeSessionId && storeUsername && !showEditInput ? (
+      {!activeSessionId && demoUsername ? (
+        <div className="max-w-lg mx-auto w-full shrink-0 pt-8 md:pt-12">
+          <div
+            className="rounded-3xl overflow-hidden"
+            style={{
+              background: "linear-gradient(135deg, rgba(254,44,85,0.08) 0%, rgba(37,244,238,0.04) 100%)",
+              border: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #fe2c55, #25f4ee)" }} />
+            <div className="p-6 sm:p-8 text-center">
+              <p className="text-[11px] uppercase tracking-wide text-white/30">Live demo sin registro</p>
+              <p className="mt-2 font-mono text-lg font-extrabold text-white/90 tracking-tight break-all">
+                @{demoUsername}
+              </p>
+              {demoStarting ? (
+                <span className="mt-4 inline-flex items-center gap-2 text-xs text-white/50">
+                  <span className="w-4 h-4 rounded-full border-2 border-white/20 border-t-[#fe2c55] animate-spin" />
+                  Iniciando el live...
+                </span>
+              ) : demoError ? (
+                <>
+                  <p className="mt-3 text-xs text-[#fe2c55]">{demoError}</p>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      demoStartRequested.current = true;
+                      void startDemo();
+                    }}
+                    className="mt-4 h-10 px-4 bg-[#fe2c55] hover:bg-[#fe2c55]/80 text-white text-xs font-bold rounded-xl"
+                  >
+                    Reintentar
+                  </Button>
+                </>
+              ) : demoStopped ? (
+                <p className="mt-3 text-xs text-white/40">Live demo detenido.</p>
+              ) : (
+                <p className="mt-3 text-xs text-white/40">Esperando la conexión del live...</p>
+              )}
+              <p className="mt-4 text-[11px] text-white/25">
+                Nada de este live se guarda en la base de datos.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : !activeSessionId && storeUsername && !showEditInput ? (
 
         <div className="max-w-lg mx-auto w-full shrink-0 pt-8 md:pt-12">
           <div

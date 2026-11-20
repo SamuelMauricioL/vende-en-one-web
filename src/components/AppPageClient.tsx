@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { authHeaders } from "@/lib/api-auth";
 import { resolveActiveStore, useActiveStoreId } from "@/lib/active-store";
 import { fetchFilters } from "@/lib/filters-api";
+import { parseDemoParam } from "@/lib/demo-live";
 import {
   LiveController,
   type LiveControllerHandle,
@@ -43,6 +44,8 @@ export default function AppPageClient() {
   const [verificationOpen, setVerificationOpen] = useState(false);
   const autoPrompted = useRef(false);
   const noticedStores = useRef<Set<string>>(new Set());
+  const [demoUsername, setDemoUsername] = useState<string | null>(null);
+  const [queryReady, setQueryReady] = useState(false);
 
   const readStores = useCallback(async (): Promise<ActiveStoreRow[]> => {
     const headers = await authHeaders(getToken);
@@ -97,7 +100,14 @@ export default function AppPageClient() {
   }, [applyStores, readStores]);
 
   useEffect(() => {
+    setDemoUsername(parseDemoParam(window.location.search));
+    setQueryReady(true);
+  }, []);
+
+  useEffect(() => {
     if (!isLoaded || !userId) return;
+    if (!queryReady) return;
+    if (demoUsername) return;
     let cancelled = false;
     setFiltersState("loading");
     setFiltersError("");
@@ -124,7 +134,7 @@ export default function AppPageClient() {
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, userId, getToken, activeStoreId, reloadKey, readStores, applyStores, announceVerified]);
+  }, [isLoaded, userId, getToken, activeStoreId, reloadKey, queryReady, demoUsername, readStores, applyStores, announceVerified]);
 
   const handleActiveChange = useCallback((active: boolean) => {
     setSessionActive(active);
@@ -162,7 +172,13 @@ export default function AppPageClient() {
       )}
       <main className="flex-1 flex flex-col min-h-0">
         <div className="flex-1 min-h-0 px-4 sm:px-6 pb-4 max-w-6xl w-full mx-auto">
-          {filtersReady ? (
+          {queryReady && demoUsername ? (
+            <LiveController
+              ref={controllerRef}
+              demoUsername={demoUsername}
+              onActiveChange={handleActiveChange}
+            />
+          ) : filtersReady ? (
             <LiveController
               ref={controllerRef}
               onActiveChange={handleActiveChange}
