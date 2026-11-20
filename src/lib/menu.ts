@@ -41,23 +41,24 @@ const ADMIN_AREAS: AdminArea[] = [
   { id: "admin.accounts", href: "/app/admin/cuentas", label: "Cuentas", countKey: "accounts" },
 ];
 
-const PROFILE: MenuItem = { id: "profile", href: "/app/profile", label: "Perfil", kind: "account" };
-
-const ADMIN_PERFIL_DEMO: MenuItem = {
-  id: "admin.perfil",
-  href: "/perfil",
-  label: "Cuentas TikTok (demo)",
-  kind: "admin",
-};
+function profileItem(adminSurface: boolean): MenuItem {
+  return {
+    id: "profile",
+    href: adminSurface ? "/perfil" : "/app/profile",
+    label: "Perfil",
+    kind: "account",
+  };
+}
 
 export function menuItems({ isAdmin, hasStore, acting, counts }: MenuInput): MenuItem[] {
   const items: MenuItem[] = [];
+  const adminSurface = isAdmin && !acting;
 
   if (hasStore || acting) {
     items.push(...SELLER);
   }
 
-  if (isAdmin && !acting) {
+  if (adminSurface) {
     for (const area of ADMIN_AREAS) {
       const count = counts ? counts[area.countKey] : undefined;
       items.push({
@@ -68,10 +69,9 @@ export function menuItems({ isAdmin, hasStore, acting, counts }: MenuInput): Men
         ...(count === undefined ? {} : { count }),
       });
     }
-    items.push(ADMIN_PERFIL_DEMO);
   }
 
-  items.push(PROFILE);
+  items.push(profileItem(adminSurface));
 
   return items;
 }

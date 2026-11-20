@@ -5,7 +5,7 @@ import { menuItems } from "./menu.ts";
 
 const ids = (input: Parameters<typeof menuItems>[0]) => menuItems(input).map((item) => item.id);
 
-test("un admin sin tienda ve las tres areas, la entrada temporal de perfil y ninguna entrada de vendedor", () => {
+test("un admin sin tienda ve las tres areas y su perfil apunta a la pantalla de admin", () => {
   const items = menuItems({
     isAdmin: true,
     hasStore: false,
@@ -17,9 +17,9 @@ test("un admin sin tienda ve las tres areas, la entrada temporal de perfil y nin
     "admin.payments",
     "admin.leads",
     "admin.accounts",
-    "admin.perfil",
     "profile",
   ]);
+  assert.equal(items[items.length - 1]?.href, "/perfil");
   assert.deepEqual(items.filter((item) => item.kind === "seller"), []);
 });
 
@@ -79,9 +79,9 @@ test("perfil cierra la lista en todos los casos", () => {
 });
 
 test("quien tiene tienda y ademas es admin ve primero su trabajo y luego la administracion", () => {
-  const items = ids({ isAdmin: true, hasStore: true, acting: false, counts: { payments: 1, leads: 2, accounts: 3 } });
+  const items = menuItems({ isAdmin: true, hasStore: true, acting: false, counts: { payments: 1, leads: 2, accounts: 3 } });
 
-  assert.deepEqual(items, [
+  assert.deepEqual(items.map((item) => item.id), [
     "live",
     "inbox",
     "filters",
@@ -89,14 +89,38 @@ test("quien tiene tienda y ademas es admin ve primero su trabajo y luego la admi
     "admin.payments",
     "admin.leads",
     "admin.accounts",
-    "admin.perfil",
     "profile",
   ]);
+  assert.equal(items[items.length - 1]?.href, "/perfil");
 });
 
 test("las areas del admin apuntan a rutas propias y enlazables", () => {
   const items = menuItems({ isAdmin: true, hasStore: false, acting: false, counts: null });
   const hrefs = items.filter((item) => item.kind === "admin").map((item) => item.href);
 
-  assert.deepEqual(hrefs, ["/app/admin/pagos", "/app/admin/leads", "/app/admin/cuentas", "/perfil"]);
+  assert.deepEqual(hrefs, ["/app/admin/pagos", "/app/admin/leads", "/app/admin/cuentas"]);
+});
+
+test("el perfil de un vendedor sigue en la ruta de siempre", () => {
+  for (const input of [
+    { isAdmin: false, hasStore: true, acting: false, counts: null },
+    { isAdmin: false, hasStore: false, acting: false, counts: null },
+  ]) {
+    const profile = menuItems(input).find((item) => item.id === "profile");
+    assert.equal(profile?.href, "/app/profile", JSON.stringify(input));
+  }
+});
+
+test("un admin actuando como cliente vuelve a la ruta de perfil del cliente", () => {
+  const items = menuItems({ isAdmin: true, hasStore: false, acting: true, counts: null });
+  const profile = items.find((item) => item.id === "profile");
+
+  assert.equal(profile?.href, "/app/profile");
+  assert.equal(items.some((item) => item.id.startsWith("admin.")), false);
+});
+
+test("un admin tiene una sola entrada que lleva a /perfil", () => {
+  const items = menuItems({ isAdmin: true, hasStore: true, acting: false, counts: null });
+
+  assert.equal(items.filter((item) => item.href === "/perfil").length, 1);
 });
