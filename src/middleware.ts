@@ -3,7 +3,7 @@ import { ACTING_COOKIE, ACTING_COOKIE_VALUE } from "./lib/acting.ts";
 
 const API_BASE = "https://vende-en-one-api-production.up.railway.app";
 
-const protectedPaths = ["/app", "/onboarding"];
+const protectedPaths = ["/app", "/onboarding", "/perfil"];
 
 const storeRequiredPaths = ["/app"];
 
