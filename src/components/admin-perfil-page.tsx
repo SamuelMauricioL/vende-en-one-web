@@ -6,11 +6,9 @@ import { toast } from "sonner";
 import { AppNav } from "@/components/app-nav";
 import { Toaster } from "@/components/ui/sonner";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -51,9 +49,8 @@ function DeniedCard() {
       style={{ background: "rgba(254,44,85,0.06)", border: "1px solid rgba(254,44,85,0.18)" }}
     >
       <p className="text-sm font-bold" style={{ color: "#fe2c55" }}>
-        No tienes acceso
+        Sin acceso
       </p>
-      <p className="text-xs text-white/35 mt-1">Esta sección es solo para administradores.</p>
     </section>
   );
 }
@@ -138,13 +135,13 @@ export default function AdminPerfilPage() {
     event.preventDefault();
     const username = parseTikTokProfileUrl(urlInput);
     if (!username) {
-      setFormError("No es una URL de perfil de TikTok válida. Usa https://www.tiktok.com/@usuario");
+      setFormError("URL inválida");
       return;
     }
 
     const next = addAccount(accounts, username);
     if (next === accounts) {
-      setFormError(`@${username} ya está en la lista`);
+      setFormError("Ya está en la lista");
       return;
     }
 
@@ -153,14 +150,14 @@ export default function AdminPerfilPage() {
     setUrlInput("");
     setFormError("");
     setDialogOpen(false);
-    toast.success(`Cuenta temporal agregada: @${username}`);
+    toast.success(`@${username} agregada`);
   };
 
   const remove = (username: string) => {
     const next = removeAccount(accounts, username);
     writeStoredAccounts(next);
     setAccounts(next);
-    toast.success(`Cuenta temporal quitada: @${username}`);
+    toast.success(`@${username} quitada`);
   };
 
   return (
@@ -175,35 +172,21 @@ export default function AdminPerfilPage() {
           <DeniedCard />
         ) : access === "error" ? (
           <section className="rounded-3xl p-6 text-center" style={card}>
-            <p className="text-sm font-bold text-white/80">No pudimos verificar tu acceso</p>
-            <p className="text-xs text-white/35 mt-1">Revisa tu conexión y vuelve a entrar.</p>
+            <p className="text-sm font-bold text-white/80">No se pudo verificar el acceso</p>
           </section>
         ) : (
           <>
-            <div>
-              <h1 className="text-lg font-extrabold text-white/90 tracking-tight">Perfil admin</h1>
-              <p className="text-xs text-white/35 mt-1">
-                Material temporal para demos. Nada de esta pantalla se guarda en la base de datos.
-              </p>
-            </div>
-
             <section className="rounded-3xl p-6 space-y-4" style={card}>
               <Field label="Nombre" value={maskName(name)} />
               <Field label="Correo" value={maskEmail(email)} />
             </section>
 
             <section className="space-y-3">
-              <div>
-                <h2 className="text-sm font-bold text-white/80">Cuentas TikTok temporales</h2>
-                <p className="text-[11px] text-white/30 mt-1">
-                  Se guardan solo en este navegador. Sirven para entrar al live de esa cuenta sin
-                  registrar nada.
-                </p>
-              </div>
+              <h2 className="text-sm font-bold text-white/80">Cuentas</h2>
 
               {accounts.length === 0 ? (
                 <p className="rounded-3xl px-4 py-6 text-center text-xs text-white/35" style={card}>
-                  Todavía no registraste ninguna cuenta temporal.
+                  Sin cuentas
                 </p>
               ) : (
                 <ul className="space-y-2">
@@ -213,13 +196,8 @@ export default function AdminPerfilPage() {
                       className="flex items-center gap-3 rounded-3xl px-4 py-3"
                       style={card}
                     >
-                      <span className="min-w-0 grow">
-                        <span className="block text-sm font-semibold text-white/85 truncate">
-                          @{account.username}
-                        </span>
-                        <span className="block text-[11px] text-white/30">
-                          Temporal · solo para demos
-                        </span>
+                      <span className="min-w-0 grow block text-sm font-semibold text-white/85 truncate">
+                        @{account.username}
                       </span>
                       <a
                         href={demoLiveHref(account.username)}
@@ -257,7 +235,7 @@ export default function AdminPerfilPage() {
                 className={PRIMARY_BUTTON}
                 style={{ background: "#fe2c55" }}
               >
-                Agregar cuenta de TikTok
+                Agregar
               </button>
             </section>
           </>
@@ -265,26 +243,17 @@ export default function AdminPerfilPage() {
       </main>
 
       <Dialog open={dialogOpen} onOpenChange={(next) => (next ? undefined : setDialogOpen(false))}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader>
-            <DialogTitle>Registrar cuenta temporal</DialogTitle>
-            <DialogDescription>
-              Pega la URL del perfil de TikTok. No se guarda en la base de datos: solo en este
-              navegador.
-            </DialogDescription>
+            <DialogTitle>Agregar cuenta</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={submit} className="mt-4">
-            <Label
-              htmlFor="ephemeral-tiktok-url"
-              className="mb-1.5 block text-[11px] font-medium text-white/50"
-            >
-              URL del perfil de TikTok
-            </Label>
             <Input
               id="ephemeral-tiktok-url"
               type="url"
               inputMode="url"
+              aria-label="URL del perfil de TikTok"
               value={urlInput}
               onChange={(event) => {
                 setUrlInput(event.target.value);
@@ -303,7 +272,7 @@ export default function AdminPerfilPage() {
                 className={PRIMARY_BUTTON}
                 style={{ background: "#fe2c55" }}
               >
-                Agregar cuenta
+                Agregar
               </button>
             </DialogFooter>
           </form>

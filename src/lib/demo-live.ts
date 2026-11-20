@@ -16,14 +16,14 @@ function normalizeHandle(raw: string): string | null {
 
 export function parseDemoParam(search: string): string | null {
   const raw = search.startsWith("?") ? search.slice(1) : search;
-  const value = new URLSearchParams(raw).get("demo");
+  const value = new URLSearchParams(raw).get("live");
   if (value === null) return null;
   return normalizeHandle(value);
 }
 
 export function demoLiveHref(username: string): string {
   const value = normalizeHandle(username);
-  return value ? `/app?demo=${encodeURIComponent(value)}` : "/app";
+  return value ? `/app?live=${encodeURIComponent(value)}` : "/app";
 }
 
 function messageFrom(data: unknown): string {
@@ -53,7 +53,7 @@ export async function startDemoLive(
       return {
         ok: false,
         status: res.status,
-        message: messageFrom(data) || `No se pudo iniciar el live demo (${res.status})`,
+        message: messageFrom(data) || `No se pudo iniciar el live (${res.status})`,
       };
     }
 
@@ -62,14 +62,14 @@ export async function startDemoLive(
       return {
         ok: false,
         status: res.status,
-        message: `El API no devolvió la sesión del live demo (${res.status})`,
+        message: `No se pudo iniciar el live (${res.status})`,
       };
     }
 
     return { ok: true, sessionId };
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Error desconocido";
-    return { ok: false, status: 0, message: `Fallo de red al iniciar el live demo: ${detail}` };
+    return { ok: false, status: 0, message: `Fallo de red al iniciar el live (${detail})` };
   }
 }
 
@@ -97,12 +97,12 @@ export async function stopDemoLive(
       return {
         ok: false,
         status: res.status,
-        message: messageFrom(data) || `No se pudo detener el live demo (${res.status})`,
+        message: messageFrom(data) || `No se pudo detener el live (${res.status})`,
       };
     }
     return { ok: true, status: res.status, message: "" };
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Error desconocido";
-    return { ok: false, status: 0, message: `Fallo de red al detener el live demo: ${detail}` };
+    return { ok: false, status: 0, message: `Fallo de red al detener el live (${detail})` };
   }
 }

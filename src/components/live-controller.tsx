@@ -251,7 +251,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
     }
     setLastUsername(demoUsername);
     setActiveSessionId(result.sessionId);
-    trackEvent("Live Demo Started", { username: demoUsername });
+    trackEvent("Live Started", { username: demoUsername });
   }, [demoUsername, getToken]);
 
   useEffect(() => {
@@ -503,7 +503,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
           >
             <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #fe2c55, #25f4ee)" }} />
             <div className="p-6 sm:p-8 text-center">
-              <p className="text-[11px] uppercase tracking-wide text-white/30">Live demo sin registro</p>
+              <p className="text-[11px] uppercase tracking-wide text-white/30">En vivo</p>
               <p className="mt-2 font-mono text-lg font-extrabold text-white/90 tracking-tight break-all">
                 @{demoUsername}
               </p>
@@ -527,7 +527,7 @@ export const LiveController = forwardRef<LiveControllerHandle, {
                   </Button>
                 </>
               ) : demoStopped ? (
-                <p className="mt-3 text-xs text-white/40">Live demo detenido.</p>
+                <p className="mt-3 text-xs text-white/40">Live detenido.</p>
               ) : (
                 <p className="mt-3 text-xs text-white/40">Esperando la conexión del live...</p>
               )}
