@@ -25,6 +25,7 @@ import {
 } from "@/lib/ephemeral-accounts";
 import { maskEmail, maskName } from "@/lib/mask";
 import { parseTikTokProfileUrl } from "@/lib/tiktok-url";
+import { resolveLiveLink } from "@/lib/tiktok-resolve";
 
 type Access = "checking" | "admin" | "denied" | "error";
 
@@ -75,6 +76,7 @@ export default function AdminPerfilPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const [formError, setFormError] = useState("");
+  const [resolving, setResolving] = useState(false);
 
   useEffect(() => {
     if (!isLoaded || !userId) return;
@@ -131,11 +133,20 @@ export default function AdminPerfilPage() {
     };
   }, [syncAccounts]);
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const username = parseTikTokProfileUrl(urlInput);
+    setFormError("");
+    setResolving(true);
+
+    let username = parseTikTokProfileUrl(urlInput);
     if (!username) {
-      setFormError("URL inválida");
+      const finalUrl = await resolveLiveLink(urlInput, await authHeaders(getToken));
+      username = finalUrl ? parseTikTokProfileUrl(finalUrl) : null;
+    }
+    setResolving(false);
+
+    if (!username) {
+      setFormError("Link inválido");
       return;
     }
 
@@ -251,15 +262,15 @@ export default function AdminPerfilPage() {
           <form onSubmit={submit} className="mt-4">
             <Input
               id="ephemeral-tiktok-url"
-              type="url"
+              type="text"
               inputMode="url"
-              aria-label="URL del perfil de TikTok"
+              aria-label="Link del live"
               value={urlInput}
               onChange={(event) => {
                 setUrlInput(event.target.value);
                 setFormError("");
               }}
-              placeholder="https://www.tiktok.com/@usuario"
+              placeholder="Link del live"
               autoComplete="off"
               spellCheck={false}
               className="h-10 w-full rounded-xl border-white/10 bg-white/5 px-3 text-sm text-white/85 placeholder:text-white/20 focus-visible:ring-[#fe2c55]/40"
@@ -268,7 +279,7 @@ export default function AdminPerfilPage() {
             <DialogFooter>
               <button
                 type="submit"
-                disabled={!urlInput.trim()}
+                disabled={!urlInput.trim() || resolving}
                 className={PRIMARY_BUTTON}
                 style={{ background: "#fe2c55" }}
               >
