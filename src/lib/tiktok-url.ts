@@ -25,7 +25,7 @@ export function parseTikTokProfileUrl(raw: string): string | null {
   const host = url.hostname.toLowerCase();
   if (host !== "tiktok.com" && !host.endsWith(".tiktok.com")) return null;
 
-  const match = url.pathname.match(/^\/@([^/]+)\/?$/);
+  const match = url.pathname.match(/^\/@([^/]+)(?:\/.*)?$/);
   if (!match) return null;
 
   const handle = match[1];

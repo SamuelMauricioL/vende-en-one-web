@@ -52,3 +52,22 @@ test("una arroba pegada a mano también se acepta", () => {
 test("un usuario inválido con caracteres prohibidos se rechaza", () => {
   assert.equal(parseTikTokProfileUrl("https://www.tiktok.com/@usuario!"), null);
 });
+
+test("un enlace de live devuelve el mismo usuario", () => {
+  assert.equal(parseTikTokProfileUrl("https://www.tiktok.com/@casa.andre2/live"), "casa.andre2");
+});
+
+test("un enlace de live con query devuelve el mismo usuario", () => {
+  assert.equal(
+    parseTikTokProfileUrl("https://www.tiktok.com/@casa.andre2/live?_r=1&enter_from=share"),
+    "casa.andre2",
+  );
+});
+
+test("un enlace de video devuelve el mismo usuario", () => {
+  assert.equal(parseTikTokProfileUrl("https://www.tiktok.com/@casa.andre2/video/7300000000000000000"), "casa.andre2");
+});
+
+test("una subruta del perfil sin arroba sigue sin ser un perfil", () => {
+  assert.equal(parseTikTokProfileUrl("https://www.tiktok.com/live"), null);
+});
